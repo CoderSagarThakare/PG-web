@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
@@ -9,14 +10,17 @@ import { User, Mail, Phone, MapPin } from 'lucide-react';
 
 export default function Profile() {
   const { user, isStaff, updateUser } = useAuth();
-  const [form, setForm] = useState({
-    name: '', email: '', mobNo1: '', mobNo2: '',
-    address: { city: '', state: '', pincode: '' }
+  
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    defaultValues: {
+      name: '', email: '', mobNo1: '', mobNo2: '',
+      address: { city: '', state: '', pincode: '' }
+    }
   });
 
   useEffect(() => {
     if (user) {
-      setForm({
+      reset({
         name: user.name || '',
         email: user.email || '',
         mobNo1: user.mobNo1 || '',
@@ -28,7 +32,7 @@ export default function Profile() {
         }
       });
     }
-  }, [user]);
+  }, [user, reset]);
 
   const updateMut = useMutation({
     mutationFn: (data) => isStaff ? updateStaffProfileApi(data) : updateUserProfileApi(data),
@@ -39,27 +43,8 @@ export default function Profile() {
     onError: (e) => toast.error(getErrorMessage(e)),
   });
 
-  const handleChange = (e) => {
-    let { name, value } = e.target;
-
-    // Only allow digits and restrict length
-    if (name === 'mobNo1' || name === 'mobNo2') {
-      value = value.replace(/\D/g, '').slice(0, 10);
-    } else if (name === 'address.pincode') {
-      value = value.replace(/\D/g, '').slice(0, 6);
-    }
-
-    if (name.startsWith('address.')) {
-      const key = name.split('.')[1];
-      setForm(f => ({ ...f, address: { ...f.address, [key]: value } }));
-    } else {
-      setForm(f => ({ ...f, [name]: value }));
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    updateMut.mutate(form);
+  const onSubmit = (data) => {
+    updateMut.mutate(data);
   };
 
   return (
@@ -87,20 +72,68 @@ export default function Profile() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <div className="form-grid">
-            <Input label="Full Name" name="name" value={form.name} onChange={handleChange} required />
-            <Input label="Email Address" name="email" value={form.email} disabled />
-            <Input label="Mobile 1" name="mobNo1" type="tel" value={form.mobNo1} onChange={handleChange} required minLength={10} maxLength={10} />
-            <Input label="Mobile 2" name="mobNo2" type="tel" value={form.mobNo2} onChange={handleChange} minLength={10} maxLength={10} />
+            <Input 
+              label="Full Name" 
+              {...register('name', { required: 'Name is required' })} 
+              error={errors.name?.message} 
+              required
+            />
+            <Input 
+              label="Email Address" 
+              {...register('email')} 
+              disabled 
+              required
+            />
+            <Input 
+              label="Mobile 1" 
+              type="tel" 
+              {...register('mobNo1', { 
+                required: 'Mobile is required',
+                pattern: { value: /^[0-9]{10}$/, message: 'Must be 10 digits' }
+              })} 
+              error={errors.mobNo1?.message} 
+              maxLength={10} 
+              required
+            />
+            <Input 
+              label="Mobile 2" 
+              type="tel" 
+              {...register('mobNo2', {
+                pattern: { value: /^[0-9]{10}$/, message: 'Must be 10 digits' }
+              })} 
+              error={errors.mobNo2?.message} 
+              maxLength={10} 
+            />
             
             <div className="full" style={{ marginTop: 16 }}>
               <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>Address Details</h3>
             </div>
             
-            <Input label="City" name="address.city" value={form.address.city} onChange={handleChange} />
-            <Input label="State" name="address.state" value={form.address.state} onChange={handleChange} />
-            <Input label="Pincode" name="address.pincode" type="tel" value={form.address.pincode} onChange={handleChange} minLength={6} maxLength={6} />
+            <Input 
+              label="City" 
+              {...register('address.city', { required: 'City is required' })} 
+              error={errors.address?.city?.message}
+              required
+            />
+            <Input 
+              label="State" 
+              {...register('address.state', { required: 'State is required' })} 
+              error={errors.address?.state?.message}
+              required
+            />
+            <Input 
+              label="Pincode" 
+              type="tel" 
+              {...register('address.pincode', {
+                required: 'Pincode is required',
+                pattern: { value: /^[0-9]{6}$/, message: 'Must be 6 digits' }
+              })} 
+              error={errors.address?.pincode?.message}
+              maxLength={6} 
+              required
+            />
           </div>
 
           <div style={{ marginTop: 32, display: 'flex', justifyContent: 'flex-end' }}>

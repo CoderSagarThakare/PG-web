@@ -1,3 +1,5 @@
+import { forwardRef } from 'react';
+
 export const Spinner = ({ size = 'md', center = false }) => {
   const el = <div className={`spinner ${size === 'sm' ? 'spinner-sm' : ''}`} />;
   return center ? <div className="loading-center">{el}</div> : el;
@@ -41,41 +43,46 @@ export const Card = ({ children, className = '', hover = false, onClick, style =
   </div>
 );
 
-export const Input = ({
+export const Input = forwardRef(({
   label, name, type = 'text', value, onChange,
   placeholder, error, required, disabled, as = 'input', options, rows, ...props
-}) => (
-  <div className="form-group">
-    {label && (
-      <label className="form-label" htmlFor={name}>
-        {label} {required && <span style={{ color: 'var(--danger)' }}>*</span>}
-      </label>
-    )}
-    {as === 'select' ? (
-      <select
-        id={name} name={name} value={value} onChange={onChange}
-        className="form-control" disabled={disabled} required={required} {...props}
-      >
-        {options?.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-    ) : as === 'textarea' ? (
-      <textarea
-        id={name} name={name} value={value} onChange={onChange}
-        placeholder={placeholder} className="form-control"
-        disabled={disabled} required={required} rows={rows || 4} {...props}
-      />
-    ) : (
-      <input
-        id={name} name={name} type={type} value={value} onChange={onChange}
-        placeholder={placeholder} className="form-control"
-        disabled={disabled} required={required} {...props}
-      />
-    )}
-    {error && <span className="form-error">{error}</span>}
-  </div>
-);
+}, ref) => {
+  const commonProps = {
+    ref,
+    id: name,
+    name,
+    placeholder,
+    className: "form-control",
+    disabled,
+    required,
+    ...(value !== undefined ? { value } : {}),
+    ...(onChange ? { onChange } : {}),
+    ...props
+  };
+
+  return (
+    <div className="form-group">
+      {label && (
+        <label className="form-label" htmlFor={name}>
+          {label} {required && <span style={{ color: 'var(--danger)' }}>*</span>}
+        </label>
+      )}
+      {as === 'select' ? (
+        <select {...commonProps}>
+          {options?.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      ) : as === 'textarea' ? (
+        <textarea rows={rows || 4} {...commonProps} />
+      ) : (
+        <input type={type} {...commonProps} />
+      )}
+      {error && <span className="form-error">{error}</span>}
+    </div>
+  );
+});
+Input.displayName = 'Input';
 
 export const Modal = ({ isOpen, onClose, title, children, size = '' }) => {
   if (!isOpen) return null;
@@ -100,12 +107,12 @@ export const StatCard = ({ label, value, icon, color = 'primary' }) => (
   </div>
 );
 
-export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, loading }) => (
+export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, loading, confirmText = 'Delete', confirmVariant = 'danger' }) => (
   <Modal isOpen={isOpen} onClose={onClose} title={title || 'Confirm Action'}>
     <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>{message}</p>
     <div className="modal-footer">
       <Button variant="ghost" onClick={onClose} disabled={loading}>Cancel</Button>
-      <Button variant="danger" onClick={onConfirm} loading={loading}>Delete</Button>
+      <Button variant={confirmVariant} onClick={onConfirm} loading={loading}>{confirmText}</Button>
     </div>
   </Modal>
 );

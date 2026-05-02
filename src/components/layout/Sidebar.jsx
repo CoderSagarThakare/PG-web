@@ -124,6 +124,8 @@ export default function Sidebar() {
         onConfirm={handleLogout}
         title="Confirm Logout"
         message="Are you sure you want to sign out of your account?"
+        confirmText="Sign Out"
+        confirmVariant="primary"
       />
     </aside>
   );
