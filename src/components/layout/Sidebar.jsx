@@ -10,7 +10,7 @@ import {
 const ownerNav = [
   { label: 'Overview', icon: <LayoutDashboard size={18} />, to: '/dashboard' },
   { section: 'PG Management' },
-  { label: 'My PGs', icon: <Building2 size={18} />, to: '/pgs' },
+  { label: 'My PGs', icon: <Building2 size={18} />, to: '/pg' },
   { label: 'Vacancy Posts', icon: <FileText size={18} />, to: '/posts' },
   { label: 'Enquiries', icon: <MessageSquare size={18} />, to: '/enquiries' },
   { section: 'Account' },
@@ -20,7 +20,7 @@ const ownerNav = [
 const managerNav = [
   { label: 'Dashboard', icon: <LayoutDashboard size={18} />, to: '/dashboard' },
   { section: 'Management' },
-  { label: 'My PG', icon: <Building2 size={18} />, to: '/manager/pg' },
+  { label: 'My PGs', icon: <Building2 size={18} />, to: '/pg' },
   { label: 'Posts', icon: <FileText size={18} />, to: '/posts' },
   { label: 'Enquiries', icon: <MessageSquare size={18} />, to: '/enquiries' },
   { section: 'Account' },

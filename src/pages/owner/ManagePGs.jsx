@@ -5,6 +5,7 @@ import { getMyPGsApi, createPGApi, updatePGApi, deletePGApi, getFacilitiesApi, g
 import { Building2, Plus, Edit2, Trash2, MapPin, Users, Bed } from 'lucide-react';
 import { Button, Card, Badge, Modal, Input, Spinner, EmptyState, ConfirmModal, StatCard } from '../../components/common';
 import { getErrorMessage, formatDate } from '../../utils/helpers';
+import { useAuth } from '../../context/AuthContext';
 
 const defaultForm = {
   name: '', address: { landmark: '', city: '', state: '', country: 'India', pincode: '' },
@@ -19,23 +20,22 @@ export default function ManagePGs() {
   const [confirmId, setConfirmId] = useState(null);
   const [form, setForm] = useState(defaultForm);
 
+  const { user } = useAuth();
+  const isOwner = user?.role === 'owner';
+
   const { data, isLoading } = useQuery({
     queryKey: ['my-pgs'],
     queryFn: async () => { const r = await getMyPGsApi(); return r.data?.data; },
   });
 
-  const { data: facilitiesData } = useQuery({
-    queryKey: ['facilities'],
-    queryFn: async () => { const r = await getFacilitiesApi(); return r.data?.data; },
-  });
-
+  // Only fetch managers if the user is an owner and the modal is open
   const { data: managersData } = useQuery({
     queryKey: ['managers'],
     queryFn: async () => { const r = await getManagersApi(); return r.data?.data; },
+    enabled: isOwner && modalOpen,
   });
 
   const pgs = data?.pgs || [];
-  const facilities = facilitiesData || [];
   const managers = managersData?.managers || [];
 
   const createMutation = useMutation({
@@ -109,9 +109,11 @@ export default function ManagePGs() {
           <p className="page-subtitle">Manage all your PG properties</p>
         </div>
         <div className="page-actions">
-          <Button onClick={() => setModalOpen(true)}>
-            <Plus size={16} /> Add PG
-          </Button>
+          {isOwner && (
+            <Button onClick={() => setModalOpen(true)}>
+              <Plus size={16} /> Add PG
+            </Button>
+          )}
         </div>
       </div>
 
@@ -128,7 +130,7 @@ export default function ManagePGs() {
           icon={<Building2 size={64} />}
           title="No PGs yet"
           description="Add your first PG property to get started."
-          action={<Button onClick={() => setModalOpen(true)}><Plus size={16} /> Add PG</Button>}
+          action={isOwner ? <Button onClick={() => setModalOpen(true)}><Plus size={16} /> Add PG</Button> : null}
         />
       ) : (
         <div className="grid-3">

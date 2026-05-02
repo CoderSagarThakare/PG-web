@@ -29,9 +29,9 @@ function AppRoutes() {
             <Route path="/posts" element={<ManagePosts />} />
           </Route>
           
-          {/* Owner Only */}
-          <Route element={<RoleRoute roles={['owner']} />}>
-            <Route path="/pgs" element={<ManagePGs />} />
+          {/* Owner & Manager */}
+          <Route element={<RoleRoute roles={['owner', 'manager']} />}>
+            <Route path="/pg" element={<ManagePGs />} />
           </Route>
           
           {/* User Only */}

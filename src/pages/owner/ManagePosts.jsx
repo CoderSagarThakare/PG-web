@@ -36,6 +36,7 @@ export default function ManagePosts() {
   const { data: pgsData } = useQuery({
     queryKey: ['my-pgs'],
     queryFn: async () => (await getMyPGsApi()).data?.data,
+    enabled: modalOpen,
   });
 
   const posts = postsData?.posts || [];
