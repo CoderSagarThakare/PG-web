@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { searchPostsApi } from '../../api/post.api';
-import { createEnquiryApi } from '../../api/enquiry.api';
+import { createEnquiryApi, updateEnquiryApi } from '../../api/enquiry.api';
 import { Search, MapPin, Bed, Filter, Phone, User as UserIcon } from 'lucide-react';
 import { Button, Card, Badge, Spinner, EmptyState, Input } from '../../components/common';
 import { getErrorMessage, formatPrice } from '../../utils/helpers';
@@ -34,7 +34,12 @@ export default function BrowsePosts() {
           if (p._id === variables.postId) {
             return {
               ...p,
-              enquiryData: { owner: res.data?.data?.owner, manager: res.data?.data?.manager }
+              enquiryData: { 
+                owner: res.data?.data?.owner, 
+                manager: res.data?.data?.manager,
+                enquiryId: res.data?.data?.enquiryId,
+                status: res.data?.data?.status
+              }
             };
           }
           return p;
@@ -45,10 +50,38 @@ export default function BrowsePosts() {
     onError: (e) => toast.error(getErrorMessage(e)),
   });
 
+  const updateEnquiryMut = useMutation({
+    mutationFn: ({ id, data }) => updateEnquiryApi(id, data),
+    onSuccess: (res, variables) => {
+      qc.setQueryData(['browse-posts', activeFilters], (oldData) => {
+        if (!oldData) return oldData;
+        const newPosts = oldData.posts.map(p => {
+          if (p.enquiryData?.enquiryId === variables.id) {
+            return {
+              ...p,
+              enquiryData: { ...p.enquiryData, status: 'contacted' }
+            };
+          }
+          return p;
+        });
+        return { ...oldData, posts: newPosts };
+      });
+    },
+    // We can silently fail or toast, but since it's just a status update, silent is okay or a toast.
+    onError: (e) => console.error("Failed to update status", e),
+  });
+
   const posts = data?.posts || [];
 
   const handleEnquire = (postId) => {
     enquiryMut.mutate({ postId });
+  };
+
+  const handleRevealNumber = (e, enquiryId) => {
+    e.preventDefault();
+    if (enquiryId) {
+      updateEnquiryMut.mutate({ id: enquiryId, data: { status: 'contacted' } });
+    }
   };
 
   return (
@@ -178,14 +211,24 @@ export default function BrowsePosts() {
                                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{post.enquiryData.owner.name}</div>
                               </div>
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
-                              <div style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-primary)' }}>
-                                <Phone size={14} className="text-secondary" /> {post.enquiryData.owner.mobNo1}
-                              </div>
-                              {post.enquiryData.owner.mobNo2 && (
-                                <div style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-primary)' }}>
-                                  <Phone size={14} className="text-secondary" /> {post.enquiryData.owner.mobNo2}
-                                </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                              {post.enquiryData.status === 'contacted' ? (
+                                <a 
+                                  href={`tel:${post.enquiryData.owner.mobNo1}`}
+                                  style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--primary)', textDecoration: 'none', background: 'var(--primary-light)', padding: '6px 12px', borderRadius: 'var(--radius-sm)' }}
+                                >
+                                  <Phone size={14} /> {post.enquiryData.owner.mobNo1}
+                                </a>
+                              ) : (
+                                <Button 
+                                  variant="primary" 
+                                  size="sm" 
+                                  onClick={(e) => handleRevealNumber(e, post.enquiryData.enquiryId)}
+                                  loading={updateEnquiryMut.isPending && updateEnquiryMut.variables?.id === post.enquiryData.enquiryId}
+                                  style={{ fontSize: 13, fontWeight: 700, padding: '6px 12px' }}
+                                >
+                                  <Phone size={14} style={{ marginRight: 6 }} /> Reveal Number
+                                </Button>
                               )}
                             </div>
                           </div>
@@ -204,14 +247,24 @@ export default function BrowsePosts() {
                                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{post.enquiryData.manager.name}</div>
                                 </div>
                               </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
-                                <div style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-primary)' }}>
-                                  <Phone size={14} className="text-secondary" /> {post.enquiryData.manager.mobNo1}
-                                </div>
-                                {post.enquiryData.manager.mobNo2 && (
-                                  <div style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-primary)' }}>
-                                    <Phone size={14} className="text-secondary" /> {post.enquiryData.manager.mobNo2}
-                                  </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                                {post.enquiryData.status === 'contacted' ? (
+                                  <a 
+                                    href={`tel:${post.enquiryData.manager.mobNo1}`}
+                                    style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--primary)', textDecoration: 'none', background: 'var(--primary-light)', padding: '6px 12px', borderRadius: 'var(--radius-sm)' }}
+                                  >
+                                    <Phone size={14} /> {post.enquiryData.manager.mobNo1}
+                                  </a>
+                                ) : (
+                                  <Button 
+                                    variant="primary" 
+                                    size="sm" 
+                                    onClick={(e) => handleRevealNumber(e, post.enquiryData.enquiryId)}
+                                    loading={updateEnquiryMut.isPending && updateEnquiryMut.variables?.id === post.enquiryData.enquiryId}
+                                    style={{ fontSize: 13, fontWeight: 700, padding: '6px 12px' }}
+                                  >
+                                    <Phone size={14} style={{ marginRight: 6 }} /> Reveal Number
+                                  </Button>
                                 )}
                               </div>
                             </div>
