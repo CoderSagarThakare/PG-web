@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPGByIdApi, updatePGApi, getManagersApi, getFacilitiesApi } from '../../api/pg.api';
-import { Spinner, Card, Badge, EmptyState, Button, StatCard, Modal, Input } from '../../components/common';
-import FacilitiesPicker from '../../components/common/FacilitiesPicker';
+import { Spinner, Card, Badge, EmptyState, Button, StatCard, Modal } from '../../components/common';
+import PGForm from '../../components/owner/PGForm';
 import { Building2, MapPin, ArrowLeft, Bed, Users, FileText, CheckCircle, Clock, Edit2 } from 'lucide-react';
 import { getErrorMessage } from '../../utils/helpers';
 import toast from 'react-hot-toast';
@@ -20,7 +20,6 @@ export default function PGDetails() {
   const qc = useQueryClient();
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState(defaultForm);
 
   const { data: response, isLoading, isError, error } = useQuery({
     queryKey: ['pg', pgId],
@@ -67,35 +66,8 @@ export default function PGDetails() {
   const pgTypeLabels = { male: 'Male', female: 'Female', unisex: 'Unisex', coLiving: 'Co-Living' };
   const pgTypeColors = { male: 'info', female: 'purple', unisex: 'accent', coLiving: 'warning' };
 
-  const openEdit = () => {
-    setForm({
-      name: pg.name || '',
-      address: { ...defaultForm.address, ...pg.address },
-      pgType: pg.pgType || 'unisex',
-      totalRooms: pg.totalRooms || '',
-      description: pg.description || '',
-      managerId: pg.managerId?._id || pg.managerId || '',
-      checkInTime: pg.checkInTime || '',
-      checkOutTime: pg.checkOutTime || '',
-      facilities: pg.facilities?.map(f => typeof f === 'object' ? f._id : f) || [],
-    });
-    setModalOpen(true);
-  };
-
-  const handleChange = (e) => {
-    let { name, value } = e.target;
-    if (name === 'address.pincode') value = value.replace(/\D/g, '').slice(0, 6);
-    if (name.startsWith('address.')) {
-      const key = name.split('.')[1];
-      setForm(f => ({ ...f, address: { ...f.address, [key]: value } }));
-    } else {
-      setForm(f => ({ ...f, [name]: value }));
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const payload = { ...form, totalRooms: Number(form.totalRooms) };
+  const onSubmit = (formData) => {
+    const payload = { ...formData, totalRooms: Number(formData.totalRooms) };
     updateMutation.mutate({ id: pgId, data: payload });
   };
 
@@ -115,7 +87,7 @@ export default function PGDetails() {
           </p>
         </div>
         <div className="page-actions">
-          <Button onClick={openEdit}>
+          <Button onClick={() => setModalOpen(true)}>
             <Edit2 size={16} /> Edit PG
           </Button>
         </div>
@@ -197,58 +169,14 @@ export default function PGDetails() {
       </div>
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Edit PG Details" size="lg">
-        <form onSubmit={handleSubmit}>
-          <div className="form-grid">
-            <div className="full">
-              <Input label="PG Name" name="name" value={form.name} onChange={handleChange} required />
-            </div>
-            <Input label="Landmark" name="address.landmark" value={form.address.landmark} onChange={handleChange} required />
-            <Input label="City" name="address.city" value={form.address.city} onChange={handleChange} required />
-            <Input label="State" name="address.state" value={form.address.state} onChange={handleChange} required />
-            <Input label="Country" name="address.country" value={form.address.country} onChange={handleChange} />
-            <Input label="Pincode" name="address.pincode" type="tel" value={form.address.pincode} onChange={handleChange} minLength={6} maxLength={6} />
-            <Input
-              label="PG Type" name="pgType" as="select" value={form.pgType} onChange={handleChange}
-              options={[
-                { value: 'male', label: 'Male' }, { value: 'female', label: 'Female' },
-                { value: 'unisex', label: 'Unisex' }, { value: 'coLiving', label: 'Co-Living' },
-              ]}
-            />
-            <Input label="Total Rooms" name="totalRooms" type="number" value={form.totalRooms} onChange={handleChange} required />
-            <Input label="Check-In Time" name="checkInTime" type="time" value={form.checkInTime} onChange={handleChange} />
-            <Input label="Check-Out Time" name="checkOutTime" type="time" value={form.checkOutTime} onChange={handleChange} />
-            {managers.length > 0 && (
-              <Input
-                label="Assign Manager" name="managerId" as="select"
-                value={form.managerId} onChange={handleChange}
-                options={[
-                  { value: '', label: '— No Manager —' },
-                  ...managers.map(m => ({ 
-                    value: m._id, 
-                    label: m.role === 'owner' ? `${m.name} (Me)` : m.name 
-                  })),
-                ]}
-              />
-            )}
-            <div className="full">
-              <Input label="Description" name="description" as="textarea" value={form.description} onChange={handleChange} />
-            </div>
-            <div className="full">
-              <div className="form-group">
-                <label className="form-label">Facilities</label>
-                <FacilitiesPicker
-                  options={facilitiesList}
-                  selected={form.facilities}
-                  onChange={(ids) => setForm(f => ({ ...f, facilities: ids }))}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="modal-footer">
-            <Button variant="ghost" onClick={() => setModalOpen(false)} type="button">Cancel</Button>
-            <Button type="submit" loading={updateMutation.isPending}>Save Changes</Button>
-          </div>
-        </form>
+        <PGForm
+          initialData={pg}
+          onSubmit={onSubmit}
+          loading={updateMutation.isPending}
+          managers={managers}
+          facilitiesList={facilitiesList}
+          buttonText="Save Changes"
+        />
       </Modal>
     </div>
   );

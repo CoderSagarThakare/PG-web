@@ -4,8 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { getMyPGsApi, getPGByIdApi, createPGApi, updatePGApi, deletePGApi, getFacilitiesApi, getManagersApi } from '../../api/pg.api';
 import { Building2, Plus, Edit2, Trash2, MapPin, Users, Bed } from 'lucide-react';
-import { Button, Card, Badge, Modal, Input, Spinner, EmptyState, ConfirmModal, StatCard } from '../../components/common';
-import FacilitiesPicker from '../../components/common/FacilitiesPicker';
+import { Button, Card, Badge, Modal, Spinner, EmptyState, ConfirmModal, StatCard } from '../../components/common';
+import PGForm from '../../components/owner/PGForm';
 import { getErrorMessage, formatDate } from '../../utils/helpers';
 import { useAuth } from '../../context/AuthContext';
 
@@ -21,7 +21,6 @@ export default function ManagePGs() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editPG, setEditPG] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
-  const [form, setForm] = useState(defaultForm);
 
   const { user } = useAuth();
   const isOwner = user?.role === 'owner';
@@ -66,66 +65,17 @@ export default function ManagePGs() {
     onError: (e) => toast.error(getErrorMessage(e)),
   });
 
-  const closeModal = () => { setModalOpen(false); setEditPG(null); setForm(defaultForm); };
+  const closeModal = () => { setModalOpen(false); setEditPG(null); };
 
   const openEdit = (pg) => {
     setEditPG(pg);
-    setForm({
-      name: pg.name || '',
-      address: { ...defaultForm.address, ...pg.address },
-      pgType: pg.pgType || 'unisex',
-      totalRooms: pg.totalRooms || '',
-      description: '',
-      managerId: pg.managerId?._id || pg.managerId || '',
-      checkInTime: '',
-      checkOutTime: '',
-      facilities: pg.facilities?.map(f => typeof f === 'object' ? f._id : f) || [],
-    });
     setModalOpen(true);
   };
 
-  const { data: fullPGData, isLoading: isLoadingFullPG } = useQuery({
-    queryKey: ['pg', editPG?._id],
-    queryFn: async () => { const r = await getPGByIdApi(editPG._id); return r.data?.data; },
-    enabled: !!editPG?._id,
-  });
 
-  useEffect(() => {
-    if (fullPGData?.pg && editPG) {
-      const pg = fullPGData.pg;
-      setForm({
-        name: pg.name || '',
-        address: { ...defaultForm.address, ...pg.address },
-        pgType: pg.pgType || 'unisex',
-        totalRooms: pg.totalRooms || '',
-        description: pg.description || '',
-        managerId: pg.managerId?._id || pg.managerId || '',
-        checkInTime: pg.checkInTime || '',
-        checkOutTime: pg.checkOutTime || '',
-        facilities: pg.facilities?.map(f => typeof f === 'object' ? f._id : f) || [],
-      });
-    }
-  }, [fullPGData, editPG]);
 
-  const handleChange = (e) => {
-    let { name, value } = e.target;
-    
-    // Validate pincode to max 6 digits
-    if (name === 'address.pincode') {
-      value = value.replace(/\D/g, '').slice(0, 6);
-    }
-
-    if (name.startsWith('address.')) {
-      const key = name.split('.')[1];
-      setForm(f => ({ ...f, address: { ...f.address, [key]: value } }));
-    } else {
-      setForm(f => ({ ...f, [name]: value }));
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const payload = { ...form, totalRooms: Number(form.totalRooms) };
+  const onSubmit = (formData) => {
+    const payload = { ...formData, totalRooms: Number(formData.totalRooms) };
     if (editPG) updateMutation.mutate({ id: editPG._id, data: payload });
     else createMutation.mutate(payload);
   };
@@ -216,66 +166,15 @@ export default function ManagePGs() {
         </div>
       )}
 
-      {/* Create/Edit Modal */}
       <Modal isOpen={modalOpen} onClose={closeModal} title={editPG ? 'Edit PG' : 'Add New PG'} size="lg">
-        {isLoadingFullPG && editPG ? (
-          <div style={{ padding: '40px 0' }}><Spinner center /></div>
-        ) : (
-          <form onSubmit={handleSubmit}>
-          <div className="form-grid">
-            <div className="full">
-              <Input label="PG Name" name="name" value={form.name} onChange={handleChange} required />
-            </div>
-            <Input label="Landmark" name="address.landmark" value={form.address.landmark} onChange={handleChange} required />
-            <Input label="City" name="address.city" value={form.address.city} onChange={handleChange} required />
-            <Input label="State" name="address.state" value={form.address.state} onChange={handleChange} required />
-            <Input label="Country" name="address.country" value={form.address.country} onChange={handleChange} />
-            <Input label="Pincode" name="address.pincode" type="tel" value={form.address.pincode} onChange={handleChange} minLength={6} maxLength={6} />
-            <Input
-              label="PG Type" name="pgType" as="select" value={form.pgType} onChange={handleChange}
-              options={[
-                { value: 'male', label: 'Male' }, { value: 'female', label: 'Female' },
-                { value: 'unisex', label: 'Unisex' }, { value: 'coLiving', label: 'Co-Living' },
-              ]}
-            />
-            <Input label="Total Rooms" name="totalRooms" type="number" value={form.totalRooms} onChange={handleChange} required />
-            <Input label="Check-In Time" name="checkInTime" type="time" value={form.checkInTime} onChange={handleChange} />
-            <Input label="Check-Out Time" name="checkOutTime" type="time" value={form.checkOutTime} onChange={handleChange} />
-            {managers.length > 0 && (
-              <Input
-                label="Assign Manager" name="managerId" as="select"
-                value={form.managerId} onChange={handleChange}
-                options={[
-                  { value: '', label: '— No Manager —' },
-                  ...managers.map(m => ({ 
-                    value: m._id, 
-                    label: m.role === 'owner' ? `${m.name} (Me)` : m.name 
-                  })),
-                ]}
-              />
-            )}
-            <div className="full">
-              <Input label="Description" name="description" as="textarea" value={form.description} onChange={handleChange} />
-            </div>
-            <div className="full">
-              <div className="form-group">
-                <label className="form-label">Facilities</label>
-                <FacilitiesPicker
-                  options={facilitiesList}
-                  selected={form.facilities}
-                  onChange={(ids) => setForm(f => ({ ...f, facilities: ids }))}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="modal-footer">
-            <Button variant="ghost" onClick={closeModal} type="button">Cancel</Button>
-            <Button type="submit" loading={createMutation.isPending || updateMutation.isPending}>
-              {editPG ? 'Update PG' : 'Create PG'}
-            </Button>
-          </div>
-        </form>
-        )}
+        <PGForm
+          initialData={editPG}
+          onSubmit={onSubmit}
+          loading={createMutation.isPending || updateMutation.isPending}
+          managers={managers}
+          facilitiesList={facilitiesList}
+          buttonText={editPG ? 'Update PG' : 'Create PG'}
+        />
       </Modal>
 
       <ConfirmModal

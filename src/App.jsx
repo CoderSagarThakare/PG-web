@@ -1,53 +1,58 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute, RoleRoute } from './routes/guards';
 import { Toaster } from 'react-hot-toast';
+import { Spinner } from './components/common';
 
 import AppLayout from './components/layout/AppLayout';
-import Login from './pages/auth/Login';
-import Dashboard from './pages/shared/Dashboard';
-import Profile from './pages/shared/Profile';
-import Enquiries from './pages/shared/Enquiries';
-import ManagePGs from './pages/owner/ManagePGs';
-import PGDetails from './pages/owner/PGDetails';
-import ManagePosts from './pages/owner/ManagePosts';
-import BrowsePosts from './pages/user/BrowsePosts';
+
+const Login = lazy(() => import('./pages/auth/Login'));
+const Dashboard = lazy(() => import('./pages/shared/Dashboard'));
+const Profile = lazy(() => import('./pages/shared/Profile'));
+const Enquiries = lazy(() => import('./pages/shared/Enquiries'));
+const ManagePGs = lazy(() => import('./pages/owner/ManagePGs'));
+const PGDetails = lazy(() => import('./pages/owner/PGDetails'));
+const ManagePosts = lazy(() => import('./pages/owner/ManagePosts'));
+const BrowsePosts = lazy(() => import('./pages/user/BrowsePosts'));
 
 function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      
-      {/* Protected Routes */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/enquiries" element={<Enquiries />} />
-          
-          {/* Staff Routes */}
-          <Route element={<RoleRoute roles={['owner', 'manager']} />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/posts" element={<ManagePosts />} />
+    <Suspense fallback={<Spinner center />}>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/enquiries" element={<Enquiries />} />
+            
+            {/* Staff Routes */}
+            <Route element={<RoleRoute roles={['owner', 'manager']} />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/posts" element={<ManagePosts />} />
+            </Route>
+            
+            {/* Owner & Manager */}
+            <Route element={<RoleRoute roles={['owner', 'manager']} />}>
+              <Route path="/pg" element={<ManagePGs />} />
+              <Route path="/pg/:pgId" element={<PGDetails />} />
+            </Route>
+            
+            {/* User Only */}
+            <Route element={<RoleRoute roles={['user']} />}>
+              <Route path="/browse" element={<BrowsePosts />} />
+              <Route path="/my-enquiries" element={<Enquiries />} />
+            </Route>
+  
+            {/* Fallback */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Route>
-          
-          {/* Owner & Manager */}
-          <Route element={<RoleRoute roles={['owner', 'manager']} />}>
-            <Route path="/pg" element={<ManagePGs />} />
-            <Route path="/pg/:pgId" element={<PGDetails />} />
-          </Route>
-          
-          {/* User Only */}
-          <Route element={<RoleRoute roles={['user']} />}>
-            <Route path="/browse" element={<BrowsePosts />} />
-            <Route path="/my-enquiries" element={<Enquiries />} />
-          </Route>
-
-          {/* Fallback */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
         </Route>
-      </Route>
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 

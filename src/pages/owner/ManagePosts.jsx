@@ -4,7 +4,8 @@ import toast from 'react-hot-toast';
 import { getPostsApi, createPostApi, updatePostApi, deletePostApi } from '../../api/post.api';
 import { getMyPGsApi } from '../../api/pg.api';
 import { FileText, Plus, Edit2, Trash2, Bed } from 'lucide-react';
-import { Button, Card, Badge, Modal, Input, Spinner, EmptyState, ConfirmModal } from '../../components/common';
+import { Button, Card, Badge, Modal, Spinner, EmptyState, ConfirmModal } from '../../components/common';
+import PostForm from '../../components/owner/PostForm';
 import { getErrorMessage, formatPrice, formatDate } from '../../utils/helpers';
 
 const defaultForm = {
@@ -26,7 +27,6 @@ export default function ManagePosts() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editPost, setEditPost] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
-  const [form, setForm] = useState(defaultForm);
 
   const { data: postsData, isLoading } = useQuery({
     queryKey: ['posts'],
@@ -60,34 +60,15 @@ export default function ManagePosts() {
     onError: (e) => toast.error(getErrorMessage(e)),
   });
 
-  const closeModal = () => { setModalOpen(false); setEditPost(null); setForm(defaultForm); };
+  const closeModal = () => { setModalOpen(false); setEditPost(null); };
 
   const openEdit = (post) => {
     setEditPost(post);
-    setForm({
-      pgId: post.pgId?._id || post.pgId || '',
-      title: post.title || '', description: post.description || '',
-      vacancyCount: post.vacancyCount || '', occupancyType: post.occupancyType || 'single',
-      pgType: post.pgType || 'unisex', pricePerBed: post.pricePerBed || '',
-      availableFrom: post.availableFrom ? post.availableFrom.slice(0, 10) : '',
-    });
     setModalOpen(true);
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'pgId' && !editPost) {
-      // Auto-fill pgType from the selected PG when creating a new post
-      const selectedPg = pgs.find(p => p._id === value);
-      setForm(f => ({ ...f, pgId: value, pgType: selectedPg?.pgType || f.pgType }));
-    } else {
-      setForm(f => ({ ...f, [name]: value }));
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const payload = { ...form, vacancyCount: Number(form.vacancyCount), pricePerBed: Number(form.pricePerBed) };
+  const onSubmit = (formData) => {
+    const payload = { ...formData, vacancyCount: Number(formData.vacancyCount), pricePerBed: Number(formData.pricePerBed) };
     if (editPost) updateMut.mutate({ id: editPost._id, data: payload });
     else createMut.mutate(payload);
   };
@@ -136,42 +117,13 @@ export default function ManagePosts() {
       )}
 
       <Modal isOpen={modalOpen} onClose={closeModal} title={editPost ? 'Edit Post' : 'New Vacancy Post'} size="lg">
-        <form onSubmit={handleSubmit}>
-          <div className="form-grid">
-            <div className="full">
-              <Input label="Select PG" name="pgId" as="select" value={form.pgId} onChange={handleChange} required
-                options={[{ value: '', label: '— Select PG —' }, ...pgs.map(p => ({ value: p._id, label: p.name }))]} />
-            </div>
-            <div className="full">
-              <Input label="Post Title" name="title" value={form.title} onChange={handleChange} required placeholder="e.g. AC Double Room with Meals" />
-            </div>
-            <div className="full">
-              <Input label="Description" name="description" as="textarea" value={form.description} onChange={handleChange} required />
-            </div>
-            <Input label="Vacancy Count" name="vacancyCount" type="number" value={form.vacancyCount} onChange={handleChange} required />
-            <Input label="Price Per Bed (₹)" name="pricePerBed" type="number" value={form.pricePerBed} onChange={handleChange} required />
-            <Input label="Occupancy Type" name="occupancyType" as="select" value={form.occupancyType} onChange={handleChange} options={occupancyOptions} />
-            <div className="form-group">
-              <label className="form-label">
-                PG Type {!editPost && <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>(from selected PG)</span>}
-              </label>
-              <input
-                className="form-control"
-                value={pgTypeOptions.find(o => o.value === form.pgType)?.label || form.pgType}
-                readOnly
-                disabled={!editPost}
-                style={{ opacity: !editPost ? 0.6 : 1, cursor: !editPost ? 'not-allowed' : 'pointer' }}
-              />
-            </div>
-            <Input label="Available From" name="availableFrom" type="date" value={form.availableFrom} onChange={handleChange} />
-          </div>
-          <div className="modal-footer">
-            <Button variant="ghost" onClick={closeModal} type="button">Cancel</Button>
-            <Button type="submit" loading={createMut.isPending || updateMut.isPending}>
-              {editPost ? 'Update Post' : 'Create Post'}
-            </Button>
-          </div>
-        </form>
+        <PostForm
+          initialData={editPost}
+          onSubmit={onSubmit}
+          loading={createMut.isPending || updateMut.isPending}
+          pgs={pgs}
+          buttonText={editPost ? 'Update Post' : 'Create Post'}
+        />
       </Modal>
 
       <ConfirmModal isOpen={!!confirmId} onClose={() => setConfirmId(null)}
