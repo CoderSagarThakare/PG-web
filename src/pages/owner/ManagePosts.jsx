@@ -90,26 +90,30 @@ export default function ManagePosts() {
           description="Create a vacancy post to attract tenants."
           action={<Button onClick={() => setModalOpen(true)}><Plus size={16} /> New Post</Button>} />
       ) : (
-        <div className="grid-2">
+        <div className="grid-3" style={{ gap: 12 }}>
           {posts.map(post => (
-            <Card key={post._id} hover>
-              <div className="flex items-center justify-between mb-4">
-                <Badge variant={post.isActive ? 'success' : 'danger'}>{post.isActive ? 'Active' : 'Inactive'}</Badge>
-                <span className="text-xs text-muted">{formatDate(post.createdAt)}</span>
+            <Card key={post._id} hover style={{ padding: '12px' }}>
+              <div className="flex items-center justify-between mb-3">
+                <Badge variant={post.isActive ? 'success' : 'danger'} style={{ fontSize: 9, padding: '2px 6px' }}>{post.isActive ? 'Active' : 'Inactive'}</Badge>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{formatDate(post.createdAt)}</span>
               </div>
-              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{post.title}</div>
-              <div className="text-sm text-muted mb-4">{post.pgId?.name}</div>
-              <div className="chips mb-4">
-                <span className="chip chip-primary">{post.occupancyType}</span>
-                <span className="chip">{post.pgType}</span>
-                <span className="chip"><Bed size={11} style={{ display: 'inline' }} /> {post.vacancyCount} vacancies</span>
+              
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{post.title}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>{post.pgId?.name}</div>
+              
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
+                <span className="chip chip-primary" style={{ fontSize: 9, padding: '2px 6px' }}>{post.occupancyType}</span>
+                <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>{post.pgType}</span>
+                <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}><Bed size={10} style={{ display: 'inline' }} /> {post.vacancyCount}</span>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent)', marginBottom: 12 }}>
-                {formatPrice(post.pricePerBed)}<span className="text-sm text-muted">/bed</span>
+
+              <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent)', marginBottom: 12 }}>
+                {formatPrice(post.pricePerBed)}<span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 400 }}>/bed</span>
               </div>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => openEdit(post)}><Edit2 size={14} /> Edit</Button>
-                <Button variant="danger" size="sm" onClick={() => setConfirmId(post._id)}><Trash2 size={14} /> Delete</Button>
+
+              <div className="flex gap-2" style={{ borderTop: '1px solid var(--border-light)', paddingTop: 10 }}>
+                <Button variant="ghost" size="sm" onClick={() => openEdit(post)} style={{ fontSize: 11, padding: '4px 8px', height: 'auto' }}><Edit2 size={12} /> Edit</Button>
+                <Button variant="danger" size="sm" onClick={() => setConfirmId(post._id)} style={{ fontSize: 11, padding: '4px 8px', height: 'auto' }}><Trash2 size={12} /> Delete</Button>
               </div>
             </Card>
           ))}

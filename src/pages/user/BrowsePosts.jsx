@@ -176,153 +176,104 @@ export default function BrowsePosts() {
         <EmptyState icon={<Search size={64} />} title="No PGs found" 
           description="Try adjusting your filters to find more results." />
       ) : (
-        <div className="grid-3">
+        <div className="grid-3" style={{ gap: 12 }}>
           {posts.map(post => (
-            <Card key={post._id} hover style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 0, overflow: 'hidden', position: 'relative' }}>
-              <div style={{ height: 6, width: '100%', background: 'linear-gradient(90deg, var(--primary), var(--accent))' }} />
+            <Card key={post._id} hover style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '12px', overflow: 'hidden', position: 'relative' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, height: 4, width: '100%', background: 'linear-gradient(90deg, var(--primary), var(--accent))' }} />
               
-              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: 16 }}>
-                  <div>
-                    <h3 style={{ fontSize: 18, fontWeight: 800, lineHeight: 1.4, marginBottom: 8, color: 'var(--text-primary)' }}>{post.title}</h3>
-                    <div className="text-sm text-muted" style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 500 }}>
-                      <MapPin size={14} className="text-primary" /> {post.pgId?.address?.city || 'Location unavailable'}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0, background: 'var(--primary-light)', padding: '8px 12px', borderRadius: 'var(--radius-md)' }}>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--primary)' }}>{formatPrice(post.pricePerBed)}</div>
-                    <div className="text-xs text-primary" style={{ opacity: 0.8, fontWeight: 600 }}>/ month</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 12 }}>
+                <div style={{ minWidth: 0 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 4, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{post.title}</h3>
+                  <div className="text-xs text-muted" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <MapPin size={12} className="text-primary" /> {post.pgId?.address?.city || 'Location'}
                   </div>
                 </div>
-
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-                  <Badge variant="accent"><span style={{ textTransform: 'capitalize' }}>{post.pgType}</span></Badge>
-                  <div className="chip chip-primary" style={{ textTransform: 'capitalize' }}>{post.occupancyType}</div>
-                  <div className="chip" style={{ background: 'var(--warning-light)', color: 'var(--warning)', border: 'none', fontWeight: 600 }}>
-                    <Bed size={14} style={{ display: 'inline', marginRight: 4 }} /> {post.vacancyCount} Beds Left
-                  </div>
+                <div style={{ textAlign: 'right', flexShrink: 0, background: 'var(--primary-light)', padding: '4px 8px', borderRadius: 'var(--radius-sm)' }}>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--primary)' }}>{formatPrice(post.pricePerBed)}</div>
+                  <div style={{ fontSize: 10, color: 'var(--primary)', opacity: 0.8, fontWeight: 600 }}>/ month</div>
                 </div>
+              </div>
 
-                <div className="text-sm text-secondary flex-1" style={{ lineHeight: 1.6, marginBottom: 24 }}>
-                  {post.description?.length > 120 ? `${post.description.substring(0, 120)}...` : post.description}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                <Badge variant="accent" style={{ fontSize: 10, padding: '2px 6px' }}><span style={{ textTransform: 'capitalize' }}>{post.pgType}</span></Badge>
+                <div className="chip chip-primary" style={{ fontSize: 10, padding: '2px 6px', textTransform: 'capitalize' }}>{post.occupancyType}</div>
+                <div className="chip" style={{ fontSize: 10, padding: '2px 6px', background: 'var(--warning-light)', color: 'var(--warning)', border: 'none', fontWeight: 600 }}>
+                  <Bed size={12} style={{ display: 'inline', marginRight: 2 }} /> {post.vacancyCount} Left
                 </div>
+              </div>
 
-                <div style={{ marginTop: 'auto' }}>
-                  {!post.enquiryData ? (
+              <div className="text-xs text-secondary flex-1" style={{ lineHeight: 1.5, marginBottom: 16 }}>
+                {post.description?.length > 80 ? `${post.description.substring(0, 80)}...` : post.description}
+              </div>
+
+              <div style={{ marginTop: 'auto' }}>
+                {!post.enquiryData ? (
                   <div style={{ position: 'relative', width: '100%' }} className="interest-btn-wrapper">
                     <Button 
                       onClick={() => handleEnquire(post._id)}
                       loading={enquiryMut.isPending && enquiryMut.variables?.postId === post._id}
-                      style={{ width: '100%', padding: '14px', fontSize: 15, fontWeight: 700, borderRadius: 'var(--radius-md)' }}
+                      style={{ width: '100%', padding: '8px', fontSize: 13, fontWeight: 700, borderRadius: 'var(--radius-sm)' }}
                     >
                       Show Interest
                     </Button>
                     <div style={{
-                      position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%',
+                      position: 'absolute', bottom: 'calc(100% + 4px)', left: '50%',
                       transform: 'translateX(-50%)',
                       background: 'var(--bg-elevated)', color: 'var(--text-secondary)',
-                      fontSize: 12, fontWeight: 500, padding: '8px 12px',
+                      fontSize: 10, padding: '6px 10px',
                       borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
                       whiteSpace: 'nowrap', boxShadow: 'var(--shadow-md)',
                       pointerEvents: 'none', opacity: 0,
                       transition: 'opacity 0.2s ease',
                       zIndex: 10
                     }} className="interest-tooltip">
-                      📋 Your contact info will be shared with the owner
+                      📋 Contact info will be shared
                     </div>
                   </div>
-                  ) : (
-                    <div style={{ 
-                      background: 'var(--bg-elevated)', 
-                      borderRadius: 'var(--radius-md)', 
-                      borderLeft: '4px solid var(--success)',
-                      padding: '16px',
-                      boxShadow: 'var(--shadow-sm)'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                        <div style={{ background: 'var(--success)', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span style={{ fontSize: 12, fontWeight: 900 }}>✓</span>
-                        </div>
-                        <span style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', color: 'var(--success)', letterSpacing: '0.5px' }}>
-                          Request Sent
-                        </span>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {post.enquiryData.owner && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                              <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: 8, borderRadius: '50%' }}>
-                                <UserIcon size={16} />
-                              </div>
-                              <div>
-                                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>Owner</div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{post.enquiryData.owner.name}</div>
-                              </div>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
-                              {post.enquiryData.status === 'contacted' ? (
-                                <a 
-                                  href={`tel:${post.enquiryData.owner.mobNo1}`}
-                                  style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--primary)', textDecoration: 'none', background: 'var(--primary-light)', padding: '6px 12px', borderRadius: 'var(--radius-sm)' }}
-                                >
-                                  <Phone size={14} /> {post.enquiryData.owner.mobNo1}
-                                </a>
-                              ) : (
-                                <Button 
-                                  variant="primary" 
-                                  size="sm" 
-                                  onClick={(e) => handleRevealNumber(e, post.enquiryData.enquiryId)}
-                                  loading={updateEnquiryMut.isPending && updateEnquiryMut.variables?.id === post.enquiryData.enquiryId}
-                                  style={{ fontSize: 13, fontWeight: 700, padding: '6px 12px' }}
-                                >
-                                  <Phone size={14} style={{ marginRight: 6 }} /> Reveal Number
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {post.enquiryData.manager && (
-                          <>
-                            <div style={{ height: 1, background: 'var(--border-light)', margin: '4px 0' }} />
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{ background: 'var(--accent-light)', color: 'var(--accent)', padding: 8, borderRadius: '50%' }}>
-                                  <UserIcon size={16} />
-                                </div>
-                                <div>
-                                  <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>Manager</div>
-                                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{post.enquiryData.manager.name}</div>
-                                </div>
-                              </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
-                                {post.enquiryData.status === 'contacted' ? (
-                                  <a 
-                                    href={`tel:${post.enquiryData.manager.mobNo1}`}
-                                    style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--primary)', textDecoration: 'none', background: 'var(--primary-light)', padding: '6px 12px', borderRadius: 'var(--radius-sm)' }}
-                                  >
-                                    <Phone size={14} /> {post.enquiryData.manager.mobNo1}
-                                  </a>
-                                ) : (
-                                  <Button 
-                                    variant="primary" 
-                                    size="sm" 
-                                    onClick={(e) => handleRevealNumber(e, post.enquiryData.enquiryId)}
-                                    loading={updateEnquiryMut.isPending && updateEnquiryMut.variables?.id === post.enquiryData.enquiryId}
-                                    style={{ fontSize: 13, fontWeight: 700, padding: '6px 12px' }}
-                                  >
-                                    <Phone size={14} style={{ marginRight: 6 }} /> Reveal Number
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                ) : (
+                  <div style={{ 
+                    background: 'var(--bg-elevated)', 
+                    borderRadius: 'var(--radius-sm)', 
+                    borderLeft: '3px solid var(--success)',
+                    padding: '10px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <CheckCircle2 size={14} className="text-success" />
+                      <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', color: 'var(--success)', letterSpacing: '0.5px' }}>
+                        Requested
+                      </span>
                     </div>
-                  )}
-                </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {post.enquiryData.owner && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Owner</div>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{post.enquiryData.owner.name}</div>
+                          </div>
+                          {post.enquiryData.status === 'contacted' ? (
+                            <a 
+                              href={`tel:${post.enquiryData.owner.mobNo1}`}
+                              style={{ fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, color: 'var(--primary)', textDecoration: 'none', background: 'var(--primary-light)', padding: '4px 8px', borderRadius: 'var(--radius-sm)' }}
+                            >
+                              <Phone size={11} /> {post.enquiryData.owner.mobNo1}
+                            </a>
+                          ) : (
+                            <Button 
+                              variant="primary" 
+                              size="sm" 
+                              onClick={(e) => handleRevealNumber(e, post.enquiryData.enquiryId)}
+                              loading={updateEnquiryMut.isPending && updateEnquiryMut.variables?.id === post.enquiryData.enquiryId}
+                              style={{ fontSize: 10, fontWeight: 700, padding: '4px 8px' }}
+                            >
+                              Reveal
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </Card>
           ))}
