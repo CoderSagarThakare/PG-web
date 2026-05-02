@@ -175,6 +175,7 @@ export default function BrowsePosts() {
 
                 <div style={{ marginTop: 'auto' }}>
                   {!post.enquiryData ? (
+                  <div style={{ position: 'relative', width: '100%' }} className="interest-btn-wrapper">
                     <Button 
                       onClick={() => handleEnquire(post._id)}
                       loading={enquiryMut.isPending && enquiryMut.variables?.postId === post._id}
@@ -182,6 +183,20 @@ export default function BrowsePosts() {
                     >
                       Show Interest
                     </Button>
+                    <div style={{
+                      position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'var(--bg-elevated)', color: 'var(--text-secondary)',
+                      fontSize: 12, fontWeight: 500, padding: '8px 12px',
+                      borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
+                      whiteSpace: 'nowrap', boxShadow: 'var(--shadow-md)',
+                      pointerEvents: 'none', opacity: 0,
+                      transition: 'opacity 0.2s ease',
+                      zIndex: 10
+                    }} className="interest-tooltip">
+                      📋 Your contact info will be shared with the owner
+                    </div>
+                  </div>
                   ) : (
                     <div style={{ 
                       background: 'var(--bg-elevated)', 

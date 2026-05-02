@@ -6,6 +6,14 @@ export const formatDate = (dateStr) => {
   });
 };
 
+// Format time
+export const formatTime = (dateStr) => {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleTimeString('en-IN', {
+    hour: '2-digit', minute: '2-digit', hour12: true,
+  });
+};
+
 // Format price
 export const formatPrice = (price) => {
   if (!price && price !== 0) return '—';

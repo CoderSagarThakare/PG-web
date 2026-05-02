@@ -775,3 +775,6 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 .post-card-meta { display: flex; flex-wrap: wrap; gap: 8px; }
 .post-card-price { font-size: 20px; font-weight: 800; color: var(--accent); }
 .post-card-actions { margin-top: auto; display: flex; gap: 8px; }
+
+/* ===================== INTEREST BUTTON TOOLTIP ===================== */
+.interest-btn-wrapper:hover .interest-tooltip { opacity: 1 !important; }

@@ -63,7 +63,7 @@ export default function Login() {
           <Logo size={64} centered subtitle="Sign in to your account" />
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form" style={{ marginTop: '24px' }}>
+        <form onSubmit={handleSubmit} className="auth-form" style={{ marginTop: '24px' }} noValidate>
           <Input
             label="Email Address"
             name="email"

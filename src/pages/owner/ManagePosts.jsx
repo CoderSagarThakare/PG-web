@@ -74,7 +74,16 @@ export default function ManagePosts() {
     setModalOpen(true);
   };
 
-  const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'pgId' && !editPost) {
+      // Auto-fill pgType from the selected PG when creating a new post
+      const selectedPg = pgs.find(p => p._id === value);
+      setForm(f => ({ ...f, pgId: value, pgType: selectedPg?.pgType || f.pgType }));
+    } else {
+      setForm(f => ({ ...f, [name]: value }));
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -142,7 +151,18 @@ export default function ManagePosts() {
             <Input label="Vacancy Count" name="vacancyCount" type="number" value={form.vacancyCount} onChange={handleChange} required />
             <Input label="Price Per Bed (₹)" name="pricePerBed" type="number" value={form.pricePerBed} onChange={handleChange} required />
             <Input label="Occupancy Type" name="occupancyType" as="select" value={form.occupancyType} onChange={handleChange} options={occupancyOptions} />
-            <Input label="PG Type" name="pgType" as="select" value={form.pgType} onChange={handleChange} options={pgTypeOptions} />
+            <div className="form-group">
+              <label className="form-label">
+                PG Type {!editPost && <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>(from selected PG)</span>}
+              </label>
+              <input
+                className="form-control"
+                value={pgTypeOptions.find(o => o.value === form.pgType)?.label || form.pgType}
+                readOnly
+                disabled={!editPost}
+                style={{ opacity: !editPost ? 0.6 : 1, cursor: !editPost ? 'not-allowed' : 'pointer' }}
+              />
+            </div>
             <Input label="Available From" name="availableFrom" type="date" value={form.availableFrom} onChange={handleChange} />
           </div>
           <div className="modal-footer">
