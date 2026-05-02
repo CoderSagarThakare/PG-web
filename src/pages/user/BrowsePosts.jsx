@@ -9,8 +9,8 @@ import { getErrorMessage, formatPrice } from '../../utils/helpers';
 
 export default function BrowsePosts() {
   const qc = useQueryClient();
-  const [filters, setFilters] = useState({ city: '', pgType: '', occupancyType: '', maxPrice: '' });
-  const [activeFilters, setActiveFilters] = useState({ city: '', pgType: '', occupancyType: '', maxPrice: '' });
+  const [filters, setFilters] = useState({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '' });
+  const [activeFilters, setActiveFilters] = useState({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '' });
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -91,48 +91,82 @@ export default function BrowsePosts() {
           <h1 className="page-title">Find Your Next Home</h1>
           <p className="page-subtitle">Browse available PG rooms based on your preferences</p>
         </div>
+        {Object.values(filters).some(v => v !== '') && (
+          <Button variant="ghost" size="sm" onClick={() => setFilters({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '' })}>
+            Clear Filters
+          </Button>
+        )}
       </div>
 
-      <Card className="mb-6">
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 150 }}>
-            <Input 
-              label="City" name="city" value={filters.city} 
-              onChange={e => setFilters(f => ({ ...f, city: e.target.value }))}
-              placeholder="e.g. Pune, Mumbai" 
+      <Card className="mb-6" style={{ padding: '12px 16px' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* Main Search */}
+          <div style={{ position: 'relative', flex: '2 1 300px' }}>
+            <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+            <input
+              className="form-control"
+              style={{ paddingLeft: 36, height: 40 }}
+              placeholder="Search by title..."
+              value={filters.title}
+              onChange={e => setFilters(f => ({ ...f, title: e.target.value }))}
             />
           </div>
-          <div style={{ flex: 1, minWidth: 140 }}>
+
+          {/* City */}
+          <div style={{ flex: '1 1 150px' }}>
             <Input 
-              label="PG Type" name="pgType" as="select" value={filters.pgType}
+              name="city" value={filters.city} 
+              onChange={e => setFilters(f => ({ ...f, city: e.target.value }))}
+              placeholder="City..."
+              style={{ height: 40 }}
+            />
+          </div>
+
+          {/* PG Type */}
+          <div style={{ flex: '1 1 120px' }}>
+            <Input 
+              name="pgType" as="select" value={filters.pgType}
               onChange={e => setFilters(f => ({ ...f, pgType: e.target.value }))}
               options={[
-                { value: '', label: 'All Types' },
+                { value: '', label: 'PG Type' },
                 { value: 'male', label: 'Male' },
                 { value: 'female', label: 'Female' },
                 { value: 'unisex', label: 'Unisex' },
                 { value: 'coLiving', label: 'Co-Living' }
               ]}
+              style={{ height: 40 }}
             />
           </div>
-          <div style={{ flex: 1, minWidth: 140 }}>
+
+          {/* Sharing */}
+          <div style={{ flex: '1 1 120px' }}>
             <Input 
-              label="Sharing" name="occupancyType" as="select" value={filters.occupancyType}
+              name="occupancyType" as="select" value={filters.occupancyType}
               onChange={e => setFilters(f => ({ ...f, occupancyType: e.target.value }))}
               options={[
-                { value: '', label: 'Any Sharing' },
-                { value: 'single', label: 'Single Room' },
-                { value: 'double', label: 'Double Sharing' },
-                { value: 'triple', label: 'Triple Sharing' },
-                { value: 'four', label: 'Four Sharing' }
+                { value: '', label: 'Sharing' },
+                { value: 'single', label: 'Single' },
+                { value: 'double', label: 'Double' },
+                { value: 'triple', label: 'Triple' },
+                { value: 'four', label: 'Four' }
               ]}
+              style={{ height: 40 }}
             />
           </div>
-          <div style={{ flex: 1, minWidth: 140 }}>
+
+          {/* Price Range */}
+          <div style={{ display: 'flex', gap: 4, flex: '1 1 180px' }}>
             <Input 
-              label="Max Price" name="maxPrice" type="number" value={filters.maxPrice}
+              name="minPrice" type="number" value={filters.minPrice}
+              onChange={e => setFilters(f => ({ ...f, minPrice: e.target.value }))}
+              placeholder="₹ Min"
+              style={{ height: 40 }}
+            />
+            <Input 
+              name="maxPrice" type="number" value={filters.maxPrice}
               onChange={e => setFilters(f => ({ ...f, maxPrice: e.target.value }))}
-              placeholder="Budget Limit" 
+              placeholder="₹ Max"
+              style={{ height: 40 }}
             />
           </div>
         </div>
