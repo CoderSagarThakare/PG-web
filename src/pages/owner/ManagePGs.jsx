@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { getMyPGsApi, createPGApi, updatePGApi, deletePGApi, getFacilitiesApi, getManagersApi } from '../../api/pg.api';
+import { getMyPGsApi, getPGByIdApi, createPGApi, updatePGApi, deletePGApi, getFacilitiesApi, getManagersApi } from '../../api/pg.api';
 import { Building2, Plus, Edit2, Trash2, MapPin, Users, Bed } from 'lucide-react';
 import { Button, Card, Badge, Modal, Input, Spinner, EmptyState, ConfirmModal, StatCard } from '../../components/common';
+import FacilitiesPicker from '../../components/common/FacilitiesPicker';
 import { getErrorMessage, formatDate } from '../../utils/helpers';
 import { useAuth } from '../../context/AuthContext';
 
 const defaultForm = {
   name: '', address: { landmark: '', city: '', state: '', country: 'India', pincode: '' },
   pgType: 'unisex', totalRooms: '', description: '', managerId: '',
-  checkInTime: '', checkOutTime: '',
+  checkInTime: '', checkOutTime: '', facilities: []
 };
 
 export default function ManagePGs() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [editPG, setEditPG] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
@@ -35,8 +38,15 @@ export default function ManagePGs() {
     enabled: isOwner && modalOpen,
   });
 
+  const { data: facilitiesData } = useQuery({
+    queryKey: ['facilities'],
+    queryFn: async () => { const r = await getFacilitiesApi(); return r.data?.data; },
+    enabled: modalOpen,
+  });
+
   const pgs = data?.pgs || [];
   const managers = managersData?.managers || [];
+  const facilitiesList = facilitiesData?.facilities || [];
 
   const createMutation = useMutation({
     mutationFn: createPGApi,
@@ -65,13 +75,37 @@ export default function ManagePGs() {
       address: { ...defaultForm.address, ...pg.address },
       pgType: pg.pgType || 'unisex',
       totalRooms: pg.totalRooms || '',
-      description: pg.description || '',
+      description: '',
       managerId: pg.managerId?._id || pg.managerId || '',
-      checkInTime: pg.checkInTime || '',
-      checkOutTime: pg.checkOutTime || '',
+      checkInTime: '',
+      checkOutTime: '',
+      facilities: pg.facilities?.map(f => typeof f === 'object' ? f._id : f) || [],
     });
     setModalOpen(true);
   };
+
+  const { data: fullPGData, isLoading: isLoadingFullPG } = useQuery({
+    queryKey: ['pg', editPG?._id],
+    queryFn: async () => { const r = await getPGByIdApi(editPG._id); return r.data?.data; },
+    enabled: !!editPG?._id,
+  });
+
+  useEffect(() => {
+    if (fullPGData?.pg && editPG) {
+      const pg = fullPGData.pg;
+      setForm({
+        name: pg.name || '',
+        address: { ...defaultForm.address, ...pg.address },
+        pgType: pg.pgType || 'unisex',
+        totalRooms: pg.totalRooms || '',
+        description: pg.description || '',
+        managerId: pg.managerId?._id || pg.managerId || '',
+        checkInTime: pg.checkInTime || '',
+        checkOutTime: pg.checkOutTime || '',
+        facilities: pg.facilities?.map(f => typeof f === 'object' ? f._id : f) || [],
+      });
+    }
+  }, [fullPGData, editPG]);
 
   const handleChange = (e) => {
     let { name, value } = e.target;
@@ -135,7 +169,7 @@ export default function ManagePGs() {
       ) : (
         <div className="grid-3">
           {pgs.map(pg => (
-            <Card key={pg._id} hover>
+            <Card key={pg._id} hover onClick={() => navigate(`/pg/${pg._id}`)}>
               <div className="card-header">
                 <div>
                   <div className="card-title">{pg.name}</div>
@@ -169,7 +203,7 @@ export default function ManagePGs() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
                 <Button variant="ghost" size="sm" onClick={() => openEdit(pg)}>
                   <Edit2 size={14} /> Edit
                 </Button>
@@ -184,7 +218,10 @@ export default function ManagePGs() {
 
       {/* Create/Edit Modal */}
       <Modal isOpen={modalOpen} onClose={closeModal} title={editPG ? 'Edit PG' : 'Add New PG'} size="lg">
-        <form onSubmit={handleSubmit}>
+        {isLoadingFullPG && editPG ? (
+          <div style={{ padding: '40px 0' }}><Spinner center /></div>
+        ) : (
+          <form onSubmit={handleSubmit}>
           <div className="form-grid">
             <div className="full">
               <Input label="PG Name" name="name" value={form.name} onChange={handleChange} required />
@@ -220,6 +257,16 @@ export default function ManagePGs() {
             <div className="full">
               <Input label="Description" name="description" as="textarea" value={form.description} onChange={handleChange} />
             </div>
+            <div className="full">
+              <div className="form-group">
+                <label className="form-label">Facilities</label>
+                <FacilitiesPicker
+                  options={facilitiesList}
+                  selected={form.facilities}
+                  onChange={(ids) => setForm(f => ({ ...f, facilities: ids }))}
+                />
+              </div>
+            </div>
           </div>
           <div className="modal-footer">
             <Button variant="ghost" onClick={closeModal} type="button">Cancel</Button>
@@ -228,6 +275,7 @@ export default function ManagePGs() {
             </Button>
           </div>
         </form>
+        )}
       </Modal>
 
       <ConfirmModal

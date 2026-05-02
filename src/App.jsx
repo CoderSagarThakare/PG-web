@@ -9,6 +9,7 @@ import Dashboard from './pages/shared/Dashboard';
 import Profile from './pages/shared/Profile';
 import Enquiries from './pages/shared/Enquiries';
 import ManagePGs from './pages/owner/ManagePGs';
+import PGDetails from './pages/owner/PGDetails';
 import ManagePosts from './pages/owner/ManagePosts';
 import BrowsePosts from './pages/user/BrowsePosts';
 
@@ -32,6 +33,7 @@ function AppRoutes() {
           {/* Owner & Manager */}
           <Route element={<RoleRoute roles={['owner', 'manager']} />}>
             <Route path="/pg" element={<ManagePGs />} />
+            <Route path="/pg/:pgId" element={<PGDetails />} />
           </Route>
           
           {/* User Only */}
