@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { getEnquiriesApi, updateEnquiryApi } from '../../api/enquiry.api';
+import { getRoomsApi, assignTenantApi } from '../../api/room.api';
 import { getMyPGsApi } from '../../api/pg.api';
 import { useAuth } from '../../context/AuthContext';
-import { MessageSquare, Search, ChevronLeft, ChevronRight, Phone } from 'lucide-react';
+import { MessageSquare, Search, ChevronLeft, ChevronRight, Phone, CheckCircle2, Bed, Building2 } from 'lucide-react';
 import { Badge, Card, Spinner, EmptyState, Modal, Input, Button } from '../../components/common';
 import { getErrorMessage, formatDate, formatTime, capitalize } from '../../utils/helpers';
 
@@ -25,6 +27,7 @@ const LIMIT = 10;
 
 export default function Enquiries() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const isUserRole = user?.role === 'user';
   const isStaff = !isUserRole;
@@ -37,6 +40,7 @@ export default function Enquiries() {
   const [selected, setSelected] = useState(null);
   const [newStatus, setNewStatus] = useState('');
   const [remarks, setRemarks] = useState('');
+  const [assignUserModal, setAssignUserModal] = useState(null); // { userId, userName, pgId, pgName }
 
   // Debounce userName search
   useEffect(() => {
@@ -69,9 +73,20 @@ export default function Enquiries() {
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => updateEnquiryApi(id, data),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       toast.success('Enquiry updated!');
       qc.invalidateQueries(['enquiries']);
+      
+      // If deal is done, ask to assign to a room
+      if (variables.data.status === 'dealDone') {
+        setAssignUserModal({ 
+          userId: selected.userId?._id, 
+          userName: selected.userId?.name, 
+          pgId: selected.pgId?._id, 
+          pgName: selected.pgId?.name 
+        });
+      }
+      
       setSelected(null);
     },
     onError: (e) => toast.error(getErrorMessage(e)),
@@ -312,6 +327,39 @@ export default function Enquiries() {
             <div className="modal-footer">
               <Button variant="ghost" onClick={() => setSelected(null)}>Cancel</Button>
               <Button onClick={handleUpdate} loading={updateMut.isPending}>Save Changes</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+      {/* Success & Navigation Modal */}
+      <Modal isOpen={!!assignUserModal} onClose={() => setAssignUserModal(null)} title="Deal Confirmed! 🚀">
+        {assignUserModal && (
+          <div style={{ textAlign: 'center', padding: '10px 0' }}>
+            <div style={{ 
+              width: 64, height: 64, background: 'var(--success-light)', 
+              borderRadius: '50%', display: 'flex', alignItems: 'center', 
+              justifyContent: 'center', margin: '0 auto 16px', color: 'var(--success)' 
+            }}>
+              <CheckCircle2 size={32} />
+            </div>
+            <h3 style={{ marginBottom: 8 }}>Congratulations!</h3>
+            <p className="text-muted" style={{ fontSize: 14, marginBottom: 24 }}>
+              The deal for <strong>{assignUserModal.userName}</strong> is marked as done. 
+              Would you like to assign them to a room now?
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <Button 
+                onClick={() => {
+                  setAssignUserModal(null);
+                  navigate(`/pg/${assignUserModal.pgId}/inventory`);
+                }}
+                style={{ width: '100%', background: 'linear-gradient(135deg, var(--primary), var(--purple))', border: 'none' }}
+              >
+                Go to Manage Rooms & Beds
+              </Button>
+              <Button variant="ghost" onClick={() => setAssignUserModal(null)} style={{ width: '100%' }}>
+                I'll do it later
+              </Button>
             </div>
           </div>
         )}

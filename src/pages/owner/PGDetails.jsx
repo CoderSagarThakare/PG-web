@@ -86,8 +86,15 @@ export default function PGDetails() {
             <MapPin size={14} /> {pg.address?.city}, {pg.address?.state} - {pg.address?.pincode}
           </p>
         </div>
-        <div className="page-actions">
-          <Button onClick={() => setModalOpen(true)}>
+        <div className="page-actions" style={{ display: 'flex', gap: 12 }}>
+          <Button 
+            variant="primary" 
+            onClick={() => navigate(`/pg/${pgId}/inventory`)}
+            style={{ background: 'linear-gradient(135deg, var(--primary), var(--purple))', border: 'none', boxShadow: 'var(--shadow-md)' }}
+          >
+            <Building2 size={16} /> Manage Inventory
+          </Button>
+          <Button variant="accent" onClick={() => setModalOpen(true)}>
             <Edit2 size={16} /> Edit PG
           </Button>
         </div>

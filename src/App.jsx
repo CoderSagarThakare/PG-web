@@ -13,6 +13,7 @@ const Profile = lazy(() => import('./pages/shared/Profile'));
 const Enquiries = lazy(() => import('./pages/shared/Enquiries'));
 const ManagePGs = lazy(() => import('./pages/owner/ManagePGs'));
 const PGDetails = lazy(() => import('./pages/owner/PGDetails'));
+const ManageRooms = lazy(() => import('./pages/owner/ManageRooms'));
 const ManagePosts = lazy(() => import('./pages/owner/ManagePosts'));
 const BrowsePosts = lazy(() => import('./pages/user/BrowsePosts'));
 
@@ -38,6 +39,7 @@ function AppRoutes() {
             <Route element={<RoleRoute roles={['owner', 'manager']} />}>
               <Route path="/pg" element={<ManagePGs />} />
               <Route path="/pg/:pgId" element={<PGDetails />} />
+              <Route path="/pg/:pgId/inventory" element={<ManageRooms />} />
             </Route>
             
             {/* User Only */}
