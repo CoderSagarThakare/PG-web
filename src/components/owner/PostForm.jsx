@@ -87,6 +87,7 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
           type="number" 
           {...register('vacancyCount', { required: 'Count is required', min: 1 })} 
           error={errors.vacancyCount?.message}
+          min={1}
           required 
         />
         <Input 
@@ -94,6 +95,7 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
           type="number" 
           {...register('pricePerBed', { required: 'Price is required', min: 0 })} 
           error={errors.pricePerBed?.message}
+          min={0}
           required 
         />
         
@@ -129,7 +131,7 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
       </div>
 
       <div className="modal-footer" style={{ marginTop: 24 }}>
-        <Button variant="ghost" type="button" onClick={() => reset()} disabled={loading}>Reset</Button>
+        <Button variant="ghost" type="button" onClick={() => reset()} disabled={loading}>Cancel</Button>
         <Button type="submit" loading={loading}>{buttonText}</Button>
       </div>
     </form>

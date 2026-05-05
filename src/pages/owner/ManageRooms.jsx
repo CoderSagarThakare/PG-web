@@ -26,6 +26,7 @@ export default function ManageRooms() {
     onSuccess: () => {
       toast.success('Room created!');
       qc.invalidateQueries(['rooms', pgId]);
+      qc.invalidateQueries(['my-pgs']);
       setModalOpen(false);
     },
     onError: (e) => toast.error(getErrorMessage(e)),
@@ -36,6 +37,7 @@ export default function ManageRooms() {
     onSuccess: () => {
       toast.success('Room updated!');
       qc.invalidateQueries(['rooms', pgId]);
+      qc.invalidateQueries(['my-pgs']);
       setEditRoom(null);
     },
     onError: (e) => toast.error(getErrorMessage(e)),
@@ -46,6 +48,7 @@ export default function ManageRooms() {
     onSuccess: () => {
       toast.success('Room deleted!');
       qc.invalidateQueries(['rooms', pgId]);
+      qc.invalidateQueries(['my-pgs']);
     },
     onError: (e) => toast.error(getErrorMessage(e)),
   });
@@ -55,6 +58,7 @@ export default function ManageRooms() {
     onSuccess: () => {
       toast.success('Tenant assigned!');
       qc.invalidateQueries(['rooms', pgId]);
+      qc.invalidateQueries(['my-pgs']);
       setAssignModal(null);
     },
     onError: (e) => toast.error(getErrorMessage(e)),
@@ -65,6 +69,7 @@ export default function ManageRooms() {
     onSuccess: () => {
       toast.success('Bed vacated!');
       qc.invalidateQueries(['rooms', pgId]);
+      qc.invalidateQueries(['my-pgs']);
     },
     onError: (e) => toast.error(getErrorMessage(e)),
   });
@@ -303,8 +308,9 @@ function RoomForm({ onSubmit, loading, initialData, isEdit }) {
           </div>
         </div>
       </div>
-      <div className="modal-footer" style={{ marginTop: 24 }}>
-        <Button type="submit" loading={loading} style={{ width: '100%' }}>
+      <div className="modal-footer" style={{ marginTop: 24, display: 'flex', gap: 10 }}>
+        <Button variant="ghost" type="button" onClick={() => reset()} style={{ flex: 1 }}>Cancel</Button>
+        <Button type="submit" loading={loading} style={{ flex: 2 }}>
           {isEdit ? 'Update Room' : 'Create Room & Beds'}
         </Button>
       </div>

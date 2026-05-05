@@ -75,9 +75,8 @@ export default function ManagePGs() {
 
 
   const onSubmit = (formData) => {
-    const payload = { ...formData, totalRooms: Number(formData.totalRooms) };
-    if (editPG) updateMutation.mutate({ id: editPG._id, data: payload });
-    else createMutation.mutate(payload);
+    if (editPG) updateMutation.mutate({ id: editPG._id, data: formData });
+    else createMutation.mutate(formData);
   };
 
   const pgTypeLabels = { male: 'Male', female: 'Female', unisex: 'Unisex', coLiving: 'Co-Living' };
@@ -153,13 +152,34 @@ export default function ManagePGs() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
-                <Button variant="ghost" size="sm" onClick={() => openEdit(pg)}>
-                  <Edit2 size={14} /> Edit
-                </Button>
-                <Button variant="danger" size="sm" onClick={() => setConfirmId(pg._id)}>
-                  <Trash2 size={14} /> Delete
-                </Button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--warning-light)', color: 'var(--warning)', padding: '4px 8px', borderRadius: 'var(--radius-sm)', fontSize: 12, fontWeight: 700 }}>
+                    ★ {pg.rating || 0}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <div className="tooltip-wrapper">
+                    <Button variant="outline" size="sm" className="btn-icon" onClick={() => navigate(`/pg/${pg._id}/inventory`)}>
+                      <Bed size={14} />
+                    </Button>
+                    <span className="tooltip-content">Inventory Manager</span>
+                  </div>
+                  
+                  <div className="tooltip-wrapper">
+                    <Button variant="ghost" size="sm" className="btn-icon" onClick={() => openEdit(pg)}>
+                      <Edit2 size={14} />
+                    </Button>
+                    <span className="tooltip-content">Edit Property</span>
+                  </div>
+                  
+                  <div className="tooltip-wrapper">
+                    <Button variant="danger" size="sm" className="btn-icon" onClick={() => setConfirmId(pg._id)}>
+                      <Trash2 size={14} />
+                    </Button>
+                    <span className="tooltip-content">Delete Property</span>
+                  </div>
+                </div>
               </div>
             </Card>
           ))}

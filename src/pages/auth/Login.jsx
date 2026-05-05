@@ -23,24 +23,9 @@ export default function Login() {
     try {
       const { data } = await loginApi(form);
       const token = data?.data?.token;
+      const userData = data?.data?.user;
+      
       if (!token) throw new Error('No token received');
-
-      // Token received — now fetch profile to get user info + role
-      // Try staff profile first, then user profile
-      let userData = null;
-      try {
-        const tempApi = await import('../../api/axios').then(m => m.default);
-        tempApi.defaults.headers.Authorization = `Bearer ${token}`;
-        const profileRes = await getStaffProfileApi();
-        userData = profileRes?.data?.data;
-      } catch {
-        try {
-          const profileRes = await import('../../api/profile.api').then(m => m.getUserProfileApi());
-          userData = profileRes?.data?.data;
-        } catch {
-          userData = { role: 'user' };
-        }
-      }
 
       login(userData, token);
       toast.success(`Welcome back, ${userData?.name || 'there'}!`);
@@ -90,10 +75,13 @@ export default function Login() {
 
         <div style={{ marginTop: 20, padding: '16px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', fontSize: 12 }}>
           <p style={{ color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>Test Credentials</p>
-          <p style={{ color: 'var(--text-secondary)' }}>Owner: coder.sagarthakare@gmail.com</p>
-          <p style={{ color: 'var(--text-secondary)' }}>Manager: manager1@gmail.com</p>
-          <p style={{ color: 'var(--text-secondary)' }}>User: saggythakare01@gmail.com</p>
-          <p style={{ color: 'var(--text-muted)', marginTop: 4 }}>Password: Sagar@123</p>
+          <p style={{ color: 'var(--text-secondary)' }}>Owner: <strong>coder.sagarthakare@gmail.com</strong> (sagar123)</p>
+          <p style={{ color: 'var(--text-secondary)' }}>Manager: <strong>manager1@gmail.com</strong> (Sagar@123)</p>
+          <p style={{ color: 'var(--text-secondary)' }}>User: <strong>saggythakare01@gmail.com</strong> (Sagar@123)</p>
+        </div>
+        <div style={{ marginTop: 16, textAlign: 'center', fontSize: 14 }}>
+          <span style={{ color: 'var(--text-muted)' }}>Don't have an account? </span>
+          <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 700 }}>Register Now</Link>
         </div>
       </div>
     </div>

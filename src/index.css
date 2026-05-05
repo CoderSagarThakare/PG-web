@@ -90,6 +90,15 @@ input, textarea, select { font-family: inherit; }
 img { max-width: 100%; display: block; }
 ul { list-style: none; }
 
+/* ===================== TOOLTIP ===================== */
+.tooltip-wrapper { position: relative; display: inline-flex; }
+.tooltip-content {
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+  padding: 4px 8px; background: #333; color: #fff; font-size: 11px; border-radius: 4px;
+  white-space: nowrap; opacity: 0; visibility: hidden; transition: 0.2s; pointer-events: none; margin-bottom: 8px;
+}
+.tooltip-wrapper:hover .tooltip-content { opacity: 1; visibility: visible; }
+
 /* ===================== SCROLLBAR ===================== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-surface); }
@@ -799,3 +808,46 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 
 /* ===================== INTEREST BUTTON TOOLTIP ===================== */
 .interest-btn-wrapper:hover .interest-tooltip { opacity: 1 !important; }
+/* ===================== TOOLTIP ===================== */
+.tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 100;
+}
+
+.tooltip-wrapper:hover .tooltip-content {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: var(--border) transparent transparent transparent;
+}

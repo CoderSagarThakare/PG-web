@@ -8,6 +8,7 @@ import { Spinner } from './components/common';
 import AppLayout from './components/layout/AppLayout';
 
 const Login = lazy(() => import('./pages/auth/Login'));
+const Register = lazy(() => import('./pages/auth/Register'));
 const Dashboard = lazy(() => import('./pages/shared/Dashboard'));
 const Profile = lazy(() => import('./pages/shared/Profile'));
 const Enquiries = lazy(() => import('./pages/shared/Enquiries'));
@@ -22,6 +23,7 @@ function AppRoutes() {
     <Suspense fallback={<Spinner center />}>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>

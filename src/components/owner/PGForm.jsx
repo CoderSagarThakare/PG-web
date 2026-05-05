@@ -16,7 +16,6 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
       name: '',
       address: { landmark: '', city: '', state: '', country: 'India', pincode: '' },
       pgType: 'unisex',
-      totalRooms: '',
       description: '',
       managerId: '',
       checkInTime: '',
@@ -37,7 +36,6 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
           pincode: initialData.address?.pincode || ''
         },
         pgType: initialData.pgType || 'unisex',
-        totalRooms: initialData.totalRooms || '',
         description: initialData.description || '',
         managerId: initialData.managerId?._id || initialData.managerId || '',
         checkInTime: initialData.checkInTime || '',
@@ -85,13 +83,13 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
         />
         <Input 
           label="Pincode" 
-          type="tel" 
+          type="number" 
           {...register('address.pincode', { 
             required: 'Pincode is required',
             pattern: { value: /^[0-9]{6}$/, message: 'Must be 6 digits' }
           })} 
           error={errors.address?.pincode?.message} 
-          maxLength={6} 
+          min={0}
           required 
         />
         
@@ -104,13 +102,7 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
           required
         />
         
-        <Input 
-          label="Total Rooms" 
-          type="number" 
-          {...register('totalRooms', { required: 'Total Rooms is required', min: 1 })} 
-          error={errors.totalRooms?.message} 
-          required 
-        />
+
         
         <Input 
           label="Check-In Time" 
@@ -175,7 +167,7 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
       </div>
 
       <div className="modal-footer" style={{ marginTop: 24 }}>
-        <Button variant="ghost" type="button" onClick={() => reset()} disabled={loading}>Reset</Button>
+        <Button variant="ghost" type="button" onClick={() => reset()} disabled={loading}>Cancel</Button>
         <Button type="submit" loading={loading}>{buttonText}</Button>
       </div>
     </form>
