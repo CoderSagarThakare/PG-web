@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { ProtectedRoute, RoleRoute } from './routes/guards';
+import { ProtectedRoute, RoleRoute, GuestRoute } from './routes/guards';
 import { Toaster } from 'react-hot-toast';
 import { Spinner } from './components/common';
 
@@ -22,8 +22,10 @@ function AppRoutes() {
   return (
     <Suspense fallback={<Spinner center />}>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route element={<GuestRoute />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Route>
         
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
