@@ -21,6 +21,39 @@ export default function ManageRooms() {
     queryFn: async () => (await getRoomsApi(pgId)).data?.data,
   });
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // all, occupied, available
+  const [typeFilter, setTypeFilter] = useState('all'); // all, AC, Non-AC
+
+  const filteredRooms = rooms.filter(room => {
+    // Type Filter
+    if (typeFilter !== 'all' && room.roomType !== typeFilter) return false;
+
+    // Search Filter
+    const searchLower = searchTerm.toLowerCase();
+    const roomMatch = room.roomNumber.toString().toLowerCase().includes(searchLower);
+    const bedMatch = room.beds?.some(bed => 
+      bed.bedNumber.toLowerCase().includes(searchLower) ||
+      bed.userId?.name?.toLowerCase().includes(searchLower) ||
+      bed.userId?.mobNo1?.toLowerCase().includes(searchLower)
+    );
+
+    if (searchTerm && !roomMatch && !bedMatch) return false;
+
+    // Status Filter (Occupancy)
+    if (statusFilter === 'occupied') {
+      return room.beds?.some(bed => bed.status === 'occupied');
+    }
+    if (statusFilter === 'available') {
+      return room.beds?.some(bed => bed.status === 'available');
+    }
+
+    return true;
+  }).sort((a, b) => {
+    // Natural sort for room numbers (e.g., 101, 102, 201)
+    return a.roomNumber.toString().localeCompare(b.roomNumber.toString(), undefined, { numeric: true });
+  });
+
   const createRoomMut = useMutation({
     mutationFn: createRoomApi,
     onSuccess: () => {
@@ -89,14 +122,14 @@ export default function ManageRooms() {
       margin: '-24px',
       padding: '24px'
     }}>
-      <div className="page-header">
+      <div className="page-header" style={{ marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Button variant="ghost" className="btn-icon" onClick={() => navigate(`/pg/${pgId}`)}>
             <ArrowLeft size={20} />
           </Button>
           <div>
-            <h1 className="page-title">Manage Rooms & Inventory</h1>
-            <p className="page-subtitle">Track occupancy and assign beds</p>
+            <h1 className="page-title">Inventory Management</h1>
+            <p className="page-subtitle">Track occupancy, rooms, and beds</p>
           </div>
         </div>
         <Button onClick={() => setModalOpen(true)}>
@@ -104,16 +137,63 @@ export default function ManageRooms() {
         </Button>
       </div>
 
-      {rooms.length === 0 ? (
+      {/* Filter Bar */}
+      <Card style={{ padding: '16px', marginBottom: 24, background: 'var(--bg-elevated)', border: '1px solid var(--border-light)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 16, alignItems: 'center' }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <input 
+              type="text" 
+              placeholder="Search by Room No, Bed No, Tenant Name or Mobile..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="form-control"
+              style={{ paddingLeft: 40, background: 'var(--bg-base)', height: 44 }}
+            />
+          </div>
+          
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select 
+              className="form-control" 
+              value={typeFilter} 
+              onChange={(e) => setTypeFilter(e.target.value)}
+              style={{ height: 44, width: 120, background: 'var(--bg-base)' }}
+            >
+              <option value="all">All Types</option>
+              <option value="AC">AC</option>
+              <option value="Non-AC">Non-AC</option>
+            </select>
+
+            <select 
+              className="form-control" 
+              value={statusFilter} 
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{ height: 44, width: 140, background: 'var(--bg-base)' }}
+            >
+              <option value="all">All Status</option>
+              <option value="occupied">Has Occupancy</option>
+              <option value="available">Has Vacancy</option>
+            </select>
+          </div>
+
+          {(searchTerm || typeFilter !== 'all' || statusFilter !== 'all') && (
+            <Button variant="ghost" size="sm" onClick={() => { setSearchTerm(''); setTypeFilter('all'); setStatusFilter('all'); }}>
+              Clear
+            </Button>
+          )}
+        </div>
+      </Card>
+
+      {filteredRooms.length === 0 ? (
         <EmptyState 
-          icon={<Building2 size={64} />} 
-          title="No rooms added yet" 
-          description="Start by adding rooms and configuring sharing types."
-          action={<Button onClick={() => setModalOpen(true)}><Plus size={16} /> Add First Room</Button>}
+          icon={<Search size={48} style={{ opacity: 0.5 }} />} 
+          title={rooms.length === 0 ? "No rooms added yet" : "No results found"} 
+          description={rooms.length === 0 ? "Start by adding rooms and configuring sharing types." : "Try adjusting your filters or search query."}
+          action={rooms.length === 0 ? <Button onClick={() => setModalOpen(true)}><Plus size={16} /> Add First Room</Button> : null}
         />
       ) : (
         <div className="grid-3" style={{ gap: 12 }}>
-          {rooms.map(room => (
+          {filteredRooms.map(room => (
             <Card key={room._id} className="room-card hover-container" style={{ padding: '12px' }}>
               <div className="hover-actions" style={{ top: 8, right: 8 }}>
                 <Button variant="ghost" size="sm" className="btn-icon" onClick={() => setEditRoom(room)} style={{ background: 'var(--bg-surface)', padding: 4 }}>
