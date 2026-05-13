@@ -183,6 +183,7 @@ export default function PGDetails() {
           managers={managers}
           facilitiesList={facilitiesList}
           buttonText="Save Changes"
+          onCancel={() => setModalOpen(false)}
         />
       </Modal>
     </div>

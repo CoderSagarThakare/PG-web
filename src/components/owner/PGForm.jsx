@@ -10,7 +10,7 @@ const pgTypeOptions = [
   { value: 'coLiving', label: 'Co-Living' },
 ];
 
-export default function PGForm({ initialData, onSubmit, loading, managers = [], facilitiesList = [], buttonText = 'Submit' }) {
+export default function PGForm({ initialData, onSubmit, loading, managers = [], facilitiesList = [], buttonText = 'Submit', onCancel }) {
   const { register, handleSubmit, control, reset, formState: { errors } } = useForm({
     defaultValues: {
       name: '',
@@ -167,7 +167,7 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
       </div>
 
       <div className="modal-footer" style={{ marginTop: 24 }}>
-        <Button variant="ghost" type="button" onClick={() => reset()} disabled={loading}>Cancel</Button>
+        <Button variant="ghost" type="button" onClick={() => onCancel ? onCancel() : reset()} disabled={loading}>Cancel</Button>
         <Button type="submit" loading={loading}>{buttonText}</Button>
       </div>
     </form>

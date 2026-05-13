@@ -194,6 +194,7 @@ export default function ManagePGs() {
           managers={managers}
           facilitiesList={facilitiesList}
           buttonText={editPG ? 'Update PG' : 'Create PG'}
+          onCancel={closeModal}
         />
       </Modal>
 

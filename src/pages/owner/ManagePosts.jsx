@@ -92,14 +92,14 @@ export default function ManagePosts() {
       ) : (
         <div className="grid-3" style={{ gap: 12 }}>
           {posts.map(post => (
-            <Card key={post._id} hover style={{ padding: '12px' }}>
+            <Card key={post._id} hover style={{ padding: '12px', minWidth: 0 }}>
               <div className="flex items-center justify-between mb-3">
                 <Badge variant={post.isActive ? 'success' : 'danger'} style={{ fontSize: 9, padding: '2px 6px' }}>{post.isActive ? 'Active' : 'Inactive'}</Badge>
                 <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{formatDate(post.createdAt)}</span>
               </div>
               
               <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{post.title}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>{post.pgId?.name}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{post.pgId?.name}</div>
               
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
                 <span className="chip chip-primary" style={{ fontSize: 9, padding: '2px 6px' }}>{post.occupancyType}</span>
@@ -111,9 +111,13 @@ export default function ManagePosts() {
                 {formatPrice(post.pricePerBed)}<span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 400 }}>/bed</span>
               </div>
 
-              <div className="flex gap-2" style={{ borderTop: '1px solid var(--border-light)', paddingTop: 10 }}>
-                <Button variant="ghost" size="sm" onClick={() => openEdit(post)} style={{ fontSize: 11, padding: '4px 8px', height: 'auto' }}><Edit2 size={12} /> Edit</Button>
-                <Button variant="danger" size="sm" onClick={() => setConfirmId(post._id)} style={{ fontSize: 11, padding: '4px 8px', height: 'auto' }}><Trash2 size={12} /> Delete</Button>
+              <div className="flex gap-2" style={{ borderTop: '1px solid var(--border-light)', paddingTop: 10, justifyContent: 'flex-end' }}>
+                <Button variant="ghost" size="sm" onClick={() => openEdit(post)} style={{ padding: '6px', height: 'auto' }} title="Edit">
+                  <Edit2 size={16} />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setConfirmId(post._id)} style={{ padding: '6px', height: 'auto', color: 'var(--danger)' }} title="Delete">
+                  <Trash2 size={16} />
+                </Button>
               </div>
             </Card>
           ))}
@@ -127,6 +131,7 @@ export default function ManagePosts() {
           loading={createMut.isPending || updateMut.isPending}
           pgs={pgs}
           buttonText={editPost ? 'Update Post' : 'Create Post'}
+          onCancel={closeModal}
         />
       </Modal>
 
