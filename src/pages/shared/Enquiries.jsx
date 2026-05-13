@@ -214,9 +214,13 @@ export default function Enquiries() {
                       </td>
                     )}
                     <td>
-                      <div style={{ fontWeight: 500, fontSize: 13 }}>{enq.postId?.title || '—'}</div>
+                      <div style={{ fontWeight: 500, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        {enq.postId?.title || '—'}
+                        {enq.postId?.isDeleted && <Badge variant="danger" style={{ fontSize: 9, padding: '2px 4px' }}>Deleted</Badge>}
+                        {enq.postId && !enq.postId.isActive && !enq.postId.isDeleted && <Badge variant="warning" style={{ fontSize: 9, padding: '2px 4px' }}>Inactive</Badge>}
+                      </div>
                       <div className="text-xs text-muted">
-                        {enq.postId?.occupancyType} · ₹{enq.postId?.pricePerBed?.toLocaleString()}/bed
+                        {enq.postId?.occupancyType || '—'} · ₹{enq.postId?.pricePerBed?.toLocaleString() || '—'}/bed
                       </div>
                     </td>
                     <td className="text-sm">{enq.pgId?.name || '—'}</td>
