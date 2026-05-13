@@ -101,7 +101,7 @@ export default function PGDetails() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
-        <StatCard label="Total Rooms" value={pg.totalRooms} color="primary" icon={<Bed size={24} />} />
+        <StatCard label="Total Rooms" value={pg.totalRooms || 0} color="primary" icon={<Bed size={24} />} />
         <StatCard label="Occupied Beds" value={pg.occupiedBeds || 0} color="warning" icon={<Users size={24} />} />
         <StatCard label="Empty Beds" value={pg.emptyBeds || 0} color="success" icon={<CheckCircle size={24} />} />
       </div>
