@@ -11,8 +11,9 @@ export default function BrowsePosts() {
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(9);
-  const [filters, setFilters] = useState({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '' });
-  const [activeFilters, setActiveFilters] = useState({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '' });
+  const [filters, setFilters] = useState({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '', facilities: [] });
+  const [activeFilters, setActiveFilters] = useState({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '', facilities: [] });
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [viewPost, setViewPost] = useState(null);
 
   useEffect(() => {
@@ -88,6 +89,21 @@ export default function BrowsePosts() {
     onError: (e) => console.error("Failed to update status", e),
   });
 
+  const { data: facilitiesList } = useQuery({
+    queryKey: ['facilities'],
+    queryFn: async () => (await getFacilitiesApi()).data?.data?.facilities || [],
+  });
+
+  const handleFacilityToggle = (id) => {
+    setFilters(prev => {
+      const current = prev.facilities || [];
+      const updated = current.includes(id) 
+        ? current.filter(f => f !== id) 
+        : [...current, id];
+      return { ...prev, facilities: updated };
+    });
+  };
+
   const posts = data?.posts || [];
 
   const handleEnquire = (postId) => {
@@ -115,146 +131,114 @@ export default function BrowsePosts() {
         )}
       </div>
 
-      <Card className="mb-6" style={{ padding: '12px 16px' }}>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* Main Search */}
-          <div style={{ position: 'relative', flex: '2 1 300px' }}>
-            <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-            <input
-              className="form-control"
-              style={{ paddingLeft: 36, height: 40 }}
-              placeholder="Search by title..."
-              value={filters.title}
-              onChange={e => setFilters(f => ({ ...f, title: e.target.value }))}
-            />
-          </div>
-
-          {/* City */}
-          <div style={{ flex: '1 1 150px' }}>
-            <Input 
-              name="city" value={filters.city} 
-              onChange={e => setFilters(f => ({ ...f, city: e.target.value }))}
-              placeholder="City..."
-              style={{ height: 40 }}
-            />
-          </div>
-
-          {/* PG Type */}
-          <div style={{ flex: '1 1 120px' }}>
-            <Input 
-              name="pgType" as="select" value={filters.pgType}
-              onChange={e => setFilters(f => ({ ...f, pgType: e.target.value }))}
-              options={[
-                { value: '', label: 'PG Type' },
-                { value: 'male', label: 'Male' },
-                { value: 'female', label: 'Female' },
-                { value: 'unisex', label: 'Unisex' },
-                { value: 'coLiving', label: 'Co-Living' }
-              ]}
-              style={{ height: 40 }}
-            />
-          </div>
-
-          {/* Sharing */}
-          <div style={{ flex: '1 1 120px' }}>
-            <Input 
-              name="occupancyType" as="select" value={filters.occupancyType}
-              onChange={e => setFilters(f => ({ ...f, occupancyType: e.target.value }))}
-              options={[
-                { value: '', label: 'Sharing' },
-                { value: 'single', label: 'Single' },
-                { value: 'double', label: 'Double' },
-                { value: 'triple', label: 'Triple' },
-                { value: 'four', label: 'Four' }
-              ]}
-              style={{ height: 40 }}
-            />
-          </div>
-
-          {/* Price Range */}
-          <div style={{ display: 'flex', gap: 4, flex: '1 1 180px' }}>
-            <Input 
-              name="minPrice" type="number" value={filters.minPrice}
-              onChange={e => setFilters(f => ({ ...f, minPrice: e.target.value }))}
-              placeholder="₹ Min"
-              style={{ height: 40 }}
-              min={0}
-            />
-            <Input 
-              name="maxPrice" type="number" value={filters.maxPrice}
-              onChange={e => setFilters(f => ({ ...f, maxPrice: e.target.value }))}
-              placeholder="₹ Max"
-              style={{ height: 40 }}
-              min={0}
-            />
-          </div>
+      <div className="search-bar-inline">
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, paddingLeft: 12 }}>
+          <Search size={16} style={{ color: 'var(--text-muted)' }} />
+          <input
+            placeholder="Search by area, PG name..."
+            value={filters.title}
+            onChange={e => setFilters(f => ({ ...f, title: e.target.value }))}
+          />
         </div>
-      </Card>
+        
+        <div className="divider" />
+        
+        <input
+          style={{ width: 120 }}
+          placeholder="City..."
+          value={filters.city}
+          onChange={e => setFilters(f => ({ ...f, city: e.target.value }))}
+        />
+
+        <div className="divider" />
+
+        <select 
+          className="pill-select"
+          value={filters.pgType}
+          onChange={e => setFilters(f => ({ ...f, pgType: e.target.value }))}
+        >
+          <option value="">Any Type</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="unisex">Unisex</option>
+          <option value="coLiving">Co-Living</option>
+        </select>
+
+        <div className="divider" />
+
+        <select 
+          className="pill-select"
+          value={filters.occupancyType}
+          onChange={e => setFilters(f => ({ ...f, occupancyType: e.target.value }))}
+        >
+          <option value="">Sharing</option>
+          <option value="single">Single</option>
+          <option value="double">Double</option>
+          <option value="triple">Triple</option>
+        </select>
+
+        <Button 
+          variant="primary" 
+          onClick={() => setShowAdvancedFilters(true)}
+          style={{ borderRadius: 99, height: 32, padding: '0 16px', fontSize: 12, marginRight: 4 }}
+        >
+          <Filter size={14} style={{ marginRight: 6 }} /> Filters
+        </Button>
+      </div>
 
       {isLoading ? <Spinner center /> : posts.length === 0 ? (
         <EmptyState icon={<Search size={64} />} title="No PGs found" 
           description="Try adjusting your filters to find more results." />
       ) : (
         <>
-          <div className="grid-3" style={{ gap: 12 }}>
+          <div className="browse-grid">
             {posts.map(post => (
-              <Card key={post._id} hover onClick={() => setViewPost(post)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%', padding: '12px', overflow: 'hidden', position: 'relative' }}>
-                {/* ... card content ... */}
-                <div style={{ position: 'absolute', top: 0, left: 0, height: 4, width: '100%', background: 'linear-gradient(90deg, var(--primary), var(--accent))' }} />
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 12 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 4, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{post.title}</h3>
-                    <div className="text-xs text-muted" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <MapPin size={12} className="text-primary" /> {post.pgId?.address?.city || 'Location'}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0, background: 'var(--primary-light)', padding: '4px 8px', borderRadius: 'var(--radius-sm)' }}>
-                    <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--primary)' }}>{formatPrice(post.pricePerBed)}</div>
-                    <div style={{ fontSize: 10, color: 'var(--primary)', opacity: 0.8, fontWeight: 600 }}>/ month</div>
+              <div key={post._id} className="sleek-card" onClick={() => setViewPost(post)} style={{ cursor: 'pointer' }}>
+                <div className="sleek-card-img">
+                  <Building2 size={40} style={{ opacity: 0.1 }} />
+                  <div className="sleek-card-price">{formatPrice(post.pricePerBed)}</div>
+                  <div style={{ position: 'absolute', bottom: 10, left: 10 }}>
+                    <Badge variant={post.pgType === 'male' ? 'info' : post.pgType === 'female' ? 'danger' : 'accent'}>
+                      {post.pgType}
+                    </Badge>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                  <Badge variant="accent" style={{ fontSize: 10, padding: '2px 6px' }}><span style={{ textTransform: 'capitalize' }}>{post.pgType}</span></Badge>
-                  <div className="chip chip-primary" style={{ fontSize: 10, padding: '2px 6px', textTransform: 'capitalize' }}>{post.occupancyType}</div>
-                  <div className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '2px 8px', background: 'var(--warning-light)', color: 'var(--warning)', border: 'none', fontWeight: 700 }}>
-                    <Bed size={12} /> {post.vacancyCount} Left
+                <div className="sleek-card-body">
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 2 }}>{post.pgId?.name}</div>
+                  <h3 className="sleek-card-title truncate">{post.title}</h3>
+                  <div className="property-location" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
+                    <MapPin size={12} className="text-primary" /> {post.pgId?.address?.city}
                   </div>
-                </div>
 
-                <div className="text-xs text-secondary flex-1" style={{ lineHeight: 1.5, marginBottom: 16 }}>
-                  {post.description?.length > 80 ? `${post.description.substring(0, 80)}...` : post.description}
-                </div>
+                  <div className="property-tags" style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                    <Badge variant="accent" style={{ fontSize: 9 }}>{post.occupancyType}</Badge>
+                    <Badge variant="warning" style={{ fontSize: 9 }}>{post.vacancyCount} Left</Badge>
+                  </div>
 
-                <div style={{ marginTop: 'auto' }}>
-                  {!post.enquiryData ? (
-                    <div style={{ position: 'relative', width: '100%' }} className="interest-btn-wrapper">
+                  <div style={{ marginTop: 'auto' }}>
+                    {!post.enquiryData ? (
                       <Button 
+                        size="sm"
+                        style={{ width: '100%', fontWeight: 700 }}
                         onClick={(e) => { e.stopPropagation(); handleEnquire(post._id); }}
                         loading={enquiryMut.isPending && enquiryMut.variables?.postId === post._id}
-                        style={{ width: '100%', padding: '8px', fontSize: 13, fontWeight: 700, borderRadius: 'var(--radius-sm)' }}
                       >
                         Show Interest
                       </Button>
-                    </div>
-                  ) : (
-                    <div style={{ 
-                      background: 'var(--bg-elevated)', 
-                      borderRadius: 'var(--radius-sm)', 
-                      borderLeft: '3px solid var(--success)',
-                      padding: '10px'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <CheckCircle2 size={14} className="text-success" />
-                        <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', color: 'var(--success)' }}>
-                          Requested
-                        </span>
+                    ) : (
+                      <div style={{ 
+                        background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', 
+                        padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        gap: 6, color: 'var(--success)', border: '1px solid var(--success-light)'
+                      }}>
+                        <CheckCircle2 size={14} />
+                        <span style={{ fontSize: 10, fontWeight: 800 }}>REQUESTED</span>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
 
@@ -267,6 +251,57 @@ export default function BrowsePosts() {
           />
         </>
       )}
+
+      {/* Advanced Filters Modal */}
+      <Modal 
+        isOpen={showAdvancedFilters} 
+        onClose={() => setShowAdvancedFilters(false)}
+        title="Advanced Filters"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 12 }}>
+          <div className="detail-section">
+            <div className="detail-section-title">Budget Range</div>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <Input 
+                label="Min Price" type="number" value={filters.minPrice}
+                onChange={e => setFilters(f => ({ ...f, minPrice: e.target.value }))}
+                placeholder="₹ 0"
+              />
+              <Input 
+                label="Max Price" type="number" value={filters.maxPrice}
+                onChange={e => setFilters(f => ({ ...f, maxPrice: e.target.value }))}
+                placeholder="₹ 20000"
+              />
+            </div>
+          </div>
+
+          <div className="detail-section">
+            <div className="detail-section-title">Amenities & Facilities</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              {facilitiesList?.map(fac => (
+                <label key={fac._id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px', background: filters.facilities.includes(fac._id) ? 'var(--primary-light)' : 'transparent', borderRadius: 'var(--radius-sm)', transition: '0.2s' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={filters.facilities.includes(fac._id)}
+                    onChange={() => handleFacilityToggle(fac._id)}
+                    style={{ width: 16, height: 16, accentColor: 'var(--primary)' }}
+                  />
+                  <span style={{ fontSize: 14, color: filters.facilities.includes(fac._id) ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: filters.facilities.includes(fac._id) ? 700 : 500 }}>{fac.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+            <Button variant="ghost" className="flex-1" onClick={() => { setFilters({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '', facilities: [] }); setShowAdvancedFilters(false); }}>
+              Reset All
+            </Button>
+            <Button variant="primary" className="flex-1" onClick={() => setShowAdvancedFilters(false)}>
+              Apply Filters
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Post Details Modal */}
       <Modal 

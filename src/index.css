@@ -44,8 +44,8 @@
   --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
   --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
 
-  --sidebar-width: 260px;
-  --navbar-height: 64px;
+  --sidebar-width: 230px;
+  --navbar-height: 54px;
 }
 
 [data-theme="light"] {
@@ -78,8 +78,8 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg-base);
   color: var(--text-primary);
-  line-height: 1.6;
-  font-size: 14px;
+  line-height: 1.5;
+  font-size: 13px;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
@@ -122,7 +122,7 @@ ul { list-style: none; }
 
 .page-container {
   flex: 1;
-  padding: 32px;
+  padding: 20px;
   max-width: 1400px;
   width: 100%;
 }
@@ -260,9 +260,9 @@ ul { list-style: none; }
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 8px 16px;
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   transition: all 0.2s ease;
   white-space: nowrap;
@@ -325,9 +325,9 @@ ul { list-style: none; }
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 11px 14px;
+  padding: 9px 12px;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 13px;
   transition: all 0.2s;
   width: 100%;
 }
@@ -782,29 +782,115 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 .role-employee { color: var(--accent); }
 .role-user { color: var(--success); }
 
-/* ===================== POST CARD ===================== */
-.post-card {
+/* ===================== SLEEK INLINE SEARCH ===================== */
+.search-bar-inline {
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 4px 6px;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.search-bar-inline input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+}
+
+.search-bar-inline .divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0;
+}
+
+.pill-select {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+  outline: none;
+  border-radius: 99px;
+}
+
+.pill-select:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.pill-select option {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+/* ===================== COMPACT CARDS ===================== */
+.browse-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.sleek-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 20px;
+  overflow: hidden;
+  transition: all 0.2s;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  transition: all 0.2s;
-  cursor: pointer;
 }
 
-.post-card:hover {
+.sleek-card:hover {
   border-color: var(--primary);
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
 }
 
-.post-card-title { font-size: 16px; font-weight: 700; }
-.post-card-meta { display: flex; flex-wrap: wrap; gap: 8px; }
-.post-card-price { font-size: 20px; font-weight: 800; color: var(--accent); }
-.post-card-actions { margin-top: auto; display: flex; gap: 8px; }
+.sleek-card-img {
+  height: 120px;
+  background: var(--bg-elevated);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sleek-card-price {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--primary);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.sleek-card-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.sleek-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
 
 /* ===================== INTEREST BUTTON TOOLTIP ===================== */
 .interest-btn-wrapper:hover .interest-tooltip { opacity: 1 !important; }
