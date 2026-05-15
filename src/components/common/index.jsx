@@ -117,4 +117,96 @@ export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, loadi
   </Modal>
 );
 
+export const Pagination = ({ 
+  currentPage, 
+  totalResults, 
+  limit, 
+  onPageChange, 
+  onLimitChange 
+}) => {
+  const totalPages = Math.ceil(totalResults / limit);
+  if (totalResults === 0) return null;
+
+  const startResult = (currentPage - 1) * limit + 1;
+  const endResult = Math.min(currentPage * limit, totalResults);
+
+  // Advanced: Generate page numbers with Ellipses (e.g. 1 ... 4 5 6 ... 100)
+  const getPageRange = () => {
+    const range = [];
+    const delta = 1; // Number of pages to show on either side of current page
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (
+        i === 1 || 
+        i === totalPages || 
+        (i >= currentPage - delta && i <= currentPage + delta)
+      ) {
+        range.push(i);
+      } else if (range[range.length - 1] !== '...') {
+        range.push('...');
+      }
+    }
+    return range;
+  };
+
+  return (
+    <div className="pagination-container">
+      <div className="pagination-stats">
+        Showing <strong>{startResult}</strong> to <strong>{endResult}</strong> of <strong>{totalResults}</strong> results
+      </div>
+
+      <div className="pagination-controls">
+        <div className="pagination-numbers">
+          <Button 
+            variant="ghost" size="sm" 
+            disabled={currentPage === 1}
+            onClick={() => onPageChange(currentPage - 1)}
+          >
+            Prev
+          </Button>
+
+          {getPageRange().map((p, i) => (
+            p === '...' ? (
+              <span key={`sep-${i}`} style={{ padding: '0 8px', color: 'var(--text-muted)' }}>...</span>
+            ) : (
+              <div 
+                key={p} 
+                className={`pagination-number ${currentPage === p ? 'active' : ''}`}
+                onClick={() => onPageChange(p)}
+              >
+                {p}
+              </div>
+            )
+          ))}
+
+          <Button 
+            variant="ghost" size="sm" 
+            disabled={currentPage === totalPages}
+            onClick={() => onPageChange(currentPage + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+
+
+      <div className="pagination-limit">
+        Rows:
+        <select 
+          className="pagination-select" 
+          value={limit} 
+          onChange={(e) => onLimitChange(Number(e.target.value))}
+        >
+          <option value={9}>9 per page</option>
+          <option value={18}>18 per page</option>
+          <option value={36}>36 per page</option>
+          <option value={77}>Show All</option>
+        </select>
+      </div>
+    </div>
+  );
+};
+
+
+
 export { Logo } from './Logo';
