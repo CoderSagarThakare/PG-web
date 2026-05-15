@@ -17,6 +17,7 @@ const PGDetails = lazy(() => import('./pages/owner/PGDetails'));
 const ManageRooms = lazy(() => import('./pages/owner/ManageRooms'));
 const ManagePosts = lazy(() => import('./pages/owner/ManagePosts'));
 const BrowsePosts = lazy(() => import('./pages/user/BrowsePosts'));
+const BrowsePGs = lazy(() => import('./pages/user/BrowsePGs'));
 
 function AppRoutes() {
   return (
@@ -49,6 +50,7 @@ function AppRoutes() {
             {/* User Only */}
             <Route element={<RoleRoute roles={['user']} />}>
               <Route path="/browse" element={<BrowsePosts />} />
+              <Route path="/browse-pgs" element={<BrowsePGs />} />
               <Route path="/my-enquiries" element={<Enquiries />} />
             </Route>
   

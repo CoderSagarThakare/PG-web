@@ -29,6 +29,7 @@ const managerNav = [
 
 const userNav = [
   { label: 'Discover Stays', icon: <Search size={18} />, to: '/browse' },
+  { label: 'Browse PGs', icon: <Building2 size={18} />, to: '/browse-pgs' },
   { label: 'My Enquiries', icon: <MessageSquare size={18} />, to: '/my-enquiries' },
   { section: 'Account' },
   { label: 'Profile', icon: <User size={18} />, to: '/profile' },

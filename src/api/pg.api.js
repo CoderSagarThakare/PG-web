@@ -13,5 +13,8 @@ export const getManagerPGsApi = (params) => api.get('/post', { params });
 // Facilities
 export const getFacilitiesApi = () => api.get('/pg/facilities');
 
+// Discover PGs (User/Public)
+export const discoverPGsApi = (params) => api.get('/pg/discover', { params });
+
 // Staff — managers list
 export const getManagersApi = (params) => api.get('/staff/managers', { params });
