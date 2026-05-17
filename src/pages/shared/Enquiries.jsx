@@ -64,11 +64,13 @@ export default function Enquiries() {
     queryFn: async () => (await getEnquiriesApi(params)).data?.data,
   });
 
-  // PG list for staff filter
+  // PG list for staff filter — use a long staleTime so the cached result from
+  // the dashboard or sidebar is reused. No new network call on every tab visit.
   const { data: pgData } = useQuery({
     queryKey: ['my-pgs'],
     queryFn: async () => (await getMyPGsApi()).data?.data,
     enabled: isStaff,
+    staleTime: 5 * 60 * 1000,   // 5 minutes — reuse cache across page navigations
   });
 
   const updateMut = useMutation({

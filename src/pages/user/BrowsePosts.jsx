@@ -40,8 +40,8 @@ export default function BrowsePosts() {
         status: res.data?.data?.status
       };
 
-      // Update the main list cache
-      qc.setQueryData(['browse-posts', activeFilters], (oldData) => {
+      // Update the main list cache — key must match exactly what useQuery uses
+      qc.setQueryData(['browse-posts', activeFilters, page, limit], (oldData) => {
         if (!oldData) return oldData;
         const newPosts = oldData.posts.map(p => {
           if (p._id === variables.postId) {
@@ -63,7 +63,8 @@ export default function BrowsePosts() {
   const updateEnquiryMut = useMutation({
     mutationFn: ({ id, data }) => updateEnquiryApi(id, data),
     onSuccess: (res, variables) => {
-      qc.setQueryData(['browse-posts', activeFilters], (oldData) => {
+      // Update the main list cache — key must match exactly what useQuery uses
+      qc.setQueryData(['browse-posts', activeFilters, page, limit], (oldData) => {
         if (!oldData) return oldData;
         const newPosts = oldData.posts.map(p => {
           if (p.enquiryData?.enquiryId === variables.id) {
@@ -85,7 +86,6 @@ export default function BrowsePosts() {
         }));
       }
     },
-    // We can silently fail or toast, but since it's just a status update, silent is okay or a toast.
     onError: (e) => console.error("Failed to update status", e),
   });
 
