@@ -24,7 +24,6 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
   const selectedPgId = watch('pgId');
   const isEdit = !!initialData;
   const [basePrice, setBasePrice] = useState({ min: 0, max: 0 });
-  const [discount, setDiscount] = useState(0);
 
   useEffect(() => {
     if (initialData) {
@@ -44,28 +43,20 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
     }
   }, [initialData, reset]);
 
-  // Auto-fill pgType and fetch price range when PG changes (only on create)
+  // Auto-fill pgType and fetch price range when PG changes (on create and edit)
   useEffect(() => {
-    if (selectedPgId && !isEdit) {
+    if (selectedPgId) {
       const pg = pgs.find(p => p._id === selectedPgId);
-      if (pg) setValue('pgType', pg.pgType);
+      if (pg && !isEdit) setValue('pgType', pg.pgType);
 
       getPgPriceRangeApi(selectedPgId).then(res => {
         const { minPrice, maxPrice } = res.data.data;
         setBasePrice({ min: minPrice, max: maxPrice });
         setValue('minPrice', minPrice);
         setValue('maxPrice', maxPrice);
-        setDiscount(0);
       }).catch(err => console.error(err));
     }
   }, [selectedPgId, pgs, setValue, isEdit]);
-
-  const handleDiscountChange = (e) => {
-    const val = Number(e.target.value) || 0;
-    setDiscount(val);
-    setValue('minPrice', Math.max(0, basePrice.min - val));
-    setValue('maxPrice', Math.max(0, basePrice.max - val));
-  };
 
   const currentPgType = watch('pgType');
 
@@ -111,14 +102,20 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
           min={1}
           required 
         />
-        <Input 
-          label="Discount Applied (₹)" 
-          type="number" 
-          value={discount}
-          onChange={handleDiscountChange}
-          min={0}
-          placeholder="e.g. 500"
-        />
+        {selectedPgId && (
+          <div className="full" style={{ 
+            fontSize: 12, 
+            background: 'var(--bg-elevated)', 
+            padding: '10px 14px', 
+            borderRadius: 8, 
+            borderLeft: '4px solid var(--primary)',
+            color: 'var(--text-muted)',
+            marginTop: 4,
+            marginBottom: 4 
+          }}>
+            💡 <strong>PG Bed Price Range:</strong> Available beds in this PG cost between <strong>₹{basePrice.min.toLocaleString('en-IN')}</strong> and <strong>₹{basePrice.max.toLocaleString('en-IN')}</strong>. You can customize the Min/Max price fields below.
+          </div>
+        )}
         <Input 
           label="Min Price (₹)" 
           type="number" 

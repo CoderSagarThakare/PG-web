@@ -117,7 +117,7 @@ export default function Dashboard() {
                     <div style={{ fontWeight: 600, fontSize: 13 }}>{post.title}</div>
                     <div className="text-xs text-muted">{post.pgId?.name} · {post.vacancyCount} vacancies</div>
                   </div>
-                  <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: 14 }}>{formatPrice(post.pricePerBed)}</div>
+                  <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: 13 }}>{formatPrice(post.minPrice)} - {formatPrice(post.maxPrice)}</div>
                 </div>
               ))}
             </div>

@@ -196,7 +196,7 @@ export default function BrowsePosts() {
               <div key={post._id} className="sleek-card" onClick={() => setViewPost(post)} style={{ cursor: 'pointer' }}>
                 <div className="sleek-card-img">
                   <Building2 size={40} style={{ opacity: 0.1 }} />
-                  <div className="sleek-card-price">{formatPrice(post.pricePerBed)}</div>
+                  <div className="sleek-card-price" style={{ fontSize: 13, padding: '4px 10px' }}>{formatPrice(post.minPrice)} - {formatPrice(post.maxPrice)}</div>
                   <div style={{ position: 'absolute', bottom: 10, left: 10 }}>
                     <Badge variant={post.pgType === 'male' ? 'info' : post.pgType === 'female' ? 'danger' : 'accent'}>
                       {post.pgType}
@@ -215,6 +215,21 @@ export default function BrowsePosts() {
                     <Badge variant="accent" style={{ fontSize: 9 }}>{post.occupancyType}</Badge>
                     <Badge variant="warning" style={{ fontSize: 9 }}>{post.vacancyCount} Left</Badge>
                   </div>
+
+                  <p style={{ 
+                    fontSize: 11.5, 
+                    color: 'var(--text-muted)', 
+                    marginBottom: 14,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    lineHeight: '1.4',
+                    height: '2.8em'
+                  }}>
+                    {post.description}
+                  </p>
 
                   <div style={{ marginTop: 'auto' }}>
                     {!post.enquiryData ? (
@@ -329,8 +344,8 @@ export default function BrowsePosts() {
                 </div>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-                  <div style={{ fontSize: 32, fontWeight: 900, color: 'var(--primary)' }}>{formatPrice(viewPost.pricePerBed)}</div>
-                  <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>/ month per bed</div>
+                  <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--primary)' }}>{formatPrice(viewPost.minPrice)} - {formatPrice(viewPost.maxPrice)}</div>
+                  <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>/ month</div>
                 </div>
 
                 <div className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--warning-light)', color: 'var(--warning)', borderRadius: 'var(--radius-sm)', fontWeight: 800 }}>

@@ -107,6 +107,21 @@ export default function ManagePosts() {
                 <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}><Bed size={10} style={{ display: 'inline' }} /> {post.vacancyCount}</span>
               </div>
 
+              <p style={{ 
+                fontSize: 11.5, 
+                color: 'var(--text-muted)', 
+                marginBottom: 10,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                lineHeight: '1.4',
+                height: '2.8em'
+              }}>
+                {post.description}
+              </p>
+
               <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent)', marginBottom: 12 }}>
                 {formatPrice(post.minPrice)} - {formatPrice(post.maxPrice)}<span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 400 }}>/mo</span>
               </div>
@@ -125,14 +140,18 @@ export default function ManagePosts() {
       )}
 
       <Modal isOpen={modalOpen} onClose={closeModal} title={editPost ? 'Edit Post' : 'New Vacancy Post'} size="lg">
-        <PostForm
-          initialData={editPost}
-          onSubmit={onSubmit}
-          loading={createMut.isPending || updateMut.isPending}
-          pgs={pgs}
-          buttonText={editPost ? 'Update Post' : 'Create Post'}
-          onCancel={closeModal}
-        />
+        {pgsData ? (
+          <PostForm
+            initialData={editPost}
+            onSubmit={onSubmit}
+            loading={createMut.isPending || updateMut.isPending}
+            pgs={pgs}
+            buttonText={editPost ? 'Update Post' : 'Create Post'}
+            onCancel={closeModal}
+          />
+        ) : (
+          <Spinner center />
+        )}
       </Modal>
 
       <ConfirmModal isOpen={!!confirmId} onClose={() => setConfirmId(null)}
