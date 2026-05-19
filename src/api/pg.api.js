@@ -3,6 +3,7 @@ import api from './axios';
 // PG CRUD — routes live under /owner/pg for owners
 export const getMyPGsApi = (params) => api.get('/pg', { params });
 export const getPGByIdApi = (pgId) => api.get(`/pg/${pgId}`);
+export const getPgPriceRangeApi = (pgId) => api.get(`/pg/${pgId}/price-range`);
 export const createPGApi = (data) => api.post('/pg', data);
 export const updatePGApi = (pgId, data) => api.patch(`/pg/${pgId}`, data);
 export const deletePGApi = (pgId) => api.delete(`/pg/${pgId}`);

@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Input, Button } from '../common';
+import { getPgPriceRangeApi } from '../../api/pg.api';
 
 const occupancyOptions = [
   { value: 'single', label: 'Single' }, { value: 'double', label: 'Double' },
@@ -16,12 +17,14 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     defaultValues: {
       pgId: '', title: '', description: '', vacancyCount: '',
-      occupancyType: 'single', pgType: 'unisex', pricePerBed: '', availableFrom: '',
+      occupancyType: 'single', pgType: 'unisex', minPrice: '', maxPrice: '', availableFrom: '',
     }
   });
 
   const selectedPgId = watch('pgId');
   const isEdit = !!initialData;
+  const [basePrice, setBasePrice] = useState({ min: 0, max: 0 });
+  const [discount, setDiscount] = useState(0);
 
   useEffect(() => {
     if (initialData) {
@@ -32,20 +35,37 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
         vacancyCount: initialData.vacancyCount || '',
         occupancyType: initialData.occupancyType || 'single',
         pgType: initialData.pgType || 'unisex',
-        pricePerBed: initialData.pricePerBed || '',
+        minPrice: initialData.minPrice || '',
+        maxPrice: initialData.maxPrice || '',
         availableFrom: initialData.availableFrom ? initialData.availableFrom.slice(0, 10) : '',
         isActive: initialData.isActive !== false,
       });
+      setBasePrice({ min: initialData.minPrice || 0, max: initialData.maxPrice || 0 });
     }
   }, [initialData, reset]);
 
-  // Auto-fill pgType when PG changes (only on create)
+  // Auto-fill pgType and fetch price range when PG changes (only on create)
   useEffect(() => {
     if (selectedPgId && !isEdit) {
       const pg = pgs.find(p => p._id === selectedPgId);
       if (pg) setValue('pgType', pg.pgType);
+
+      getPgPriceRangeApi(selectedPgId).then(res => {
+        const { minPrice, maxPrice } = res.data.data;
+        setBasePrice({ min: minPrice, max: maxPrice });
+        setValue('minPrice', minPrice);
+        setValue('maxPrice', maxPrice);
+        setDiscount(0);
+      }).catch(err => console.error(err));
     }
   }, [selectedPgId, pgs, setValue, isEdit]);
+
+  const handleDiscountChange = (e) => {
+    const val = Number(e.target.value) || 0;
+    setDiscount(val);
+    setValue('minPrice', Math.max(0, basePrice.min - val));
+    setValue('maxPrice', Math.max(0, basePrice.max - val));
+  };
 
   const currentPgType = watch('pgType');
 
@@ -92,10 +112,26 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
           required 
         />
         <Input 
-          label="Price Per Bed (₹)" 
+          label="Discount Applied (₹)" 
           type="number" 
-          {...register('pricePerBed', { required: 'Price is required', min: 0 })} 
-          error={errors.pricePerBed?.message}
+          value={discount}
+          onChange={handleDiscountChange}
+          min={0}
+          placeholder="e.g. 500"
+        />
+        <Input 
+          label="Min Price (₹)" 
+          type="number" 
+          {...register('minPrice', { required: 'Min Price is required', min: 0 })} 
+          error={errors.minPrice?.message}
+          min={0}
+          required 
+        />
+        <Input 
+          label="Max Price (₹)" 
+          type="number" 
+          {...register('maxPrice', { required: 'Max Price is required', min: 0 })} 
+          error={errors.maxPrice?.message}
           min={0}
           required 
         />

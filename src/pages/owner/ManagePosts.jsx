@@ -10,7 +10,7 @@ import { getErrorMessage, formatPrice, formatDate } from '../../utils/helpers';
 
 const defaultForm = {
   pgId: '', title: '', description: '', vacancyCount: '',
-  occupancyType: 'single', pgType: 'unisex', pricePerBed: '', availableFrom: '',
+  occupancyType: 'single', pgType: 'unisex', minPrice: '', maxPrice: '', availableFrom: '',
 };
 
 const occupancyOptions = [
@@ -68,7 +68,7 @@ export default function ManagePosts() {
   };
 
   const onSubmit = (formData) => {
-    const payload = { ...formData, vacancyCount: Number(formData.vacancyCount), pricePerBed: Number(formData.pricePerBed) };
+    const payload = { ...formData, vacancyCount: Number(formData.vacancyCount), minPrice: Number(formData.minPrice), maxPrice: Number(formData.maxPrice) };
     if (editPost) updateMut.mutate({ id: editPost._id, data: payload });
     else createMut.mutate(payload);
   };
@@ -108,7 +108,7 @@ export default function ManagePosts() {
               </div>
 
               <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent)', marginBottom: 12 }}>
-                {formatPrice(post.pricePerBed)}<span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 400 }}>/bed</span>
+                {formatPrice(post.minPrice)} - {formatPrice(post.maxPrice)}<span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 400 }}>/mo</span>
               </div>
 
               <div className="flex gap-2" style={{ borderTop: '1px solid var(--border-light)', paddingTop: 10, justifyContent: 'flex-end' }}>
