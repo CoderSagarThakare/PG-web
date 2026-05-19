@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Logo, ConfirmModal } from '../common';
 import {
   LayoutDashboard, Building2, FileText, MessageSquare,
-  Users, Settings, LogOut, User, Home, Search, Sun, Moon
+  Users, Settings, LogOut, User, Home, Search, Sun, Moon, IndianRupee
 } from 'lucide-react';
 
 const ownerNav = [
@@ -13,6 +13,7 @@ const ownerNav = [
   { label: 'My PGs', icon: <Building2 size={18} />, to: '/pg' },
   { label: 'Vacancy Posts', icon: <FileText size={18} />, to: '/posts' },
   { label: 'Enquiries', icon: <MessageSquare size={18} />, to: '/enquiries' },
+  { label: 'Rent Tracker', icon: <IndianRupee size={18} />, to: '/rent' },
   { section: 'Account' },
   { label: 'Profile', icon: <User size={18} />, to: '/profile' },
 ];
@@ -23,6 +24,7 @@ const managerNav = [
   { label: 'My PGs', icon: <Building2 size={18} />, to: '/pg' },
   { label: 'Posts', icon: <FileText size={18} />, to: '/posts' },
   { label: 'Enquiries', icon: <MessageSquare size={18} />, to: '/enquiries' },
+  { label: 'Rent Tracker', icon: <IndianRupee size={18} />, to: '/rent' },
   { section: 'Account' },
   { label: 'Profile', icon: <User size={18} />, to: '/profile' },
 ];
@@ -31,9 +33,11 @@ const userNav = [
   { label: 'Discover Stays', icon: <Search size={18} />, to: '/browse' },
   { label: 'Browse PGs', icon: <Building2 size={18} />, to: '/browse-pgs' },
   { label: 'My Enquiries', icon: <MessageSquare size={18} />, to: '/my-enquiries' },
+  { label: 'My Rent', icon: <IndianRupee size={18} />, to: '/my-rent' },
   { section: 'Account' },
   { label: 'Profile', icon: <User size={18} />, to: '/profile' },
 ];
+
 
 const navByRole = { owner: ownerNav, manager: managerNav, employee: managerNav, user: userNav };
 

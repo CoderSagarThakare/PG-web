@@ -18,6 +18,10 @@ const ManageRooms = lazy(() => import('./pages/owner/ManageRooms'));
 const ManagePosts = lazy(() => import('./pages/owner/ManagePosts'));
 const BrowsePosts = lazy(() => import('./pages/user/BrowsePosts'));
 const BrowsePGs = lazy(() => import('./pages/user/BrowsePGs'));
+const RentTracker = lazy(() => import('./pages/owner/RentTracker'));
+const MyRent = lazy(() => import('./pages/user/MyRent'));
+
+
 
 function AppRoutes() {
   return (
@@ -45,6 +49,7 @@ function AppRoutes() {
               <Route path="/pg" element={<ManagePGs />} />
               <Route path="/pg/:pgId" element={<PGDetails />} />
               <Route path="/pg/:pgId/inventory" element={<ManageRooms />} />
+              <Route path="/rent" element={<RentTracker />} />
             </Route>
             
             {/* User Only */}
@@ -52,7 +57,9 @@ function AppRoutes() {
               <Route path="/browse" element={<BrowsePosts />} />
               <Route path="/browse-pgs" element={<BrowsePGs />} />
               <Route path="/my-enquiries" element={<Enquiries />} />
+              <Route path="/my-rent" element={<MyRent />} />
             </Route>
+
   
             {/* Fallback */}
             <Route path="/" element={<Navigate to="/login" replace />} />
