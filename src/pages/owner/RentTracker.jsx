@@ -15,7 +15,7 @@ import {
   bulkApprovePaymentsApi
 } from '../../api/rent.api';
 import { Badge, Button, Card, Modal, Spinner, EmptyState, Input } from '../../components/common';
-import { getErrorMessage, formatDate } from '../../utils/helpers';
+import { getErrorMessage, formatDate, formatDateTime, formatTime } from '../../utils/helpers';
 import {
   IndianRupee, TrendingUp, Clock, AlertCircle, Phone, Plus,
   Edit2, Trash2, CheckCircle2, Zap, Check, X, ShieldAlert, FileCheck
@@ -43,6 +43,24 @@ const monthOptions = () => {
 const emptyForm = {
   bedId: '', userId: '', amount: '', amountPaid: '',
   paymentMode: 'cash', paidDate: '', referenceNo: '', notes: '', rentMonth: currentMonth()
+};
+
+const getActiveDays = (rec) => {
+  if (rec.notes && rec.notes.includes("Prorated rent:")) {
+    const match = rec.notes.match(/Prorated rent: (\d+) active days/);
+    if (match) return `${match[1]}D`;
+  }
+  if (rec.rentMonth) {
+    const [y, m] = rec.rentMonth.split("-").map(Number);
+    if (y && m) {
+      const totalDays = new Date(y, m, 0).getDate();
+      if (rec.amount && rec.bedId?.price && rec.amount < rec.bedId.price) {
+        return `${Math.round((rec.amount / rec.bedId.price) * totalDays)}D`;
+      }
+      return `${totalDays}D`;
+    }
+  }
+  return '—';
 };
 
 export default function RentTracker() {
@@ -264,8 +282,8 @@ export default function RentTracker() {
           <p className="page-subtitle">Track payments, verification approvals, and monthly collections</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button variant="ghost" size="sm" onClick={() => setModal('generate')} style={{ gap: 6 }}>
-            <Zap size={14} /> Auto-Generate
+          <Button variant="ghost" size="sm" onClick={() => { setForm(f => ({ ...f, _genPgId: filterPgId || '' })); setModal('generate'); }} style={{ gap: 6 }}>
+            <Zap size={14} /> Generate Rent Bills
           </Button>
           <Button size="sm" onClick={() => { setForm(emptyForm); setModal('record'); loadBeds(filterPgId); }} style={{ gap: 6 }}>
             <Plus size={14} /> Record Payment
@@ -278,8 +296,8 @@ export default function RentTracker() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
           {[
             { icon: <IndianRupee size={18} />, label: 'Collected', value: f(summary.totalCollected), sub: `of ${f(summary.totalDue)}`, color: 'var(--success)' },
-            { icon: <TrendingUp size={18} />, label: 'Collection Rate', value: `${summary.collectionRate}%`, sub: `${summary.tenantCount} tenants`, color: 'var(--primary)' },
-            { icon: <Clock size={18} />, label: 'Pending', value: summary.pending + (summary.partial || 0), sub: 'payments due', color: 'var(--warning)' },
+            { icon: <TrendingUp size={18} />, label: 'Collection Rate', value: `${summary.paid || 0} / ${summary.tenantCount || 0}`, sub: `${summary.collectionRate}% tenants paid`, color: 'var(--primary)' },
+            { icon: <Clock size={18} />, label: 'Pending', value: (summary.pending || 0) + (summary.partial || 0) + (summary.under_review || 0), sub: 'payments due', color: 'var(--warning)' },
             { icon: <AlertCircle size={18} />, label: 'Overdue', value: summary.overdue || 0, sub: 'past due date', color: 'var(--danger)' },
           ].map((s, i) => (
             <Card key={i} style={{ padding: '16px 20px' }}>
@@ -380,6 +398,7 @@ export default function RentTracker() {
                     <th>Student Details</th>
                     <th>Bed / PG</th>
                     <th>Month</th>
+                    <th>Days</th>
                     <th>Amount Due</th>
                     <th>Paid Amount</th>
                     <th>Mode</th>
@@ -409,7 +428,15 @@ export default function RentTracker() {
                         <div style={{ color: 'var(--text-muted)' }}>{rec.pgId?.name}</div>
                       </td>
                       <td style={{ fontSize: 12, fontWeight: 700 }}>{rec.rentMonth}</td>
-                      <td style={{ fontSize: 13, fontWeight: 700 }}>{f(rec.amount)}</td>
+                      <td style={{ fontSize: 12, fontWeight: 600 }}>{getActiveDays(rec)}</td>
+                       <td style={{ fontSize: 13, fontWeight: 700 }}>
+                        <div>{f(rec.amount)}</div>
+                        {rec.bedId?.price && rec.amount < rec.bedId.price && (
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, marginTop: 2 }}>
+                            Base: {f(rec.bedId.price)}
+                          </div>
+                        )}
+                      </td>
                       <td style={{ fontSize: 13, fontWeight: 800, color: 'var(--success)' }}>{f(rec.amountPaid)}</td>
                       <td style={{ fontSize: 12 }}>{rec.paymentMode ? MODE_LABELS[rec.paymentMode] : '—'}</td>
                       <td style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{rec.referenceNo || '—'}</td>
@@ -523,6 +550,7 @@ export default function RentTracker() {
                       <th>Bed / Room</th>
                       <th>PG</th>
                       <th>Month</th>
+                      <th>Days</th>
                       <th>Due</th>
                       <th>Paid</th>
                       <th>Status</th>
@@ -547,13 +575,28 @@ export default function RentTracker() {
                         </td>
                         <td style={{ fontSize: 12 }}>{rec.pgId?.name || '—'}</td>
                         <td style={{ fontSize: 12, fontWeight: 600 }}>{rec.rentMonth}</td>
-                        <td style={{ fontSize: 13, fontWeight: 700 }}>{f(rec.amount)}</td>
+                        <td style={{ fontSize: 12, fontWeight: 600 }}>{getActiveDays(rec)}</td>
+                        <td style={{ fontSize: 13, fontWeight: 700 }}>
+                          <div>{f(rec.amount)}</div>
+                          {rec.bedId?.price && rec.amount < rec.bedId.price && (
+                            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, marginTop: 2 }}>
+                              Base: {f(rec.bedId.price)}
+                            </div>
+                          )}
+                        </td>
                         <td style={{ fontSize: 13, fontWeight: 700, color: rec.status === 'paid' ? 'var(--success)' : 'var(--warning)' }}>
                           {f(rec.amountPaid)}
                         </td>
                         <td><Badge variant={STATUS_VARIANT[rec.status] || 'default'}>{rec.status}</Badge></td>
                         <td style={{ fontSize: 12 }}>{rec.paymentMode ? MODE_LABELS[rec.paymentMode] : '—'}</td>
-                        <td style={{ fontSize: 12 }}>{rec.paidDate ? formatDate(rec.paidDate) : '—'}</td>
+                        <td style={{ fontSize: 12 }} title={rec.paidDate ? formatDateTime(rec.paidDate) : '—'}>
+                          {rec.paidDate ? (
+                            <>
+                              <div style={{ fontWeight: 600 }}>{formatDate(rec.paidDate)}</div>
+                              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{formatTime(rec.paidDate)}</div>
+                            </>
+                          ) : '—'}
+                        </td>
                         <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {rec.referenceNo || '—'}
                         </td>
@@ -603,16 +646,20 @@ export default function RentTracker() {
           {modal === 'record' && (
             <>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>SELECT PG *</label>
-                <select className="form-control" value={form._pgId || filterPgId}
+                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>
+                  SELECT PG <span style={{ color: 'var(--danger)' }}>*</span>
+                </label>
+                <select className="form-control" required value={form._pgId || filterPgId}
                   onChange={e => { setForm(f => ({ ...f, _pgId: e.target.value, bedId: '', userId: '' })); loadBeds(e.target.value); }}>
                   <option value="">-- Select PG --</option>
                   {pgs.map(pg => <option key={pg._id} value={pg._id}>{pg.name}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>SELECT TENANT BED *</label>
-                <select className="form-control" value={form.bedId} onChange={e => handleBedSelect(e.target.value)}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>
+                  SELECT TENANT BED <span style={{ color: 'var(--danger)' }}>*</span>
+                </label>
+                <select className="form-control" required value={form.bedId} onChange={e => handleBedSelect(e.target.value)}>
                   <option value="">-- Select occupied bed --</option>
                   {beds.map(b => <option key={b._id} value={b._id}>{b.label}</option>)}
                 </select>
@@ -627,14 +674,14 @@ export default function RentTracker() {
           )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <Input label="Rent Month *" type="month" value={form.rentMonth}
+            <Input label="Rent Month" type="month" value={form.rentMonth} required
               onChange={e => setForm(f => ({ ...f, rentMonth: e.target.value }))} />
-            <Input label="Rent Amount (₹) *" type="number" min="0" value={form.amount}
+            <Input label="Rent Amount (₹)" type="number" min="0" value={form.amount} required
               onChange={e => {
                 const val = e.target.value;
                 if (val === '' || Number(val) >= 0) setForm(f => ({ ...f, amount: val }));
               }} />
-            <Input label="Amount Paid (₹) *" type="number" min="0" value={form.amountPaid}
+            <Input label="Amount Paid (₹)" type="number" min="0" value={form.amountPaid} required
               onChange={e => {
                 const val = e.target.value;
                 if (val === '' || Number(val) >= 0) setForm(f => ({ ...f, amountPaid: val }));
@@ -676,20 +723,32 @@ export default function RentTracker() {
             Creates pending rent records for all currently occupied beds in the selected PG. Existing records are skipped.
           </div>
           <div>
-            <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>SELECT PG *</label>
-            <select className="form-control" value={form._genPgId || ''}
+            <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>
+              SELECT PG <span style={{ color: 'var(--danger)' }}>*</span>
+            </label>
+            <select className="form-control" required value={form._genPgId || ''}
               onChange={e => setForm(f => ({ ...f, _genPgId: e.target.value }))}>
               <option value="">-- Select PG --</option>
               {pgs.map(pg => <option key={pg._id} value={pg._id}>{pg.name}</option>)}
             </select>
           </div>
-          <Input label="For Month *" type="month" value={form.rentMonth}
+          <Input label="For Month" type="month" value={form.rentMonth} required
             onChange={e => setForm(f => ({ ...f, rentMonth: e.target.value }))} />
           <div style={{ display: 'flex', gap: 10 }}>
             <Button variant="ghost" style={{ flex: 1 }} onClick={() => setModal(null)}>Cancel</Button>
-            <Button style={{ flex: 1 }} loading={generateMut.isPending}
-              onClick={() => generateMut.mutate({ pgId: form._genPgId, rentMonth: form.rentMonth })}>
-              <Zap size={14} style={{ marginRight: 6 }} /> Generate
+            <Button 
+              style={{ flex: 1 }} 
+              loading={generateMut.isPending}
+              disabled={!form._genPgId || !form.rentMonth}
+              onClick={() => {
+                if (!form._genPgId || !form.rentMonth) {
+                  toast.error('Please select a PG and Month');
+                  return;
+                }
+                generateMut.mutate({ pgId: form._genPgId, rentMonth: form.rentMonth });
+              }}
+            >
+              <Zap size={14} style={{ marginRight: 6 }} /> Generate Rent Slips
             </Button>
           </div>
         </div>

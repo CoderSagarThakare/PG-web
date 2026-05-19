@@ -6,6 +6,19 @@ export const formatDate = (dateStr) => {
   });
 };
 
+// Format date and time to readable string
+export const formatDateTime = (dateStr) => {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  const datePart = d.toLocaleDateString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  });
+  const timePart = d.toLocaleTimeString('en-IN', {
+    hour: '2-digit', minute: '2-digit', hour12: true,
+  });
+  return `${datePart}, ${timePart}`;
+};
+
 // Format time
 export const formatTime = (dateStr) => {
   if (!dateStr) return '';

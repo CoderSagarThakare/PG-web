@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getRoomsApi, createRoomApi, updateRoomApi, deleteRoomApi, assignTenantApi, unassignTenantApi, updateBedApi, getEligibleTenantsApi } from '../../api/room.api';
+import { getPGByIdApi } from '../../api/pg.api';
 import { Button, Card, Badge, Modal, Spinner, EmptyState, Input } from '../../components/common';
 import { Building2, Plus, Bed, Users, Trash2, Edit2, ArrowLeft, Search, UserPlus, LogOut } from 'lucide-react';
 import { getErrorMessage, formatPrice } from '../../utils/helpers';
@@ -19,6 +20,12 @@ export default function ManageRooms() {
   const { data: rooms = [], isLoading } = useQuery({
     queryKey: ['rooms', pgId],
     queryFn: async () => (await getRoomsApi(pgId)).data?.data,
+  });
+
+  const { data: pg } = useQuery({
+    queryKey: ['pg', pgId],
+    queryFn: async () => (await getPGByIdApi(pgId)).data?.data?.pg,
+    enabled: !!pgId,
   });
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,7 +94,7 @@ export default function ManageRooms() {
   });
 
   const assignMut = useMutation({
-    mutationFn: ({ bedId, userId }) => assignTenantApi(bedId, userId),
+    mutationFn: ({ bedId, userId, joiningDate }) => assignTenantApi(bedId, userId, joiningDate),
     onSuccess: () => {
       toast.success('Tenant assigned!');
       qc.invalidateQueries(['rooms', pgId]);
@@ -128,8 +135,23 @@ export default function ManageRooms() {
             <ArrowLeft size={20} />
           </Button>
           <div>
-            <h1 className="page-title">Inventory Management</h1>
-            <p className="page-subtitle">Track occupancy, rooms, and beds</p>
+            <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              Inventory Management
+              {pg?.name && (
+                <span style={{ 
+                  fontSize: 13, 
+                  background: 'var(--primary-light)', 
+                  color: 'var(--primary)', 
+                  padding: '3px 10px', 
+                  borderRadius: 20, 
+                  fontWeight: 600,
+                  border: '1px solid var(--primary-light)'
+                }}>
+                  {pg.name}
+                </span>
+              )}
+            </h1>
+            <p className="page-subtitle">Track occupancy, rooms, and beds for this property</p>
           </div>
         </div>
         <Button onClick={() => setModalOpen(true)}>
@@ -231,8 +253,8 @@ export default function ManageRooms() {
                     
                     <div style={{ minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ fontWeight: 700 }}>Bed {bed.bedNumber.split('-')[1]}</span>
-                        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>({bed.position || 'No Pos'})</span>
+                        <span style={{ fontWeight: 700 }}>Bed {bed.bedNumber.includes('-') ? bed.bedNumber.split('-')[1] : bed.bedNumber}</span>
+                        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>({bed.position || 'No Pos'} · {formatPrice(bed.price)})</span>
                       </div>
                       {bed.status === 'occupied' ? (
                         <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -275,18 +297,19 @@ export default function ManageRooms() {
       )}
 
       {/* Add Room Modal */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add New Room" size="lg">
-        <RoomForm onSubmit={(data) => createRoomMut.mutate({ ...data, pgId })} loading={createRoomMut.isPending} />
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={pg?.name ? `Add New Room to ${pg.name}` : "Add New Room"} size="lg">
+        <RoomForm onSubmit={(data) => createRoomMut.mutate({ ...data, pgId })} loading={createRoomMut.isPending} onCancel={() => setModalOpen(false)} />
       </Modal>
 
       {/* Edit Room Modal */}
-      <Modal isOpen={!!editRoom} onClose={() => setEditRoom(null)} title="Edit Room Details" size="lg">
+      <Modal isOpen={!!editRoom} onClose={() => setEditRoom(null)} title={pg?.name ? `Edit Room Details - ${pg.name}` : "Edit Room Details"} size="lg">
         {editRoom && (
           <RoomForm 
             initialData={editRoom} 
             onSubmit={(data) => updateRoomMut.mutate({ id: editRoom._id, data })} 
             loading={updateRoomMut.isPending} 
             isEdit 
+            onCancel={() => setEditRoom(null)}
           />
         )}
       </Modal>
@@ -296,7 +319,8 @@ export default function ManageRooms() {
         <AssignForm 
           bedInfo={assignModal} 
           pgId={pgId}
-          onSubmit={(userId) => assignMut.mutate({ bedId: assignModal.bedId, userId })} 
+          pgName={pg?.name}
+          onSubmit={(userId, joiningDate) => assignMut.mutate({ bedId: assignModal.bedId, userId, joiningDate })} 
           loading={assignMut.isPending} 
         />
       </Modal>
@@ -304,7 +328,7 @@ export default function ManageRooms() {
   );
 }
 
-function RoomForm({ onSubmit, loading, initialData, isEdit }) {
+function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
   const { register, control, handleSubmit, watch, formState: { errors } } = useForm({
     defaultValues: initialData || {
       roomNumber: '',
@@ -389,7 +413,7 @@ function RoomForm({ onSubmit, loading, initialData, isEdit }) {
         </div>
       </div>
       <div className="modal-footer" style={{ marginTop: 24, display: 'flex', gap: 10 }}>
-        <Button variant="ghost" type="button" onClick={() => reset()} style={{ flex: 1 }}>Cancel</Button>
+        <Button variant="ghost" type="button" onClick={onCancel} style={{ flex: 1 }}>Cancel</Button>
         <Button type="submit" loading={loading} style={{ flex: 2 }}>
           {isEdit ? 'Update Room' : 'Create Room & Beds'}
         </Button>
@@ -398,18 +422,35 @@ function RoomForm({ onSubmit, loading, initialData, isEdit }) {
   );
 }
 
-function AssignForm({ bedInfo, onSubmit, loading, pgId }) {
+function AssignForm({ bedInfo, onSubmit, loading, pgId, pgName }) {
   const { data: tenants = [], isLoading } = useQuery({
     queryKey: ['eligible-tenants', pgId],
     queryFn: async () => (await getEligibleTenantsApi(pgId)).data?.data,
   });
 
   const [selectedUser, setSelectedUser] = useState(null);
+  const [joiningDate, setJoiningDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().slice(0, 10);
+  });
   
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ background: 'var(--primary-light)', padding: '10px 12px', borderRadius: 'var(--radius-md)', color: 'var(--primary)', fontSize: 13 }}>
-        Assigning tenant to <strong>Room {bedInfo?.roomNumber} - Bed {bedInfo?.bedNum}</strong>
+      <div style={{ background: 'var(--primary-light)', padding: '10px 12px', borderRadius: 'var(--radius-md)', color: 'var(--primary)', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <span>Assigning tenant to <strong>Room {bedInfo?.roomNumber} - Bed {bedInfo?.bedNum}</strong></span>
+        {pgName && (
+          <span style={{ 
+            fontSize: 11, 
+            background: 'var(--bg-surface)', 
+            color: 'var(--primary)', 
+            padding: '2px 8px', 
+            borderRadius: 12, 
+            fontWeight: 700,
+            border: '1px solid var(--primary-light)'
+          }}>
+            {pgName}
+          </span>
+        )}
       </div>
       
       <div>
@@ -449,8 +490,18 @@ function AssignForm({ bedInfo, onSubmit, loading, pgId }) {
         )}
       </div>
 
+      <div>
+        <Input 
+          label="Check-in / Joining Date" 
+          type="date" 
+          required
+          value={joiningDate} 
+          onChange={e => setJoiningDate(e.target.value)} 
+        />
+      </div>
+
       <div className="modal-footer" style={{ borderTop: '1px solid var(--border-light)', paddingTop: 16 }}>
-        <Button onClick={() => onSubmit(selectedUser)} loading={loading} disabled={!selectedUser} style={{ width: '100%' }}>
+        <Button onClick={() => onSubmit(selectedUser, joiningDate)} loading={loading} disabled={!selectedUser || !joiningDate} style={{ width: '100%' }}>
           Confirm Assignment
         </Button>
       </div>

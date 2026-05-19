@@ -94,31 +94,37 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="sidebar-user">
-          <div className="sidebar-avatar" style={{ background: `linear-gradient(135deg, ${roleColors[user?.role] || 'var(--primary)'}, var(--accent))` }}>
-            {initials}
+        <div className="sidebar-user" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12, padding: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="sidebar-avatar" style={{ background: `linear-gradient(135deg, ${roleColors[user?.role] || 'var(--primary)'}, var(--accent))` }}>
+              {initials}
+            </div>
+            <div className="sidebar-user-info" style={{ flex: 1, minWidth: 0 }}>
+              <strong style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name || 'User'}</strong>
+              <span style={{ color: roleColors[user?.role], fontSize: 11, textTransform: 'capitalize' }}>{user?.role}</span>
+            </div>
           </div>
-          <div className="sidebar-user-info">
-            <strong>{user?.name || 'User'}</strong>
-            <span style={{ color: roleColors[user?.role] }}>{user?.role}</span>
-          </div>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            <button
-              className="btn btn-ghost btn-icon btn-sm"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              title="Toggle Theme"
-              style={{ padding: '6px' }}
-            >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-            <button
-              className="btn btn-ghost btn-icon btn-sm"
-              onClick={() => setIsLogoutModalOpen(true)}
-              title="Logout"
-              style={{ padding: '6px' }}
-            >
-              <LogOut size={16} />
-            </button>
+          
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+            <span style={{ fontSize: 10.5, color: 'var(--text-muted)', fontWeight: 500 }}>Quick Actions</span>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button
+                className="btn btn-ghost btn-icon btn-sm"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                title="Toggle Theme"
+                style={{ padding: '6px' }}
+              >
+                {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+              </button>
+              <button
+                className="btn btn-ghost btn-icon btn-sm"
+                onClick={() => setIsLogoutModalOpen(true)}
+                title="Logout"
+                style={{ padding: '6px', color: 'var(--danger)' }}
+              >
+                <LogOut size={15} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
