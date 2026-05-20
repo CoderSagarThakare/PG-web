@@ -40,6 +40,14 @@ const monthOptions = () => {
   return opts;
 };
 
+const getMonthName = (yearMonth) => {
+  if (!yearMonth) return '';
+  const [y, m] = yearMonth.split('-').map(Number);
+  if (!y || !m) return '';
+  const date = new Date(y, m - 1, 1);
+  return date.toLocaleString('default', { month: 'long' });
+};
+
 const emptyForm = {
   bedId: '', userId: '', amount: '', amountPaid: '',
   paymentMode: 'cash', paidDate: '', referenceNo: '', notes: '', rentMonth: currentMonth()
@@ -734,15 +742,36 @@ export default function RentTracker() {
           </div>
           <Input label="For Month" type="month" value={form.rentMonth} required
             onChange={e => setForm(f => ({ ...f, rentMonth: e.target.value }))} />
+
+          {form.rentMonth && form.rentMonth > currentMonth() && (
+            <div style={{ 
+              padding: '10px 14px', 
+              background: 'var(--danger-light)', 
+              border: '1px solid var(--danger)', 
+              borderRadius: 8, 
+              color: 'var(--danger)', 
+              fontSize: 12, 
+              fontWeight: 600,
+              lineHeight: 1.4
+            }}>
+              ⚠️ You cannot generate bills for {getMonthName(form.rentMonth)} month in {getMonthName(currentMonth())} month.
+            </div>
+          )}
+
           <div style={{ display: 'flex', gap: 10 }}>
             <Button variant="ghost" style={{ flex: 1 }} onClick={() => setModal(null)}>Cancel</Button>
             <Button 
               style={{ flex: 1 }} 
               loading={generateMut.isPending}
-              disabled={!form._genPgId || !form.rentMonth}
+              disabled={!form._genPgId || !form.rentMonth || (form.rentMonth > currentMonth())}
+              title={form.rentMonth && form.rentMonth > currentMonth() ? `You cannot generate bills for ${getMonthName(form.rentMonth)} month in ${getMonthName(currentMonth())} month.` : ''}
               onClick={() => {
                 if (!form._genPgId || !form.rentMonth) {
                   toast.error('Please select a PG and Month');
+                  return;
+                }
+                if (form.rentMonth > currentMonth()) {
+                  toast.error(`You cannot generate bills for ${getMonthName(form.rentMonth)} month in ${getMonthName(currentMonth())} month.`);
                   return;
                 }
                 generateMut.mutate({ pgId: form._genPgId, rentMonth: form.rentMonth });
