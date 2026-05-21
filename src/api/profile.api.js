@@ -1,17 +1,20 @@
 import api from './axios';
 
-// User profile (role: user)
-export const getUserProfileApi = () => api.get('/user/profile');
-export const updateUserProfileApi = (data) => api.patch('/user/profile', data);
-export const deleteUserApi = () => api.delete('/user/profile');
-
-// Staff profile (role: owner/manager/employee)
-export const getStaffProfileApi = () => api.get('/staff/profile');
-export const updateStaffProfileApi = (data) => api.patch('/staff/profile', data);
+// Unified Profile API
+export const getProfileApi = () => api.get('/profile');
+export const updateProfileApi = (data) => api.patch('/profile', data);
+export const deleteProfileApi = () => api.delete('/profile');
 
 // Avatar CRUD (S3-backed)
-export const getAvatarUrlApi = () => api.get('/user/profile/avatar');
+export const getAvatarUrlApi = () => api.get('/profile/avatar');
 export const getAvatarUploadUrlApi = (fileName, fileType) =>
-  api.get('/user/profile/avatar/upload-url', { params: { fileName, fileType } });
-export const saveAvatarApi = (key) => api.patch('/user/profile/avatar', { key });
-export const deleteAvatarApi = () => api.delete('/user/profile/avatar');
+  api.get('/profile/avatar/upload-url', { params: { fileName, fileType } });
+export const saveAvatarApi = (key) => api.patch('/profile/avatar', { key });
+export const deleteAvatarApi = () => api.delete('/profile/avatar');
+
+// Aliases for backward compatibility
+export const getUserProfileApi = getProfileApi;
+export const getStaffProfileApi = getProfileApi;
+export const updateUserProfileApi = updateProfileApi;
+export const updateStaffProfileApi = updateProfileApi;
+export const deleteUserApi = deleteProfileApi;

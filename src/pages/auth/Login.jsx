@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { loginApi } from '../../api/auth.api';
-import { getStaffProfileApi } from '../../api/profile.api';
 import { useAuth } from '../../context/AuthContext';
 import { Button, Input, Logo } from '../../components/common';
 import { getErrorMessage } from '../../utils/helpers';

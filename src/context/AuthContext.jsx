@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { getUserProfileApi } from '../api/profile.api';
+import { getProfileApi } from '../api/profile.api';
 
 const AuthContext = createContext(null);
 
@@ -20,15 +20,9 @@ export const AuthProvider = ({ children }) => {
    * Called after login and on app mount when a token exists.
    * This ensures the picture (presigned URL) is always fresh.
    */
-  const syncProfile = useCallback(async (role) => {
+  const syncProfile = useCallback(async () => {
     try {
-      const isStaffRole = ['owner', 'manager', 'employee'].includes(role);
-      // Staff and user both share the User model and the avatar endpoint.
-      // getUserProfileApi works for 'user' role only; for staff roles we skip
-      // the profile sync (staff profile already handled at login via login response).
-      if (isStaffRole) return;
-
-      const res = await getUserProfileApi();
+      const res = await getProfileApi();
       const fresh = res.data?.data;
       if (!fresh) return;
 
@@ -48,9 +42,9 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (syncCalled.current) return;  // Already ran — skip the StrictMode second fire
-    if (token && user?.role) {
+    if (token) {
       syncCalled.current = true;
-      syncProfile(user.role);
+      syncProfile();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -62,8 +56,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', authToken);
 
     // Then fetch the full profile (includes fresh presigned picture URL)
-    // Use the role from login data to pick the right endpoint
-    await syncProfile(userData.role);
+    await syncProfile();
   };
 
   const logout = () => {

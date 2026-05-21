@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
-import { updateUserProfileApi, updateStaffProfileApi, getAvatarUploadUrlApi, saveAvatarApi, deleteAvatarApi } from '../../api/profile.api';
+import { updateProfileApi, getAvatarUploadUrlApi, saveAvatarApi, deleteAvatarApi } from '../../api/profile.api';
 import { Input, Button, Card } from '../../components/common';
 import { getErrorMessage } from '../../utils/helpers';
 import { User, Mail, Phone, MapPin, Shield, Activity, Calendar, ExternalLink, Camera, Trash2 } from 'lucide-react';
@@ -40,7 +40,7 @@ export default function Profile() {
   }, [user, reset]);
 
   const updateMut = useMutation({
-    mutationFn: (data) => isStaff ? updateStaffProfileApi(data) : updateUserProfileApi(data),
+    mutationFn: updateProfileApi,
     onSuccess: (_, variables) => {
       toast.success('Profile updated successfully!');
       updateUser(variables);
