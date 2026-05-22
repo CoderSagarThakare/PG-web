@@ -1,5 +1,10 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+  Outlet,
+} from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute, RoleRoute, GuestRoute } from './routes/guards';
 import { Toaster } from 'react-hot-toast';
@@ -7,79 +12,104 @@ import { Spinner } from './components/common';
 
 import AppLayout from './components/layout/AppLayout';
 
-const Login = lazy(() => import('./pages/auth/Login'));
-const Register = lazy(() => import('./pages/auth/Register'));
-const Dashboard = lazy(() => import('./pages/shared/Dashboard'));
-const Profile = lazy(() => import('./pages/shared/Profile'));
-const Enquiries = lazy(() => import('./pages/shared/Enquiries'));
-const ManagePGs = lazy(() => import('./pages/owner/ManagePGs'));
-const PGDetails = lazy(() => import('./pages/owner/PGDetails'));
-const ManageRooms = lazy(() => import('./pages/owner/ManageRooms'));
-const ManagePosts = lazy(() => import('./pages/owner/ManagePosts'));
-const BrowsePosts = lazy(() => import('./pages/user/BrowsePosts'));
-const BrowsePGs = lazy(() => import('./pages/user/BrowsePGs'));
-const RentTracker = lazy(() => import('./pages/owner/RentTracker'));
-const MyRent = lazy(() => import('./pages/user/MyRent'));
+// ── Lazy-loaded pages ─────────────────────────────────────────────────────────
+const Login        = lazy(() => import('./pages/auth/Login'));
+const Register     = lazy(() => import('./pages/auth/Register'));
+const Dashboard    = lazy(() => import('./pages/shared/Dashboard'));
+const Profile      = lazy(() => import('./pages/shared/Profile'));
+const Enquiries    = lazy(() => import('./pages/shared/Enquiries'));
+const ManagePGs    = lazy(() => import('./pages/owner/ManagePGs'));
+const PGDetails    = lazy(() => import('./pages/owner/PGDetails'));
+const ManageRooms  = lazy(() => import('./pages/owner/ManageRooms'));
+const ManagePosts  = lazy(() => import('./pages/owner/ManagePosts'));
+const BrowsePosts  = lazy(() => import('./pages/user/BrowsePosts'));
+const BrowsePGs    = lazy(() => import('./pages/user/BrowsePGs'));
+const RentTracker  = lazy(() => import('./pages/owner/RentTracker'));
+const MyRent       = lazy(() => import('./pages/user/MyRent'));
 
-
-
-function AppRoutes() {
+// ── Root layout: wraps the whole app with providers + toast ───────────────────
+// Must live INSIDE the data router so that useBlocker works in any descendant.
+function RootLayout() {
   return (
-    <Suspense fallback={<Spinner center />}>
-      <Routes>
-        <Route element={<GuestRoute />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        </Route>
-        
-        {/* Protected Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route element={<AppLayout />}>
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/enquiries" element={<Enquiries />} />
-            
-            {/* Staff Routes */}
-            <Route element={<RoleRoute roles={['owner', 'manager']} />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/posts" element={<ManagePosts />} />
-            </Route>
-            
-            {/* Owner & Manager */}
-            <Route element={<RoleRoute roles={['owner', 'manager']} />}>
-              <Route path="/pg" element={<ManagePGs />} />
-              <Route path="/pg/:pgId" element={<PGDetails />} />
-              <Route path="/pg/:pgId/inventory" element={<ManageRooms />} />
-              <Route path="/rent" element={<RentTracker />} />
-            </Route>
-            
-            {/* User Only */}
-            <Route element={<RoleRoute roles={['user']} />}>
-              <Route path="/browse" element={<BrowsePosts />} />
-              <Route path="/browse-pgs" element={<BrowsePGs />} />
-              <Route path="/my-enquiries" element={<Enquiries />} />
-              <Route path="/my-rent" element={<MyRent />} />
-            </Route>
-
-  
-            {/* Fallback */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Route>
-        </Route>
-      </Routes>
-    </Suspense>
+    <AuthProvider>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: 'var(--bg-elevated)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border)',
+          },
+        }}
+      />
+      <Suspense fallback={<Spinner center />}>
+        <Outlet />
+      </Suspense>
+    </AuthProvider>
   );
 }
 
+// ── Route tree ────────────────────────────────────────────────────────────────
+const router = createBrowserRouter([
+  {
+    element: <RootLayout />,
+    children: [
+      // Guest-only routes (redirect to app if already logged in)
+      {
+        element: <GuestRoute />,
+        children: [
+          { path: '/login',    element: <Login /> },
+          { path: '/register', element: <Register /> },
+        ],
+      },
+
+      // Protected routes (redirect to login if not authenticated)
+      {
+        element: <ProtectedRoute />,
+        children: [
+          {
+            element: <AppLayout />,
+            children: [
+              // Shared (all authenticated roles)
+              { path: '/profile',    element: <Profile /> },
+              { path: '/enquiries',  element: <Enquiries /> },
+
+              // Staff only (owner + manager)
+              {
+                element: <RoleRoute roles={['owner', 'manager']} />,
+                children: [
+                  { path: '/dashboard', element: <Dashboard /> },
+                  { path: '/posts',     element: <ManagePosts /> },
+                  { path: '/pg',                      element: <ManagePGs /> },
+                  { path: '/pg/:pgId',                element: <PGDetails /> },
+                  { path: '/pg/:pgId/inventory',      element: <ManageRooms /> },
+                  { path: '/rent',                    element: <RentTracker /> },
+                ],
+              },
+
+              // Tenant only
+              {
+                element: <RoleRoute roles={['user']} />,
+                children: [
+                  { path: '/browse',        element: <BrowsePosts /> },
+                  { path: '/browse-pgs',    element: <BrowsePGs /> },
+                  { path: '/my-enquiries',  element: <Enquiries /> },
+                  { path: '/my-rent',       element: <MyRent /> },
+                ],
+              },
+
+              // Fallbacks
+              { path: '/',  element: <Navigate to="/login" replace /> },
+              { path: '*',  element: <Navigate to="/login" replace /> },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+]);
+
+// ── App entry ─────────────────────────────────────────────────────────────────
 export default function App() {
-  return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Toaster position="top-right" toastOptions={{
-          style: { background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border)' }
-        }} />
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
-  );
+  return <RouterProvider router={router} />;
 }

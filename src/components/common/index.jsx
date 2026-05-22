@@ -107,15 +107,16 @@ export const StatCard = ({ label, value, icon, color = 'primary' }) => (
   </div>
 );
 
-export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, loading, confirmText = 'Delete', confirmVariant = 'danger' }) => (
+export const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, loading, confirmText = 'Delete', confirmVariant = 'danger', cancelText = 'Cancel' }) => (
   <Modal isOpen={isOpen} onClose={onClose} title={title || 'Confirm Action'}>
-    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>{message}</p>
+    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', whiteSpace: 'pre-line' }}>{message}</p>
     <div className="modal-footer">
-      <Button variant="ghost" onClick={onClose} disabled={loading}>Cancel</Button>
+      <Button variant="primary" onClick={onClose} disabled={loading}>{cancelText}</Button>
       <Button variant={confirmVariant} onClick={onConfirm} loading={loading}>{confirmText}</Button>
     </div>
   </Modal>
 );
+
 
 export const Pagination = ({ 
   currentPage, 
