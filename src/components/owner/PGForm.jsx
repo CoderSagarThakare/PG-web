@@ -20,6 +20,8 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
       managerId: '',
       checkInTime: '',
       checkOutTime: '',
+      dueDayOfMonth: 10,
+      lateFee: 0,
       facilities: []
     }
   });
@@ -40,6 +42,8 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
         managerId: initialData.managerId?._id || initialData.managerId || '',
         checkInTime: initialData.checkInTime || '',
         checkOutTime: initialData.checkOutTime || '',
+        dueDayOfMonth: initialData.dueDayOfMonth || 10,
+        lateFee: initialData.lateFee || 0,
         facilities: initialData.facilities?.map(f => typeof f === 'object' ? f._id : f) || []
       });
     }
@@ -116,6 +120,31 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
           type="time" 
           {...register('checkOutTime', { required: 'Check-Out Time is required' })} 
           error={errors.checkOutTime?.message} 
+          required 
+        />
+
+        <Input 
+          label="Due Day of Month (1-28)" 
+          type="number" 
+          {...register('dueDayOfMonth', { 
+            required: 'Due day is required',
+            min: { value: 1, message: 'Must be between 1 and 28' },
+            max: { value: 28, message: 'Must be between 1 and 28' }
+          })} 
+          error={errors.dueDayOfMonth?.message} 
+          min={1}
+          max={28}
+          required 
+        />
+        <Input 
+          label="Late Fee Penalty (₹)" 
+          type="number" 
+          {...register('lateFee', { 
+            required: 'Penalty is required',
+            min: { value: 0, message: 'Cannot be negative' }
+          })} 
+          error={errors.lateFee?.message} 
+          min={0}
           required 
         />
 

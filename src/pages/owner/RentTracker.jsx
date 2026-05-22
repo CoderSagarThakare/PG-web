@@ -18,7 +18,8 @@ import { Badge, Button, Card, Modal, Spinner, EmptyState, Input } from '../../co
 import { getErrorMessage, formatDate, formatDateTime, formatTime } from '../../utils/helpers';
 import {
   IndianRupee, TrendingUp, Clock, AlertCircle, Phone, Plus,
-  Edit2, Trash2, CheckCircle2, Zap, Check, X, ShieldAlert, FileCheck
+  Edit2, Trash2, CheckCircle2, Zap, Check, X, ShieldAlert, FileCheck,
+  FileText
 } from 'lucide-react';
 
 const MODE_LABELS  = { cash: '💵 Cash', upi: '📱 UPI', bank_transfer: '🏦 Bank', cheque: '📄 Cheque', online: '🌐 Online' };
@@ -87,6 +88,7 @@ export default function RentTracker() {
   const [rejectionNotes, setRejectionNotes] = useState('');
   const [form, setForm]                   = useState(emptyForm);
   const [beds, setBeds]                   = useState([]);
+  const [breakdownTarget, setBreakdownTarget] = useState(null);
 
   // Checkbox state for bulk approval
   const [selectedIds, setSelectedIds]     = useState([]);
@@ -438,12 +440,16 @@ export default function RentTracker() {
                       <td style={{ fontSize: 12, fontWeight: 700 }}>{rec.rentMonth}</td>
                       <td style={{ fontSize: 12, fontWeight: 600 }}>{getActiveDays(rec)}</td>
                        <td style={{ fontSize: 13, fontWeight: 700 }}>
-                        <div>{f(rec.amount)}</div>
-                        {rec.bedId?.price && rec.amount < rec.bedId.price && (
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, marginTop: 2 }}>
-                            Base: {f(rec.bedId.price)}
+                        <div>{f(rec.amount + (rec.penaltyAmount || 0))}</div>
+                        {rec.penaltyAmount > 0 ? (
+                          <div style={{ fontSize: 10, color: 'var(--danger)', fontWeight: 500, marginTop: 2 }}>
+                            Base: {f(rec.amount)} + Late Fee: {f(rec.penaltyAmount)}
                           </div>
-                        )}
+                        ) : rec.bedId?.price && rec.amount < rec.bedId.price ? (
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, marginTop: 2 }}>
+                            Base: {f(rec.bedId.price)} (Prorated)
+                          </div>
+                        ) : null}
                       </td>
                       <td style={{ fontSize: 13, fontWeight: 800, color: 'var(--success)' }}>{f(rec.amountPaid)}</td>
                       <td style={{ fontSize: 12 }}>{rec.paymentMode ? MODE_LABELS[rec.paymentMode] : '—'}</td>
@@ -452,7 +458,12 @@ export default function RentTracker() {
                         {rec.notes || '—'}
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+                          <button onClick={() => setBreakdownTarget(rec)}
+                            style={{ padding: '6px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--primary)', display: 'flex', alignItems: 'center', height: '28px' }}
+                            title="View Breakdown">
+                            <FileText size={13} />
+                          </button>
                           <button
                             onClick={() => { if (window.confirm('Confirm and approve this payment?')) approveMut.mutate({ id: rec._id }); }}
                             style={{
@@ -466,7 +477,8 @@ export default function RentTracker() {
                               alignItems: 'center',
                               gap: 4,
                               fontWeight: 800,
-                              fontSize: 11
+                              fontSize: 11,
+                              height: '28px'
                             }}
                           >
                             <Check size={12} /> Approve
@@ -484,7 +496,8 @@ export default function RentTracker() {
                               alignItems: 'center',
                               gap: 4,
                               fontWeight: 800,
-                              fontSize: 11
+                              fontSize: 11,
+                              height: '28px'
                             }}
                           >
                             <X size={12} /> Reject
@@ -585,17 +598,28 @@ export default function RentTracker() {
                         <td style={{ fontSize: 12, fontWeight: 600 }}>{rec.rentMonth}</td>
                         <td style={{ fontSize: 12, fontWeight: 600 }}>{getActiveDays(rec)}</td>
                         <td style={{ fontSize: 13, fontWeight: 700 }}>
-                          <div>{f(rec.amount)}</div>
-                          {rec.bedId?.price && rec.amount < rec.bedId.price && (
-                            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, marginTop: 2 }}>
-                              Base: {f(rec.bedId.price)}
+                          <div>{f(rec.amount + (rec.penaltyAmount || 0))}</div>
+                          {rec.penaltyAmount > 0 ? (
+                            <div style={{ fontSize: 10, color: 'var(--danger)', fontWeight: 500, marginTop: 2 }}>
+                              Base: {f(rec.amount)} + Late Fee: {f(rec.penaltyAmount)}
                             </div>
-                          )}
+                          ) : rec.bedId?.price && rec.amount < rec.bedId.price ? (
+                            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, marginTop: 2 }}>
+                              Base: {f(rec.bedId.price)} (Prorated)
+                            </div>
+                          ) : null}
                         </td>
                         <td style={{ fontSize: 13, fontWeight: 700, color: rec.status === 'paid' ? 'var(--success)' : 'var(--warning)' }}>
                           {f(rec.amountPaid)}
                         </td>
-                        <td><Badge variant={STATUS_VARIANT[rec.status] || 'default'}>{rec.status}</Badge></td>
+                        <td>
+                          <Badge variant={STATUS_VARIANT[rec.status] || 'default'}>{rec.status}</Badge>
+                          {rec.penaltyAmount > 0 && rec.status === 'paid' && (
+                            <div style={{ fontSize: 10, color: 'var(--danger)', fontWeight: 600, marginTop: 2 }}>
+                              (Late Fee Applied)
+                            </div>
+                          )}
+                        </td>
                         <td style={{ fontSize: 12 }}>{rec.paymentMode ? MODE_LABELS[rec.paymentMode] : '—'}</td>
                         <td style={{ fontSize: 12 }} title={rec.paidDate ? formatDateTime(rec.paidDate) : '—'}>
                           {rec.paidDate ? (
@@ -610,14 +634,15 @@ export default function RentTracker() {
                         </td>
                         <td>
                           <div style={{ display: 'flex', gap: 6 }}>
-                            <button onClick={() => openEdit(rec)}
-                              style={{ padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--primary)' }}>
-                              <Edit2 size={13} />
+                            <button onClick={() => setBreakdownTarget(rec)}
+                              style={{ padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--primary)' }}
+                              title="View Breakdown">
+                              <FileText size={13} />
                             </button>
-                            <button
-                              onClick={() => { if (window.confirm('Delete this rent record?')) deleteMut.mutate({ id: rec._id }); }}
-                              style={{ padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--danger)' }}>
-                              <Trash2 size={13} />
+                            <button onClick={() => openEdit(rec)}
+                              style={{ padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--primary)' }}
+                              title="Edit Record">
+                              <Edit2 size={13} />
                             </button>
                           </div>
                         </td>
@@ -808,6 +833,112 @@ export default function RentTracker() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Detailed Rent Breakdown Modal */}
+      <Modal
+        isOpen={!!breakdownTarget}
+        onClose={() => setBreakdownTarget(null)}
+        title="Rent Payment Breakdown"
+        size="lg"
+      >
+        {breakdownTarget && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Header section in card */}
+            <div style={{ padding: '16px 20px', background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>Rent Period</span>
+                <Badge variant={STATUS_VARIANT[breakdownTarget.status] || 'default'}>{breakdownTarget.status}</Badge>
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)' }}>{getMonthName(breakdownTarget.rentMonth)} {breakdownTarget.rentMonth.split('-')[0]}</h3>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                {breakdownTarget.pgId?.name} · Bed {breakdownTarget.bedId?.bedNumber} · Room {breakdownTarget.roomId?.roomNumber}
+              </p>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6, fontWeight: 600 }}>
+                Days Occupied: <span style={{ color: 'var(--primary)' }}>{getActiveDays(breakdownTarget) !== '—' ? getActiveDays(breakdownTarget).replace('D', ' days') : '—'}</span>
+              </div>
+            </div>
+
+            {/* Tenant details if present */}
+            {breakdownTarget.userId && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 16px', background: 'var(--bg-base)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 12 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tenant Details</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 4 }}>
+                  <div><strong>Name:</strong> {breakdownTarget.userId.name}</div>
+                  {breakdownTarget.userId.mobNo1 && <div><strong>Phone:</strong> {breakdownTarget.userId.mobNo1}</div>}
+                  {breakdownTarget.userId.email && <div style={{ gridColumn: 'span 2' }}><strong>Email:</strong> {breakdownTarget.userId.email}</div>}
+                </div>
+              </div>
+            )}
+
+            {/* Price breakdown details */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 16, background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+              <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Financial Breakdown</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13, marginTop: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Base Rent:</span>
+                  <span style={{ fontWeight: 600 }}>{f(breakdownTarget.amount)}</span>
+                </div>
+                {breakdownTarget.penaltyAmount > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--danger)' }}>
+                    <span>Late Fee Penalty:</span>
+                    <span style={{ fontWeight: 700 }}>+ {f(breakdownTarget.penaltyAmount)}</span>
+                  </div>
+                )}
+                <div style={{ borderTop: '1px solid var(--border)', paddingRow: 4 }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 800 }}>
+                  <span>Total Due:</span>
+                  <span style={{ color: 'var(--text-primary)' }}>{f(breakdownTarget.amount + (breakdownTarget.penaltyAmount || 0))}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 800, color: 'var(--success)' }}>
+                  <span>Amount Paid:</span>
+                  <span>{f(breakdownTarget.amountPaid)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 800, color: breakdownTarget.status === 'paid' ? 'var(--text-muted)' : 'var(--warning)' }}>
+                  <span>Outstanding Balance:</span>
+                  <span>{f(Math.max(0, (breakdownTarget.amount + (breakdownTarget.penaltyAmount || 0)) - breakdownTarget.amountPaid))}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Transaction details */}
+            {(breakdownTarget.paymentMode || breakdownTarget.referenceNo || breakdownTarget.paidDate || breakdownTarget.notes) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 16, background: 'var(--bg-base)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 12 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Transaction Info</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 4 }}>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', display: 'block' }}>Payment Method</span>
+                    <strong>{breakdownTarget.paymentMode ? MODE_LABELS[breakdownTarget.paymentMode] : '—'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted)', display: 'block' }}>Transaction Date</span>
+                    <strong>{breakdownTarget.paidDate ? formatDate(breakdownTarget.paidDate) : '—'}</strong>
+                  </div>
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <span style={{ color: 'var(--text-muted)', display: 'block' }}>Transaction Reference / Txn ID</span>
+                    <strong style={{ fontFamily: 'monospace' }}>{breakdownTarget.referenceNo || '—'}</strong>
+                  </div>
+                  {breakdownTarget.recordedBy && (
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <span style={{ color: 'var(--text-muted)', display: 'block' }}>Recorded By</span>
+                      <strong>{breakdownTarget.recordedBy.name}</strong>
+                    </div>
+                  )}
+                  {breakdownTarget.notes && (
+                    <div style={{ gridColumn: 'span 2', padding: 8, background: 'var(--bg-elevated)', borderRadius: 6, borderLeft: '3px solid var(--primary)' }}>
+                      <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 10, fontWeight: 700, marginBottom: 2 }}>REMARKS / NOTES</span>
+                      <span style={{ fontStyle: 'italic' }}>{breakdownTarget.notes}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', marginTop: 8 }}>
+              <Button style={{ flex: 1 }} onClick={() => setBreakdownTarget(null)}>Close Details</Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

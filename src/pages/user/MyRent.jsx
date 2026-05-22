@@ -24,6 +24,24 @@ const STATUS_LABEL = {
 
 const MODE_EMOJIS = { cash: '💵 Cash', upi: '📱 UPI', bank_transfer: '🏦 Bank', cheque: '📄 Cheque', online: '🌐 Online' };
 
+const getActiveDays = (rec) => {
+  if (rec.notes && rec.notes.includes("Prorated rent:")) {
+    const match = rec.notes.match(/Prorated rent: (\d+) active days/);
+    if (match) return `${match[1]}D`;
+  }
+  if (rec.rentMonth) {
+    const [y, m] = rec.rentMonth.split("-").map(Number);
+    if (y && m) {
+      const totalDays = new Date(y, m, 0).getDate();
+      if (rec.amount && rec.bedId?.price && rec.amount < rec.bedId.price) {
+        return `${Math.round((rec.amount / rec.bedId.price) * totalDays)}D`;
+      }
+      return `${totalDays}D`;
+    }
+  }
+  return '—';
+};
+
 export default function MyRent() {
   const qc = useQueryClient();
   const [selectedRent, setSelectedRent] = useState(null);
@@ -31,6 +49,7 @@ export default function MyRent() {
   const [referenceNo, setReferenceNo] = useState('');
   const [amountPaid, setAmountPaid] = useState('');
   const [notes, setNotes] = useState('');
+  const [breakdownTarget, setBreakdownTarget] = useState(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['my-rent'],
@@ -54,7 +73,7 @@ export default function MyRent() {
 
   const openSubmitModal = (rent) => {
     setSelectedRent(rent);
-    setAmountPaid(rent.amount.toString());
+    setAmountPaid((rent.amount + (rent.penaltyAmount || 0)).toString());
   };
 
   const handleSubmitProof = () => {
@@ -111,7 +130,12 @@ export default function MyRent() {
             
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Total Amount Due</div>
-              <div style={{ fontSize: 32, fontWeight: 950, color: 'var(--text-primary)' }}>{f(activeRent.amount)}</div>
+              <div style={{ fontSize: 32, fontWeight: 950, color: 'var(--text-primary)' }}>{f(activeRent.amount + (activeRent.penaltyAmount || 0))}</div>
+              {activeRent.penaltyAmount > 0 && (
+                <div style={{ fontSize: 12, color: 'var(--danger)', fontWeight: 700, marginTop: 2 }}>
+                  Base: {f(activeRent.amount)} + Late Fee: {f(activeRent.penaltyAmount)}
+                </div>
+              )}
               {activeRent.status === 'partial' && (
                 <div style={{ fontSize: 12, color: 'var(--warning)', fontWeight: 700, marginTop: 2 }}>
                   Already paid: {f(activeRent.amountPaid)}
@@ -125,6 +149,10 @@ export default function MyRent() {
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Monthly Rate</div>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{f(activeRent.bedId?.price || activeRent.amount)}/mo</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Active Days</div>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>{getActiveDays(activeRent)}</div>
               </div>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Generated Date</div>
@@ -166,12 +194,14 @@ export default function MyRent() {
               <tr>
                 <th>Rent Month</th>
                 <th>PG / Bed</th>
+                <th>Days</th>
                 <th>Rent Due</th>
                 <th>Amount Paid</th>
                 <th>Status</th>
                 <th>Payment Mode</th>
                 <th>Transaction Date</th>
                 <th>Reference No / Txn ID</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -182,16 +212,40 @@ export default function MyRent() {
                     <div style={{ fontSize: 13, fontWeight: 600 }}>{rec.pgId?.name}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Bed {rec.bedId?.bedNumber} · Room {rec.roomId?.roomNumber}</div>
                   </td>
-                  <td style={{ fontSize: 14, fontWeight: 700 }}>{f(rec.amount)}</td>
+                  <td style={{ fontSize: 12, fontWeight: 600 }}>{getActiveDays(rec)}</td>
+                  <td style={{ fontSize: 14, fontWeight: 700 }}>
+                    <div>{f(rec.amount + (rec.penaltyAmount || 0))}</div>
+                    {rec.penaltyAmount > 0 ? (
+                      <div style={{ fontSize: 10, color: 'var(--danger)', fontWeight: 500, marginTop: 2 }}>
+                        Base: {f(rec.amount)} + Late Fee: {f(rec.penaltyAmount)}
+                      </div>
+                    ) : rec.bedId?.price && rec.amount < rec.bedId.price ? (
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, marginTop: 2 }}>
+                        Base: {f(rec.bedId.price)} (Prorated)
+                      </div>
+                    ) : null}
+                  </td>
                   <td style={{ fontSize: 14, fontWeight: 700, color: rec.status === 'paid' ? 'var(--success)' : 'var(--text-primary)' }}>
                     {f(rec.amountPaid)}
                   </td>
                   <td>
                     <Badge variant={STATUS_VARIANT[rec.status]}>{rec.status}</Badge>
+                    {rec.penaltyAmount > 0 && rec.status === 'paid' && (
+                      <div style={{ fontSize: 10, color: 'var(--danger)', fontWeight: 600, marginTop: 2 }}>
+                        (Late Fee Applied)
+                      </div>
+                    )}
                   </td>
                   <td>{rec.paymentMode ? MODE_EMOJIS[rec.paymentMode] : '—'}</td>
                   <td>{rec.paidDate ? formatDate(rec.paidDate) : '—'}</td>
                   <td style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{rec.referenceNo || '—'}</td>
+                  <td>
+                    <button onClick={() => setBreakdownTarget(rec)}
+                      style={{ padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--primary)' }}
+                      title="View Breakdown">
+                      <FileText size={13} />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -233,7 +287,15 @@ export default function MyRent() {
                 <span className="text-muted">Rent Month:</span> <strong style={{ display: 'block' }}>{selectedRent.rentMonth}</strong>
               </div>
               <div>
-                <span className="text-muted">Due Amount:</span> <strong style={{ display: 'block', color: 'var(--primary)', fontSize: 14 }}>{f(selectedRent.amount)}</strong>
+                <span className="text-muted">Due Amount:</span> 
+                <strong style={{ display: 'block', color: 'var(--primary)', fontSize: 14 }}>
+                  {f(selectedRent.amount + (selectedRent.penaltyAmount || 0))}
+                </strong>
+                {selectedRent.penaltyAmount > 0 && (
+                  <span style={{ fontSize: 10, color: 'var(--danger)', fontWeight: 600 }}>
+                    (Incl. {f(selectedRent.penaltyAmount)} Late Fee)
+                  </span>
+                )}
               </div>
             </div>
 
@@ -286,6 +348,98 @@ export default function MyRent() {
           </div>
         </Modal>
       )}
+
+      {/* Detailed Rent Breakdown Modal */}
+      <Modal
+        isOpen={!!breakdownTarget}
+        onClose={() => setBreakdownTarget(null)}
+        title="Rent Payment Breakdown"
+        size="lg"
+      >
+        {breakdownTarget && (() => {
+          const [y, m] = breakdownTarget.rentMonth.split("-").map(Number);
+          const monthName = new Date(y, m - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Header section in card */}
+              <div style={{ padding: '16px 20px', background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>Rent Period</span>
+                  <Badge variant={STATUS_VARIANT[breakdownTarget.status] || 'default'}>{breakdownTarget.status}</Badge>
+                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)' }}>{monthName}</h3>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                  {breakdownTarget.pgId?.name} · Bed {breakdownTarget.bedId?.bedNumber} · Room {breakdownTarget.roomId?.roomNumber}
+                </p>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6, fontWeight: 600 }}>
+                  Days Occupied: <span style={{ color: 'var(--primary)' }}>{getActiveDays(breakdownTarget) !== '—' ? getActiveDays(breakdownTarget).replace('D', ' days') : '—'}</span>
+                </div>
+              </div>
+
+              {/* Price breakdown details */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 16, background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Financial Breakdown</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13, marginTop: 4 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Base Rent:</span>
+                    <span style={{ fontWeight: 600 }}>{f(breakdownTarget.amount)}</span>
+                  </div>
+                  {breakdownTarget.penaltyAmount > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--danger)' }}>
+                      <span>Late Fee Penalty:</span>
+                      <span style={{ fontWeight: 700 }}>+ {f(breakdownTarget.penaltyAmount)}</span>
+                    </div>
+                  )}
+                  <div style={{ borderTop: '1px solid var(--border)', paddingRow: 4 }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 800 }}>
+                    <span>Total Due:</span>
+                    <span style={{ color: 'var(--text-primary)' }}>{f(breakdownTarget.amount + (breakdownTarget.penaltyAmount || 0))}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 800, color: 'var(--success)' }}>
+                    <span>Amount Paid:</span>
+                    <span>{f(breakdownTarget.amountPaid)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 800, color: breakdownTarget.status === 'paid' ? 'var(--text-muted)' : 'var(--warning)' }}>
+                    <span>Outstanding Balance:</span>
+                    <span>{f(Math.max(0, (breakdownTarget.amount + (breakdownTarget.penaltyAmount || 0)) - breakdownTarget.amountPaid))}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Transaction details */}
+              {(breakdownTarget.paymentMode || breakdownTarget.referenceNo || breakdownTarget.paidDate || breakdownTarget.notes) && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 16, background: 'var(--bg-base)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 12 }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Transaction Info</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 4 }}>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', display: 'block' }}>Payment Method</span>
+                      <strong>{breakdownTarget.paymentMode ? MODE_EMOJIS[breakdownTarget.paymentMode] : '—'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', display: 'block' }}>Transaction Date</span>
+                      <strong>{breakdownTarget.paidDate ? formatDate(breakdownTarget.paidDate) : '—'}</strong>
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <span style={{ color: 'var(--text-muted)', display: 'block' }}>Transaction Reference / Txn ID</span>
+                      <strong style={{ fontFamily: 'monospace' }}>{breakdownTarget.referenceNo || '—'}</strong>
+                    </div>
+                    {breakdownTarget.notes && (
+                      <div style={{ gridColumn: 'span 2', padding: 8, background: 'var(--bg-elevated)', borderRadius: 6, borderLeft: '3px solid var(--primary)' }}>
+                        <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 10, fontWeight: 700, marginBottom: 2 }}>REMARKS / NOTES</span>
+                        <span style={{ fontStyle: 'italic' }}>{breakdownTarget.notes}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', marginTop: 8 }}>
+                <Button style={{ flex: 1 }} onClick={() => setBreakdownTarget(null)}>Close Details</Button>
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
     </div>
   );
 }
