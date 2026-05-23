@@ -25,6 +25,13 @@ import {
 const MODE_LABELS  = { cash: '💵 Cash', upi: '📱 UPI', bank_transfer: '🏦 Bank', cheque: '📄 Cheque', online: '🌐 Online' };
 const STATUS_VARIANT = { paid: 'success', pending: 'warning', under_review: 'info', partial: 'info', overdue: 'danger' };
 
+const getDaysInMonth = (yearMonth) => {
+  if (!yearMonth) return 30;
+  const [y, m] = yearMonth.split('-').map(Number);
+  if (!y || !m) return 30;
+  return new Date(y, m, 0).getDate();
+};
+
 const currentMonth = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -51,10 +58,14 @@ const getMonthName = (yearMonth) => {
 
 const emptyForm = {
   bedId: '', userId: '', amount: '', amountPaid: '',
-  paymentMode: 'cash', paidDate: '', referenceNo: '', notes: '', rentMonth: currentMonth()
+  paymentMode: 'cash', paidDate: '', referenceNo: '', notes: '', rentMonth: currentMonth(),
+  status: 'paid', activeDays: ''
 };
 
 const getActiveDays = (rec) => {
+  if (rec.activeDays !== undefined && rec.activeDays !== null) {
+    return `${rec.activeDays}D`;
+  }
   if (rec.notes && rec.notes.includes("Prorated rent:")) {
     const match = rec.notes.match(/Prorated rent: (\d+) active days/);
     if (match) return `${match[1]}D`;
@@ -63,9 +74,6 @@ const getActiveDays = (rec) => {
     const [y, m] = rec.rentMonth.split("-").map(Number);
     if (y && m) {
       const totalDays = new Date(y, m, 0).getDate();
-      if (rec.amount && rec.bedId?.price && rec.amount < rec.bedId.price) {
-        return `${Math.round((rec.amount / rec.bedId.price) * totalDays)}D`;
-      }
       return `${totalDays}D`;
     }
   }
@@ -88,7 +96,15 @@ export default function RentTracker() {
   const [rejectionNotes, setRejectionNotes] = useState('');
   const [form, setForm]                   = useState(emptyForm);
   const [beds, setBeds]                   = useState([]);
+  const [bedSearch, setBedSearch]         = useState('');
+  const [showBedDropdown, setShowBedDropdown] = useState(false);
   const [breakdownTarget, setBreakdownTarget] = useState(null);
+
+  const filteredBeds = useMemo(() => {
+    if (!bedSearch.trim()) return beds;
+    const term = bedSearch.toLowerCase();
+    return beds.filter(b => b.label.toLowerCase().includes(term));
+  }, [beds, bedSearch]);
 
   // Checkbox state for bulk approval
   const [selectedIds, setSelectedIds]     = useState([]);
@@ -113,6 +129,7 @@ export default function RentTracker() {
   const { data, isLoading } = useQuery({
     queryKey: ['rent', queryParams],
     queryFn: async () => (await getRentPaymentsApi(queryParams)).data?.data,
+    refetchOnWindowFocus: false,
   });
 
   // Inbox Query — fetch all rents pending verification ('under_review')
@@ -123,6 +140,7 @@ export default function RentTracker() {
       status: 'under_review',
       limit: 100
     })).data?.data,
+    refetchOnWindowFocus: false,
   });
 
   const approvals = approvalsData?.records || [];
@@ -131,6 +149,7 @@ export default function RentTracker() {
     queryKey: ['rent-summary', filterPgId, filterMonth],
     queryFn: async () => (await getRentSummaryApi({ pgId: filterPgId || undefined, rentMonth: filterMonth || undefined })).data?.data,
     enabled: !!filterPgId || !!filterMonth,
+    refetchOnWindowFocus: false,
   });
 
   const records = data?.records || [];
@@ -138,15 +157,24 @@ export default function RentTracker() {
   const totalPages = Math.ceil(total / LIMIT);
 
   // Load beds when a PG is selected in the record modal
-  const loadBeds = async (pgId) => {
+  const loadBeds = async (pgId, month) => {
     if (!pgId) { setBeds([]); return; }
     try {
-      const res = await getRoomsApi({ pgId, withBeds: true });
-      const allBeds = (res.data?.data?.rooms || []).flatMap(r =>
-        (r.beds || []).filter(b => b.status === 'occupied').map(b => ({
-          ...b,
-          label: `Bed ${b.bedNumber} (Room ${r.roomNumber} - ${b.userId?.name || 'Tenant'}) — ₹${b.price}/mo`,
-        }))
+      const targetMonth = month || form.rentMonth;
+      const [roomsRes, rentsRes] = await Promise.all([
+        getRoomsApi(pgId),
+        getRentPaymentsApi({ pgId, rentMonth: targetMonth, limit: 100 })
+      ]);
+      const existingBedIds = new Set(
+        (rentsRes.data?.data?.records || []).map(r => String(r.bedId?._id))
+      );
+      const allBeds = (roomsRes.data?.data || []).flatMap(r =>
+        (r.beds || [])
+          .filter(b => b.status === 'occupied' && !existingBedIds.has(String(b._id)))
+          .map(b => ({
+            ...b,
+            label: `Bed ${b.bedNumber} (Room ${r.roomNumber} - ${b.userId?.name || 'Tenant'}) — ₹${b.price}/mo`,
+          }))
       );
       setBeds(allBeds);
     } catch { setBeds([]); }
@@ -154,12 +182,14 @@ export default function RentTracker() {
 
   const handleBedSelect = (bedId) => {
     const bed = beds.find(b => b._id === bedId);
+    const totalDays = getDaysInMonth(form.rentMonth);
     setForm(f => ({
       ...f,
       bedId,
       userId: bed?.userId?._id || '',
       amount: bed?.price || '',
-      amountPaid: bed?.price || '',
+      amountPaid: f.status === 'paid' ? (bed?.price || '') : (f.status === 'pending' ? 0 : f.amountPaid),
+      activeDays: totalDays,
     }));
   };
 
@@ -254,6 +284,8 @@ export default function RentTracker() {
       notes: rec.notes || '',
       rentMonth: rec.rentMonth,
       bedId: rec.bedId?._id, userId: rec.userId?._id,
+      status: rec.status || 'paid',
+      activeDays: rec.activeDays !== undefined && rec.activeDays !== null ? rec.activeDays : getDaysInMonth(rec.rentMonth)
     });
     setModal('edit');
   };
@@ -265,6 +297,10 @@ export default function RentTracker() {
   };
 
   const handleSubmit = () => {
+    if (modal === 'record' && !form.bedId) {
+      toast.error('Please select an occupied tenant bed from the list');
+      return;
+    }
     if (form.amount !== '' && Number(form.amount) < 0) {
       toast.error('Rent amount cannot be negative');
       return;
@@ -295,7 +331,14 @@ export default function RentTracker() {
           <Button variant="ghost" size="sm" onClick={() => { setForm(f => ({ ...f, _genPgId: filterPgId || '' })); setModal('generate'); }} style={{ gap: 6 }}>
             <Zap size={14} /> Generate Rent Bills
           </Button>
-          <Button size="sm" onClick={() => { setForm(emptyForm); setModal('record'); loadBeds(filterPgId); }} style={{ gap: 6 }}>
+          <Button size="sm" onClick={() => { 
+            const initialForm = { ...emptyForm, _pgId: filterPgId || '' };
+            setForm(initialForm); 
+            setBedSearch('');
+            setShowBedDropdown(false);
+            setModal('record'); 
+            loadBeds(filterPgId, initialForm.rentMonth); 
+          }} style={{ gap: 6 }}>
             <Plus size={14} /> Record Payment
           </Button>
         </div>
@@ -305,7 +348,13 @@ export default function RentTracker() {
       {summary && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
           {[
-            { icon: <IndianRupee size={18} />, label: 'Collected', value: f(summary.totalCollected), sub: `of ${f(summary.totalDue)}`, color: 'var(--success)' },
+            { 
+              icon: <IndianRupee size={18} />, 
+              label: 'Collected', 
+              value: f(summary.totalCollected), 
+              sub: `${summary.totalDue > 0 ? Math.round((summary.totalCollected / summary.totalDue) * 100) : 0}% of ${f(summary.totalDue)}`, 
+              color: 'var(--success)' 
+            },
             { icon: <TrendingUp size={18} />, label: 'Collection Rate', value: `${summary.paid || 0} / ${summary.tenantCount || 0}`, sub: `${summary.collectionRate}% tenants paid`, color: 'var(--primary)' },
             { icon: <Clock size={18} />, label: 'Pending', value: (summary.pending || 0) + (summary.partial || 0) + (summary.under_review || 0), sub: 'payments due', color: 'var(--warning)' },
             { icon: <AlertCircle size={18} />, label: 'Overdue', value: summary.overdue || 0, sub: 'past due date', color: 'var(--danger)' },
@@ -682,20 +731,82 @@ export default function RentTracker() {
                 <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>
                   SELECT PG <span style={{ color: 'var(--danger)' }}>*</span>
                 </label>
-                <select className="form-control" required value={form._pgId || filterPgId}
-                  onChange={e => { setForm(f => ({ ...f, _pgId: e.target.value, bedId: '', userId: '' })); loadBeds(e.target.value); }}>
+                <select className="form-control" required value={form._pgId || ''}
+                  onChange={e => { 
+                    const newPg = e.target.value;
+                    setForm(f => ({ ...f, _pgId: newPg, bedId: '', userId: '' })); 
+                    setBedSearch('');
+                    setShowBedDropdown(false);
+                    loadBeds(newPg, form.rentMonth); 
+                  }}>
                   <option value="">-- Select PG --</option>
                   {pgs.map(pg => <option key={pg._id} value={pg._id}>{pg.name}</option>)}
                 </select>
               </div>
-              <div>
+              <div style={{ position: 'relative' }}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>
                   SELECT TENANT BED <span style={{ color: 'var(--danger)' }}>*</span>
                 </label>
-                <select className="form-control" required value={form.bedId} onChange={e => handleBedSelect(e.target.value)}>
-                  <option value="">-- Select occupied bed --</option>
-                  {beds.map(b => <option key={b._id} value={b._id}>{b.label}</option>)}
-                </select>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="🔍 Type tenant name, bed no, or room no..."
+                  value={bedSearch}
+                  onFocus={() => setShowBedDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowBedDropdown(false), 200)}
+                  onChange={e => {
+                    setBedSearch(e.target.value);
+                    setShowBedDropdown(true);
+                  }}
+                  required={!form.bedId}
+                />
+                <span style={{ fontSize: 10, color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
+                  ℹ️ Only displaying occupied beds that do not have an existing rent record for the selected month.
+                </span>
+                
+                {showBedDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 100,
+                    background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 8,
+                    maxHeight: 200,
+                    overflowY: 'auto',
+                    marginTop: 4,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                  }}>
+                    {filteredBeds.length === 0 ? (
+                      <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-muted)' }}>
+                        No occupied beds found matching search
+                      </div>
+                    ) : (
+                      filteredBeds.map(b => (
+                        <div
+                          key={b._id}
+                          onMouseDown={() => {
+                            handleBedSelect(b._id);
+                            setBedSearch(b.label.split(' — ')[0]);
+                            setShowBedDropdown(false);
+                          }}
+                          style={{
+                            padding: '8px 12px',
+                            fontSize: 12,
+                            cursor: 'pointer',
+                            background: form.bedId === b._id ? 'var(--primary-light)' : 'transparent',
+                            color: form.bedId === b._id ? 'var(--primary)' : 'var(--text-primary)',
+                            borderBottom: '1px solid var(--border-light)'
+                          }}
+                        >
+                          {b.label}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -708,13 +819,87 @@ export default function RentTracker() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <Input label="Rent Month" type="month" value={form.rentMonth} required
-              onChange={e => setForm(f => ({ ...f, rentMonth: e.target.value }))} />
+              onChange={e => {
+                const newMonth = e.target.value;
+                const totalDays = getDaysInMonth(newMonth);
+                setForm(f => ({ 
+                  ...f, 
+                  rentMonth: newMonth, 
+                  bedId: '', 
+                  userId: '', 
+                  amount: '', 
+                  amountPaid: '', 
+                  activeDays: totalDays 
+                }));
+                setBedSearch('');
+                loadBeds(form._pgId || filterPgId, newMonth);
+              }} />
+            
+            <Input 
+              label="Occupied Days" 
+              type="number" 
+              min="1" 
+              max={getDaysInMonth(form.rentMonth)} 
+              value={form.activeDays} 
+              required
+              onChange={e => {
+                const days = e.target.value === '' ? '' : Number(e.target.value);
+                const totalDays = getDaysInMonth(form.rentMonth);
+                
+                const bed = beds.find(b => b._id === form.bedId) || editTarget?.bedId;
+                const basePrice = bed?.price || form.amount || 0;
+                
+                let calculatedAmount = basePrice;
+                if (days !== '' && days > 0 && days < totalDays) {
+                  calculatedAmount = Math.round((days / totalDays) * basePrice);
+                }
+                
+                setForm(f => {
+                  const newAmountPaid = f.status === 'paid' ? calculatedAmount : (f.status === 'pending' ? 0 : f.amountPaid);
+                  return {
+                    ...f,
+                    activeDays: days,
+                    amount: calculatedAmount,
+                    amountPaid: newAmountPaid
+                  };
+                });
+              }} 
+            />
+
             <Input label="Rent Amount (₹)" type="number" min="0" value={form.amount} required
               onChange={e => {
                 const val = e.target.value;
-                if (val === '' || Number(val) >= 0) setForm(f => ({ ...f, amount: val }));
+                const calculatedAmount = val === '' ? '' : Number(val);
+                setForm(f => {
+                  const newAmountPaid = f.status === 'paid' ? calculatedAmount : (f.status === 'pending' ? 0 : f.amountPaid);
+                  return {
+                    ...f,
+                    amount: calculatedAmount,
+                    amountPaid: newAmountPaid
+                  };
+                });
               }} />
+
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>PAYMENT STATUS</label>
+              <select className="form-control" value={form.status}
+                onChange={e => {
+                  const newStatus = e.target.value;
+                  setForm(f => ({
+                    ...f,
+                    status: newStatus,
+                    amountPaid: newStatus === 'paid' ? f.amount : (newStatus === 'pending' ? 0 : f.amountPaid)
+                  }));
+                }}>
+                <option value="paid">✅ Paid (Full)</option>
+                <option value="pending">⏳ Pending</option>
+                <option value="partial">💵 Partial</option>
+                <option value="under_review">🔍 Under Review</option>
+              </select>
+            </div>
+
             <Input label="Amount Paid (₹)" type="number" min="0" value={form.amountPaid} required
+              disabled={form.status === 'pending' || form.status === 'paid'}
               onChange={e => {
                 const val = e.target.value;
                 if (val === '' || Number(val) >= 0) setForm(f => ({ ...f, amountPaid: val }));
@@ -723,6 +908,7 @@ export default function RentTracker() {
             <div>
               <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>PAYMENT MODE</label>
               <select className="form-control" value={form.paymentMode}
+                disabled={form.status === 'pending'}
                 onChange={e => setForm(f => ({ ...f, paymentMode: e.target.value }))}>
                 <option value="cash">💵 Cash</option>
                 <option value="upi">📱 UPI / Scanner</option>
@@ -731,9 +917,13 @@ export default function RentTracker() {
                 <option value="online">🌐 Online</option>
               </select>
             </div>
+
             <Input label="Payment Date" type="date" value={form.paidDate}
+              disabled={form.status === 'pending'}
               onChange={e => setForm(f => ({ ...f, paidDate: e.target.value }))} />
+            
             <Input label="Reference / Txn ID" value={form.referenceNo}
+              disabled={form.status === 'pending'}
               onChange={e => setForm(f => ({ ...f, referenceNo: e.target.value }))} placeholder="UPI ID, cheque no..." />
           </div>
           <Input label="Notes" value={form.notes}

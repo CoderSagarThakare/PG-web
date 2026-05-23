@@ -25,6 +25,9 @@ const STATUS_LABEL = {
 const MODE_EMOJIS = { cash: '💵 Cash', upi: '📱 UPI', bank_transfer: '🏦 Bank', cheque: '📄 Cheque', online: '🌐 Online' };
 
 const getActiveDays = (rec) => {
+  if (rec.activeDays !== undefined && rec.activeDays !== null) {
+    return `${rec.activeDays}D`;
+  }
   if (rec.notes && rec.notes.includes("Prorated rent:")) {
     const match = rec.notes.match(/Prorated rent: (\d+) active days/);
     if (match) return `${match[1]}D`;
@@ -33,9 +36,6 @@ const getActiveDays = (rec) => {
     const [y, m] = rec.rentMonth.split("-").map(Number);
     if (y && m) {
       const totalDays = new Date(y, m, 0).getDate();
-      if (rec.amount && rec.bedId?.price && rec.amount < rec.bedId.price) {
-        return `${Math.round((rec.amount / rec.bedId.price) * totalDays)}D`;
-      }
       return `${totalDays}D`;
     }
   }
@@ -54,6 +54,7 @@ export default function MyRent() {
   const { data, isLoading } = useQuery({
     queryKey: ['my-rent'],
     queryFn: async () => (await getMyRentPaymentsApi()).data?.data,
+    refetchOnWindowFocus: false,
   });
 
   const records = data?.records || [];
