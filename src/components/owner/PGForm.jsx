@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Input, Button } from '../common';
 import FacilitiesPicker from '../common/FacilitiesPicker';
@@ -11,10 +11,10 @@ const pgTypeOptions = [
 ];
 
 export default function PGForm({ initialData, onSubmit, loading, managers = [], facilitiesList = [], buttonText = 'Submit', onCancel }) {
-  const { register, handleSubmit, control, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, reset, setValue, formState: { errors } } = useForm({
     defaultValues: {
       name: '',
-      address: { landmark: '', city: '', state: '', country: 'India', pincode: '' },
+      address: { landmark: '', city: '', state: '', country: 'India', pincode: '', locationDescription: '' },
       pgType: 'unisex',
       description: '',
       managerId: '',
@@ -22,12 +22,27 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
       checkOutTime: '',
       dueDayOfMonth: 10,
       lateFee: 0,
-      facilities: []
+      facilities: [],
+      landline: '',
+      locationLink: '',
+      pgStartedDate: ''
     }
   });
 
+  const [managerSearch, setManagerSearch] = useState('');
+  const [showManagerDropdown, setShowManagerDropdown] = useState(false);
+
   useEffect(() => {
     if (initialData) {
+      // Pre-fill manager search name
+      const currentManagerId = initialData.managerId?._id || initialData.managerId || '';
+      const currentManager = managers.find(m => m._id === currentManagerId);
+      if (currentManager) {
+        setManagerSearch(currentManager.role === 'owner' ? `${currentManager.name} (Me)` : currentManager.name);
+      } else {
+        setManagerSearch('');
+      }
+
       reset({
         name: initialData.name || '',
         address: {
@@ -35,7 +50,8 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
           city: initialData.address?.city || '',
           state: initialData.address?.state || '',
           country: initialData.address?.country || 'India',
-          pincode: initialData.address?.pincode || ''
+          pincode: initialData.address?.pincode || '',
+          locationDescription: initialData.address?.locationDescription || ''
         },
         pgType: initialData.pgType || 'unisex',
         description: initialData.description || '',
@@ -44,13 +60,46 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
         checkOutTime: initialData.checkOutTime || '',
         dueDayOfMonth: initialData.dueDayOfMonth || 10,
         lateFee: initialData.lateFee || 0,
-        facilities: initialData.facilities?.map(f => typeof f === 'object' ? f._id : f) || []
+        facilities: initialData.facilities?.map(f => typeof f === 'object' ? f._id : f) || [],
+        landline: initialData.landline || '',
+        locationLink: initialData.locationLink || '',
+        pgStartedDate: initialData.pgStartedDate ? new Date(initialData.pgStartedDate).toISOString().slice(0, 10) : ''
       });
     }
-  }, [initialData, reset]);
+  }, [initialData, reset, managers]);
+
+  const handleFormSubmit = (data) => {
+    const cleaned = { ...data };
+
+    // Clean empty optional fields so they don't fail backend validation
+    if (!cleaned.landline?.trim()) delete cleaned.landline;
+    if (!cleaned.locationLink?.trim()) delete cleaned.locationLink;
+
+    if (cleaned.address) {
+      cleaned.address = { ...cleaned.address };
+      if (!cleaned.address.locationDescription?.trim()) {
+        delete cleaned.address.locationDescription;
+      }
+      if (cleaned.address.pincode) {
+        cleaned.address.pincode = Number(cleaned.address.pincode);
+      }
+    }
+
+    if (cleaned.dueDayOfMonth) cleaned.dueDayOfMonth = Number(cleaned.dueDayOfMonth);
+    if (cleaned.lateFee) cleaned.lateFee = Number(cleaned.lateFee);
+
+    onSubmit(cleaned);
+  };
+
+  const filteredManagers = managers.filter(m => {
+    const searchString = managerSearch.toLowerCase();
+    const displayName = m.role === 'owner' ? `${m.name} (Me)` : m.name;
+    const email = m.email || '';
+    return displayName.toLowerCase().includes(searchString) || email.toLowerCase().includes(searchString);
+  });
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form onSubmit={handleSubmit(handleFormSubmit)}>
       <div className="form-grid">
         <div className="full">
           <Input 
@@ -96,6 +145,12 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
           min={0}
           required 
         />
+        <Input 
+          label="Location Description (Optional)" 
+          placeholder="e.g. Opposite Central Park, near metro pillar 42"
+          {...register('address.locationDescription')} 
+          error={errors.address?.locationDescription?.message} 
+        />
         
         <Input
           label="PG Type" 
@@ -105,8 +160,12 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
           error={errors.pgType?.message}
           required
         />
-        
-
+        <Input 
+          label="Contact No / Landline (Optional)" 
+          placeholder="e.g. +919876543210"
+          {...register('landline')} 
+          error={errors.landline?.message} 
+        />
         
         <Input 
           label="Check-In Time" 
@@ -148,22 +207,96 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
           required 
         />
 
-        {managers.length > 0 && (
-          <Input
-            label="Assign Manager" 
-            as="select"
-            {...register('managerId', { required: 'Please assign a manager' })}
-            error={errors.managerId?.message}
-            required
-            options={[
-              { value: '', label: '— Select Manager —' },
-              ...managers.map(m => ({ 
-                value: m._id, 
-                label: m.role === 'owner' ? `${m.name} (Me)` : m.name 
-              })),
-            ]}
-          />
-        )}
+        <Input 
+          label="Google Maps Location Link (Optional)" 
+          placeholder="e.g. https://maps.google.com/..."
+          type="url"
+          {...register('locationLink', {
+            validate: (val) => !val || val.startsWith('http://') || val.startsWith('https://') || 'Must be a valid URL'
+          })} 
+          error={errors.locationLink?.message} 
+        />
+        <Input 
+          label="PG Started Date" 
+          type="date" 
+          {...register('pgStartedDate', { required: 'PG Started Date is required' })} 
+          error={errors.pgStartedDate?.message} 
+          required
+        />
+
+        <div className="full" style={{ position: 'relative' }}>
+          <div className="form-group">
+            <label className="form-label" htmlFor="managerSearch">
+              Assign Manager / Owner <span style={{ color: 'var(--danger)' }}>*</span>
+            </label>
+            <input
+              id="managerSearch"
+              type="text"
+              className="form-control"
+              placeholder="Type to search and select manager/owner..."
+              value={managerSearch}
+              onChange={(e) => {
+                const val = e.target.value;
+                setManagerSearch(val);
+                setValue('managerId', '', { shouldValidate: true }); // Clear ID so validation forces choice
+              }}
+              onFocus={() => setShowManagerDropdown(true)}
+              onBlur={() => {
+                // Delay hiding dropdown so onClick event registers
+                setTimeout(() => setShowManagerDropdown(false), 200);
+              }}
+              required
+            />
+            <input type="hidden" {...register('managerId', { required: 'Please assign a manager or owner' })} />
+            {errors.managerId && <span className="form-error">{errors.managerId.message}</span>}
+
+            {showManagerDropdown && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                zIndex: 100,
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                maxHeight: 200,
+                overflowY: 'auto',
+                marginTop: 4,
+                boxShadow: 'var(--shadow-md)'
+              }}>
+                {filteredManagers.length === 0 ? (
+                  <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-muted)' }}>
+                    No managers/owners found matching search
+                  </div>
+                ) : (
+                  filteredManagers.map(m => (
+                    <div
+                      key={m._id}
+                      onClick={() => {
+                        setValue('managerId', m._id, { shouldValidate: true });
+                        setManagerSearch(m.role === 'owner' ? `${m.name} (Me)` : m.name);
+                        setShowManagerDropdown(false);
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        background: 'transparent',
+                        color: 'var(--text-primary)',
+                        borderBottom: '1px solid var(--border-light)'
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = 'var(--bg-hover)'}
+                      onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                    >
+                      {m.role === 'owner' ? `${m.name} (Me)` : m.name} ({m.email})
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
 
         <div className="full">
           <Input 
@@ -196,7 +329,7 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
       </div>
 
       <div className="modal-footer" style={{ marginTop: 24 }}>
-        <Button variant="ghost" type="button" onClick={() => onCancel ? onCancel() : reset()} disabled={loading}>Cancel</Button>
+        <Button variant="ghost" type="button" onClick={() => { setManagerSearch(''); if (onCancel) onCancel(); }} disabled={loading}>Cancel</Button>
         <Button type="submit" loading={loading}>{buttonText}</Button>
       </div>
     </form>

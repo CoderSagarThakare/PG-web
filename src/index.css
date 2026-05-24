@@ -358,19 +358,16 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 .form-error { font-size: 12px; color: var(--danger); }
 
 /* Calendar Picker Icon Styling */
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="month"]::-webkit-calendar-picker-indicator {
+input::-webkit-calendar-picker-indicator {
   filter: invert(1);
   opacity: 0.7;
   cursor: pointer;
 }
-input[type="date"]::-webkit-calendar-picker-indicator:hover,
-input[type="month"]::-webkit-calendar-picker-indicator:hover {
+input::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
 
-[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator,
-[data-theme="light"] input[type="month"]::-webkit-calendar-picker-indicator {
+[data-theme="light"] input::-webkit-calendar-picker-indicator {
   filter: invert(0);
 }
 

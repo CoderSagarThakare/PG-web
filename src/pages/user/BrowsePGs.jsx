@@ -98,7 +98,7 @@ export default function BrowsePGs() {
                 <div className="sleek-card-img">
                   <Building2 size={40} style={{ opacity: 0.1 }} />
                   <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 4, color: 'white', fontSize: 11 }}>
-                    <Star size={12} fill="var(--warning)" color="var(--warning)" /> {pg.rating || 'N/A'}
+                    <Star size={12} fill="var(--warning)" color="var(--warning)" /> {pg.rating ?? 0}
                   </div>
                   <div style={{ position: 'absolute', bottom: 10, left: 10 }}>
                     <Badge variant={pg.pgType === 'male' ? 'info' : pg.pgType === 'female' ? 'danger' : 'accent'}>
@@ -168,7 +168,7 @@ export default function BrowsePGs() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                   <Badge variant="primary" style={{ fontSize: '10px' }}>{pgDetail.pgType}</Badge>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--warning)', fontWeight: 800, fontSize: '12px' }}>
-                    <Star size={14} fill="var(--warning)" /> {pgDetail.rating}
+                    <Star size={14} fill="var(--warning)" /> {pgDetail.rating ?? 0}
                   </div>
                 </div>
                 <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: 4 }}>{pgDetail.name}</h2>

@@ -72,7 +72,7 @@ export default function PGDetails() {
   };
 
   return (
-    <div className="fade-in" style={{ maxWidth: 1000, margin: '0 auto' }}>
+    <div className="fade-in">
       <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <Button variant="ghost" className="btn-icon" onClick={() => navigate('/pg')}>
           <ArrowLeft size={20} />
@@ -82,8 +82,20 @@ export default function PGDetails() {
             <h1 className="page-title">{pg.name}</h1>
             <Badge variant={pgTypeColors[pg.pgType] || 'default'}>{pgTypeLabels[pg.pgType] || pg.pgType}</Badge>
           </div>
-          <p className="page-subtitle" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-            <MapPin size={14} /> {pg.address?.city}, {pg.address?.state} - {pg.address?.pincode}
+          <p className="page-subtitle" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+            <MapPin size={14} /> {pg.address?.landmark && `${pg.address.landmark}, `}{pg.address?.city}, {pg.address?.state} - {pg.address?.pincode}
+            {pg.address?.locationDescription && ` (${pg.address.locationDescription})`}
+            {pg.locationLink && (
+              <a 
+                href={pg.locationLink} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                style={{ color: 'var(--primary)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 8 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                🗺️ View Map
+              </a>
+            )}
           </p>
         </div>
         <div className="page-actions" style={{ display: 'flex', gap: 12 }}>
@@ -145,9 +157,25 @@ export default function PGDetails() {
                 <span className="text-muted" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={14} /> Check Out</span>
                 <span className="font-semibold">{pg.checkOutTime || '—'}</span>
               </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: 8 }}>
+                <span className="text-muted">Rent Due Day</span>
+                <span className="font-semibold">{pg.dueDayOfMonth ? `Day ${pg.dueDayOfMonth}` : '—'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: 8 }}>
+                <span className="text-muted">Late Penalty</span>
+                <span className="font-semibold">{pg.lateFee ? `₹${pg.lateFee}` : '₹0'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: 8 }}>
+                <span className="text-muted">Contact No</span>
+                <span className="font-semibold">{pg.landline || '—'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: 8 }}>
+                <span className="text-muted">Started Date</span>
+                <span className="font-semibold">{pg.pgStartedDate ? new Date(pg.pgStartedDate).toLocaleDateString() : '—'}</span>
+              </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span className="text-muted">Rating</span>
-                <span className="font-semibold">⭐ {pg.rating || 'N/A'}</span>
+                <span className="font-semibold">⭐ {pg.rating ?? 0}</span>
               </div>
             </div>
           </Card>
