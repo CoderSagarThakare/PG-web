@@ -290,6 +290,13 @@ ul { list-style: none; }
 }
 .btn-danger:hover:not(:disabled) { background: var(--danger); color: white; }
 
+.btn-success {
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid rgba(81, 207, 102, 0.3);
+}
+.btn-success:hover:not(:disabled) { background: var(--success); color: #0f1117; transform: translateY(-1px); }
+
 .btn-ghost {
   background: transparent;
   color: var(--text-secondary);

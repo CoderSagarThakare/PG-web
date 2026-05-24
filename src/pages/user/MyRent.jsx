@@ -78,10 +78,6 @@ export default function MyRent() {
   };
 
   const handleSubmitProof = () => {
-    if (!referenceNo.trim()) {
-      toast.error('Please enter the Transaction Reference No / Txn ID');
-      return;
-    }
     if (Number(amountPaid) < 0) {
       toast.error('Amount Paid cannot be negative');
       return;
@@ -91,7 +87,7 @@ export default function MyRent() {
       id: selectedRent._id,
       data: {
         paymentMode,
-        referenceNo,
+        referenceNo: referenceNo.trim() || null,
         amountPaid: Number(amountPaid),
         notes
       }
@@ -313,14 +309,13 @@ export default function MyRent() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <Input
-                label="Transaction ID / UPI Reference No *"
-                required
+                label="Transaction ID / UPI Reference No"
                 value={referenceNo}
                 onChange={e => setReferenceNo(e.target.value)}
-                placeholder="e.g., 312093849182"
+                placeholder="e.g., 312093849182 (Optional)"
               />
               <Input
-                label="Amount Paid (₹) *"
+                label="Amount Paid (₹)"
                 required
                 type="number"
                 min="0"

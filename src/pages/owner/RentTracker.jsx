@@ -14,7 +14,7 @@ import {
   rejectPaymentApi,
   bulkApprovePaymentsApi
 } from '../../api/rent.api';
-import { Badge, Button, Card, Modal, Spinner, EmptyState, Input } from '../../components/common';
+import { Badge, Button, Card, Modal, Spinner, EmptyState, Input, ConfirmModal } from '../../components/common';
 import { getErrorMessage, formatDate, formatDateTime, formatTime } from '../../utils/helpers';
 import {
   IndianRupee, TrendingUp, Clock, AlertCircle, Phone, Plus,
@@ -30,6 +30,34 @@ const getDaysInMonth = (yearMonth) => {
   const [y, m] = yearMonth.split('-').map(Number);
   if (!y || !m) return 30;
   return new Date(y, m, 0).getDate();
+};
+
+const calculateActiveDaysFromCheckIn = (checkInDateStr, rentMonthStr) => {
+  if (!checkInDateStr || !rentMonthStr) return 30;
+  
+  const [rentYear, rentMonth] = rentMonthStr.split('-').map(Number);
+  const checkIn = new Date(checkInDateStr);
+  const checkInYear = checkIn.getFullYear();
+  const checkInMonth = checkIn.getMonth() + 1;
+  const checkInDay = checkIn.getDate();
+  
+  const totalDays = new Date(rentYear, rentMonth, 0).getDate();
+  
+  const rentFirstDate = new Date(rentYear, rentMonth - 1, 1);
+  if (checkIn < rentFirstDate) {
+    return totalDays;
+  }
+  
+  const rentLastDate = new Date(rentYear, rentMonth, 0, 23, 59, 59, 999);
+  if (checkIn > rentLastDate) {
+    return 0;
+  }
+  
+  if (checkInYear === rentYear && checkInMonth === rentMonth) {
+    return (totalDays - checkInDay) + 1;
+  }
+  
+  return totalDays;
 };
 
 const currentMonth = () => {
@@ -59,7 +87,7 @@ const getMonthName = (yearMonth) => {
 const emptyForm = {
   bedId: '', userId: '', amount: '', amountPaid: '',
   paymentMode: 'cash', paidDate: '', referenceNo: '', notes: '', rentMonth: currentMonth(),
-  status: 'paid', activeDays: ''
+  status: 'paid', activeDays: '', joiningDate: ''
 };
 
 const getActiveDays = (rec) => {
@@ -99,6 +127,8 @@ export default function RentTracker() {
   const [bedSearch, setBedSearch]         = useState('');
   const [showBedDropdown, setShowBedDropdown] = useState(false);
   const [breakdownTarget, setBreakdownTarget] = useState(null);
+  const [approveTarget, setApproveTarget] = useState(null);
+  const [showBulkApproveModal, setShowBulkApproveModal] = useState(false);
 
   const filteredBeds = useMemo(() => {
     if (!bedSearch.trim()) return beds;
@@ -183,13 +213,16 @@ export default function RentTracker() {
   const handleBedSelect = (bedId) => {
     const bed = beds.find(b => b._id === bedId);
     const totalDays = getDaysInMonth(form.rentMonth);
+    const defaultCheckInDate = `${form.rentMonth}-01`;
+    
     setForm(f => ({
       ...f,
       bedId,
       userId: bed?.userId?._id || '',
+      joiningDate: defaultCheckInDate,
+      activeDays: totalDays,
       amount: bed?.price || '',
       amountPaid: f.status === 'paid' ? (bed?.price || '') : (f.status === 'pending' ? 0 : f.amountPaid),
-      activeDays: totalDays,
     }));
   };
 
@@ -253,9 +286,7 @@ export default function RentTracker() {
 
   const handleBulkApprove = () => {
     if (selectedIds.length === 0) return;
-    if (window.confirm(`Approve payment proof for all ${selectedIds.length} selected students?`)) {
-      bulkApproveMut.mutate({ rentIds: selectedIds });
-    }
+    setShowBulkApproveModal(true);
   };
 
   const handleSelectAll = (checked) => {
@@ -276,6 +307,7 @@ export default function RentTracker() {
 
   const openEdit = (rec) => {
     setEditTarget(rec);
+    const defaultCheckInDate = `${rec.rentMonth}-01`;
     setForm({
       amount: rec.amount, amountPaid: rec.amountPaid,
       paymentMode: rec.paymentMode || 'cash',
@@ -285,7 +317,8 @@ export default function RentTracker() {
       rentMonth: rec.rentMonth,
       bedId: rec.bedId?._id, userId: rec.userId?._id,
       status: rec.status || 'paid',
-      activeDays: rec.activeDays !== undefined && rec.activeDays !== null ? rec.activeDays : getDaysInMonth(rec.rentMonth)
+      activeDays: rec.activeDays !== undefined && rec.activeDays !== null ? rec.activeDays : getDaysInMonth(rec.rentMonth),
+      joiningDate: defaultCheckInDate
     });
     setModal('edit');
   };
@@ -309,10 +342,19 @@ export default function RentTracker() {
       toast.error('Amount paid cannot be negative');
       return;
     }
+
+    const submitForm = { ...form };
+    if (submitForm.status === 'pending') {
+      submitForm.amountPaid = 0;
+      submitForm.paymentMode = null;
+      submitForm.paidDate = null;
+      submitForm.referenceNo = null;
+    }
+
     if (modal === 'edit') {
-      updateMut.mutate({ id: editTarget._id, data: form });
+      updateMut.mutate({ id: editTarget._id, data: submitForm });
     } else {
-      recordMut.mutate(form);
+      recordMut.mutate(submitForm);
     }
   };
 
@@ -514,7 +556,7 @@ export default function RentTracker() {
                             <FileText size={13} />
                           </button>
                           <button
-                            onClick={() => { if (window.confirm('Confirm and approve this payment?')) approveMut.mutate({ id: rec._id }); }}
+                            onClick={() => setApproveTarget(rec)}
                             style={{
                               padding: '6px 10px',
                               background: 'var(--success-light)',
@@ -836,29 +878,31 @@ export default function RentTracker() {
               }} />
             
             <Input 
-              label="Occupied Days" 
-              type="number" 
-              min="1" 
-              max={getDaysInMonth(form.rentMonth)} 
-              value={form.activeDays} 
+              label="Check-in / Joining Date" 
+              type="date" 
+              value={form.joiningDate} 
               required
               onChange={e => {
-                const days = e.target.value === '' ? '' : Number(e.target.value);
+                const dateStr = e.target.value;
                 const totalDays = getDaysInMonth(form.rentMonth);
+                const activeDays = calculateActiveDaysFromCheckIn(dateStr, form.rentMonth);
                 
                 const bed = beds.find(b => b._id === form.bedId) || editTarget?.bedId;
                 const basePrice = bed?.price || form.amount || 0;
                 
                 let calculatedAmount = basePrice;
-                if (days !== '' && days > 0 && days < totalDays) {
-                  calculatedAmount = Math.round((days / totalDays) * basePrice);
+                if (activeDays < totalDays && activeDays >= 0) {
+                  calculatedAmount = Math.round((activeDays / totalDays) * basePrice);
+                } else if (activeDays === 0) {
+                  calculatedAmount = 0;
                 }
                 
                 setForm(f => {
                   const newAmountPaid = f.status === 'paid' ? calculatedAmount : (f.status === 'pending' ? 0 : f.amountPaid);
                   return {
                     ...f,
-                    activeDays: days,
+                    joiningDate: dateStr,
+                    activeDays: activeDays,
                     amount: calculatedAmount,
                     amountPaid: newAmountPaid
                   };
@@ -888,7 +932,12 @@ export default function RentTracker() {
                   setForm(f => ({
                     ...f,
                     status: newStatus,
-                    amountPaid: newStatus === 'paid' ? f.amount : (newStatus === 'pending' ? 0 : f.amountPaid)
+                    amountPaid: newStatus === 'paid' ? f.amount : (newStatus === 'pending' ? 0 : f.amountPaid),
+                    ...(newStatus === 'pending' && {
+                      paymentMode: null,
+                      paidDate: '',
+                      referenceNo: '',
+                    })
                   }));
                 }}>
                 <option value="paid">✅ Paid (Full)</option>
@@ -907,9 +956,10 @@ export default function RentTracker() {
 
             <div>
               <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>PAYMENT MODE</label>
-              <select className="form-control" value={form.paymentMode}
+              <select className="form-control" value={form.status === 'pending' ? '' : (form.paymentMode || '')}
                 disabled={form.status === 'pending'}
-                onChange={e => setForm(f => ({ ...f, paymentMode: e.target.value }))}>
+                onChange={e => setForm(f => ({ ...f, paymentMode: e.target.value || null }))}>
+                {form.status === 'pending' ? <option value="">— No Payment Mode —</option> : null}
                 <option value="cash">💵 Cash</option>
                 <option value="upi">📱 UPI / Scanner</option>
                 <option value="bank_transfer">🏦 Bank Transfer</option>
@@ -918,11 +968,11 @@ export default function RentTracker() {
               </select>
             </div>
 
-            <Input label="Payment Date" type="date" value={form.paidDate}
+            <Input label="Payment Date" type="date" value={form.status === 'pending' ? '' : form.paidDate}
               disabled={form.status === 'pending'}
               onChange={e => setForm(f => ({ ...f, paidDate: e.target.value }))} />
             
-            <Input label="Reference / Txn ID" value={form.referenceNo}
+            <Input label="Reference / Txn ID" value={form.status === 'pending' ? '' : form.referenceNo}
               disabled={form.status === 'pending'}
               onChange={e => setForm(f => ({ ...f, referenceNo: e.target.value }))} placeholder="UPI ID, cheque no..." />
           </div>
@@ -1130,6 +1180,36 @@ export default function RentTracker() {
           </div>
         )}
       </Modal>
+
+      {/* Confirm Single Approval Modal */}
+      <ConfirmModal
+        isOpen={!!approveTarget}
+        onClose={() => setApproveTarget(null)}
+        onConfirm={() => {
+          approveMut.mutate({ id: approveTarget._id });
+          setApproveTarget(null);
+        }}
+        title="Approve Rent Payment"
+        message={`Are you sure you want to approve the rent payment proof for ${approveTarget?.userId?.name || 'this tenant'}?`}
+        confirmText="Approve Payment"
+        confirmVariant="success"
+        loading={approveMut.isPending}
+      />
+
+      {/* Confirm Bulk Approval Modal */}
+      <ConfirmModal
+        isOpen={showBulkApproveModal}
+        onClose={() => setShowBulkApproveModal(false)}
+        onConfirm={() => {
+          bulkApproveMut.mutate({ rentIds: selectedIds });
+          setShowBulkApproveModal(false);
+        }}
+        title="Bulk Approve Payments"
+        message={`Are you sure you want to verify and approve the payments for all ${selectedIds.length} selected students?`}
+        confirmText="Confirm Bulk Approve"
+        confirmVariant="success"
+        loading={bulkApproveMut.isPending}
+      />
     </div>
   );
 }
