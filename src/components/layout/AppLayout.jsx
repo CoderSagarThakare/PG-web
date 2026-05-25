@@ -1,7 +1,8 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import BottomNav from './BottomNav';
 import { useState, useEffect } from 'react';
-import { Menu, Sun, Moon, X } from 'lucide-react';
+import { Menu, Sun, Moon } from 'lucide-react';
 import { Logo } from '../common';
 
 export default function AppLayout() {
@@ -50,6 +51,9 @@ export default function AppLayout() {
         <div className="page-container fade-in">
           <Outlet />
         </div>
+
+        {/* Mobile Bottom Navigation */}
+        <BottomNav />
       </div>
     </div>
   );
