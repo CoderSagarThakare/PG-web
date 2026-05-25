@@ -1,10 +1,10 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Logo, ConfirmModal } from '../common';
 import {
   LayoutDashboard, Building2, FileText, MessageSquare,
-  Users, Settings, LogOut, User, Home, Search, Sun, Moon, IndianRupee
+  Users, Settings, LogOut, User, Home, Search, Sun, Moon, IndianRupee, X
 } from 'lucide-react';
 
 const ownerNav = [
@@ -38,24 +38,31 @@ const userNav = [
   { label: 'Profile', icon: <User size={18} />, to: '/profile' },
 ];
 
-
 const navByRole = { owner: ownerNav, manager: managerNav, employee: managerNav, user: userNav };
 
-export default function Sidebar() {
-  const { user, logout, isOwner } = useAuth();
+export default function Sidebar({ isOpen, onClose, onThemeChange, currentTheme }) {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const navItems = navByRole[user?.role] || userNav;
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+  const [theme, setTheme] = useState(currentTheme || localStorage.getItem('theme') || 'dark');
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    if (onThemeChange) onThemeChange(newTheme);
+  };
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleNavClick = () => {
+    // Close sidebar on mobile when a link is clicked
+    if (window.innerWidth <= 768 && onClose) onClose();
   };
 
   const initials = user?.name
@@ -70,9 +77,17 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-logo">
+    <aside className={`sidebar${isOpen ? ' open' : ''}`}>
+      <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Logo size={36} subtitle="PG Management" />
+        {/* Close button — only visible on mobile */}
+        <button
+          className="sidebar-close-btn"
+          onClick={onClose}
+          aria-label="Close menu"
+        >
+          <X size={20} />
+        </button>
       </div>
 
       <nav className="sidebar-nav">
@@ -85,6 +100,7 @@ export default function Sidebar() {
               key={item.to}
               to={item.to}
               className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+              onClick={handleNavClick}
             >
               {item.icon}
               {item.label}
@@ -110,7 +126,7 @@ export default function Sidebar() {
             <div style={{ display: 'flex', gap: 4 }}>
               <button
                 className="btn btn-ghost btn-icon btn-sm"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                onClick={toggleTheme}
                 title="Toggle Theme"
                 style={{ padding: '6px' }}
               >

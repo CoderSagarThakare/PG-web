@@ -388,7 +388,7 @@ export default function RentTracker() {
 
       {/* Summary Cards */}
       {summary && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
+        <div className="rent-summary-grid">
           {[
             { 
               icon: <IndianRupee size={18} />, 

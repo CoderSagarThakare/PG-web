@@ -126,8 +126,6 @@ export default function ManageRooms() {
     <div className="fade-in" style={{ 
       background: 'radial-gradient(circle at top right, rgba(108, 99, 255, 0.03), transparent 600px)',
       minHeight: '100%',
-      margin: '-24px',
-      padding: '24px'
     }}>
       <div className="page-header" style={{ marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -161,8 +159,8 @@ export default function ManageRooms() {
 
       {/* Filter Bar */}
       <Card style={{ padding: '16px', marginBottom: 24, background: 'var(--bg-elevated)', border: '1px solid var(--border-light)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 16, alignItems: 'center' }}>
-          <div style={{ position: 'relative' }}>
+        <div className="rooms-filter-bar">
+          <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 0 }}>
             <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input 
               type="text" 
@@ -174,12 +172,12 @@ export default function ManageRooms() {
             />
           </div>
           
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <select 
               className="form-control" 
               value={typeFilter} 
               onChange={(e) => setTypeFilter(e.target.value)}
-              style={{ height: 44, width: 120, background: 'var(--bg-base)' }}
+              style={{ height: 44, minWidth: 110, background: 'var(--bg-base)' }}
             >
               <option value="all">All Types</option>
               <option value="AC">AC</option>
@@ -190,7 +188,7 @@ export default function ManageRooms() {
               className="form-control" 
               value={statusFilter} 
               onChange={(e) => setStatusFilter(e.target.value)}
-              style={{ height: 44, width: 140, background: 'var(--bg-base)' }}
+              style={{ height: 44, minWidth: 130, background: 'var(--bg-base)' }}
             >
               <option value="all">All Status</option>
               <option value="occupied">Has Occupancy</option>

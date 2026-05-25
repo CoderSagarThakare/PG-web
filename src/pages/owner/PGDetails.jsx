@@ -112,13 +112,13 @@ export default function PGDetails() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 32 }}>
+      <div className="stats-grid">
         <StatCard label="Total Rooms" value={pg.totalRooms || 0} color="primary" icon={<Bed size={24} />} />
         <StatCard label="Occupied Beds" value={pg.occupiedBeds || 0} color="warning" icon={<Users size={24} />} />
         <StatCard label="Empty Beds" value={pg.emptyBeds || 0} color="success" icon={<CheckCircle size={24} />} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, alignItems: 'start' }}>
+      <div className="pg-details-grid">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <Card>
             <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
