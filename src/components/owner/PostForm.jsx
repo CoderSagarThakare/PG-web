@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Input, Button } from '../common';
+import { Input, Button, ImageUploader } from '../common';
 import { getPgPriceRangeApi } from '../../api/pg.api';
+import { getPostImageUploadUrlApi, deletePostImageFileApi } from '../../api/post.api';
+import { cn } from '../../utils/cn';
 
 const occupancyOptions = [
   { value: 'single', label: 'Single' }, { value: 'double', label: 'Double' },
@@ -14,10 +16,11 @@ const pgTypeOptions = [
 ];
 
 export default function PostForm({ initialData, onSubmit, loading, pgs = [], buttonText = 'Submit', onCancel }) {
-  const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, watch, setValue, reset, control, formState: { errors } } = useForm({
     defaultValues: {
       pgId: '', title: '', description: '', vacancyCount: '',
       occupancyType: 'single', pgType: 'unisex', minPrice: '', maxPrice: '', availableFrom: '',
+      images: [],
     }
   });
 
@@ -38,6 +41,7 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
         maxPrice: initialData.maxPrice || '',
         availableFrom: initialData.availableFrom ? initialData.availableFrom.slice(0, 10) : '',
         isActive: initialData.isActive !== false,
+        images: initialData.images || [],
       });
       setBasePrice({ min: initialData.minPrice || 0, max: initialData.maxPrice || 0 });
     }
@@ -181,6 +185,26 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
             </div>
           </div>
         )}
+        <div className="col-span-full">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1] block mb-1">
+              Showcase Images
+            </label>
+            <Controller
+              name="images"
+              control={control}
+              render={({ field }) => (
+                <ImageUploader
+                  initialImages={field.value}
+                  onChange={field.onChange}
+                  uploadUrlApi={getPostImageUploadUrlApi}
+                  deleteUrlApi={deletePostImageFileApi}
+                  maxImages={5}
+                />
+              )}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="flex gap-3 justify-end mt-6 pt-5 border-t dark:border-[#2d3052] border-gray-200 flex-col-reverse sm:flex-row">

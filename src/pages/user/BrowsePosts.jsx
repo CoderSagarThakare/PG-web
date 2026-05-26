@@ -196,8 +196,12 @@ export default function BrowsePosts() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {posts.map(post => (
               <div key={post._id} className="bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-xl overflow-hidden transition-all duration-200 flex flex-col hover:border-[#6c63ff] hover:shadow-md cursor-pointer" onClick={() => setViewPost(post)}>
-                <div className="h-[120px] bg-[#242740] dark:bg-[#242740] relative flex items-center justify-center">
-                  <Building2 size={40} className="opacity-10" />
+                <div className="h-[120px] bg-[#242740] dark:bg-[#242740] relative flex items-center justify-center overflow-hidden">
+                  {post.images && post.images.length > 0 ? (
+                    <img src={post.images[0]} alt={post.title} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                  ) : (
+                    <Building2 size={40} className="opacity-10" />
+                  )}
                   <div className="absolute top-2.5 right-2.5 bg-[#6c63ff] text-white px-2.5 py-1 rounded-md font-black text-[13px]">{formatPrice(post.minPrice)} - {formatPrice(post.maxPrice)}</div>
                   <div className="absolute bottom-2.5 left-2.5">
                     <Badge variant={post.pgType === 'male' ? 'info' : post.pgType === 'female' ? 'danger' : 'accent'}>
@@ -317,10 +321,14 @@ export default function BrowsePosts() {
       >
         {viewPost && (
           <div className="fade-in">
-            <div className="flex gap-6 mb-6">
+            <div className="flex gap-6 mb-6 flex-col sm:flex-row">
               <div className="flex-1">
                 <div className="relative h-[200px] dark:bg-[#242740] bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden border border-gray-200 dark:border-[#2d3052]">
-                  <Building2 size={64} className="opacity-10" />
+                  {viewPost.images && viewPost.images.length > 0 ? (
+                    <img src={viewPost.images[0]} alt={viewPost.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <Building2 size={64} className="opacity-10" />
+                  )}
                   <div className="absolute bottom-3 left-3 flex gap-2">
                     <Badge variant="primary">{viewPost.pgType}</Badge>
                     <Badge variant="accent">{viewPost.occupancyType}</Badge>
@@ -383,6 +391,19 @@ export default function BrowsePosts() {
                       <div className="w-1.5 h-1.5 rounded-full bg-[#00d4aa]" />
                       {f.name}
                     </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {viewPost.images && viewPost.images.length > 0 && (
+              <div className="detail-section mt-5">
+                <div className="detail-section-title">Vacancy Gallery</div>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {viewPost.images.map((img, idx) => (
+                    <a key={idx} href={img} target="_blank" rel="noopener noreferrer" className="aspect-video rounded-lg overflow-hidden border border-gray-200 dark:border-[#2d3052] block hover:border-[#6c63ff] transition-all">
+                      <img src={img} alt={`Showcase ${idx + 1}`} className="w-full h-full object-cover" />
+                    </a>
                   ))}
                 </div>
               </div>
