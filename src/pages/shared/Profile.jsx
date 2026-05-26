@@ -36,7 +36,8 @@ export default function Profile() {
       name: '', email: '', mobNo1: '', mobNo2: '',
       address: { city: '', state: '', pincode: '' },
       aadharNumber: '',
-      aadharFileKey: ''
+      aadharFileKey: '',
+      gender: '',
     }
   });
 
@@ -82,7 +83,8 @@ export default function Profile() {
           pincode: user.address?.pincode || ''
         },
         aadharNumber: user.aadharNumber || '',
-        aadharFileKey: user.aadharFileKey || ''
+        aadharFileKey: user.aadharFileKey || '',
+        gender: user.gender || '',
       });
       setAvatarUrl(user.picture || null);
       setAadharFileUrl(user.aadharFileUrl || null);
@@ -159,8 +161,10 @@ export default function Profile() {
       toast.error('Aadhaar card document is required and must be verified.');
       return;
     }
+    // Send null for empty gender so backend clears it
+    const payload = { ...data, gender: data.gender || null };
     isSavedRef.current = true;
-    updateMut.mutate(data);
+    updateMut.mutate(payload);
   };
 
   const handleAvatarSelect = async (e) => {
@@ -509,6 +513,48 @@ export default function Profile() {
                   {...register('mobNo2', { pattern: { value: /^[0-9]{10}$/, message: 'Must be 10 digits' } })}
                   error={errors.mobNo2?.message} maxLength={10}
                 />
+
+                {/* Gender selector */}
+                <div className="col-span-full flex flex-col gap-2">
+                  <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1]">
+                    Gender <span className="text-[11px] text-gray-400 dark:text-[#6b6e82] font-normal">(optional)</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: 'male',           label: '♂ Male' },
+                      { value: 'female',         label: '♀ Female' },
+                      { value: 'transgender',    label: '⚧ Transgender' },
+                      { value: 'preferNotToSay', label: '🔒 Prefer not to say' },
+                    ].map(opt => {
+                      const selected = watch('gender') === opt.value;
+                      return (
+                        <label
+                          key={opt.value}
+                          className={cn(
+                            'flex items-center gap-2 px-3.5 py-2 rounded-xl border-2 cursor-pointer select-none transition-all duration-150 text-[13px] font-semibold',
+                            selected
+                              ? 'border-[#6c63ff] bg-[#6c63ff]/10 text-[#6c63ff] dark:text-[#a8a2ff]'
+                              : 'border-gray-200 dark:border-[#2d3052] text-gray-500 dark:text-[#6b6e82] hover:border-[#6c63ff]/50 hover:bg-[#6c63ff]/5'
+                          )}
+                        >
+                          <input
+                            type="radio"
+                            value={opt.value}
+                            {...register('gender')}
+                            className="sr-only"
+                          />
+                          <span className={cn(
+                            'w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all',
+                            selected ? 'border-[#6c63ff] bg-[#6c63ff]' : 'border-gray-300 dark:border-[#2d3052]'
+                          )}>
+                            {selected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </span>
+                          {opt.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </Card>
 
