@@ -94,7 +94,7 @@ export default function ManagePosts() {
           {posts.map(post => (
             <Card key={post._id} hover className="p-3 min-w-0">
               <div className="flex items-center justify-between mb-3">
-                <Badge variant={post.isActive ? 'success' : 'danger'} style={{ fontSize: 9, padding: '2px 6px' }}>{post.isActive ? 'Active' : 'Inactive'}</Badge>
+                <Badge variant={post.isActive ? 'success' : 'danger'} className="text-[10px] px-1.5 py-0.5">{post.isActive ? 'Active' : 'Inactive'}</Badge>
                 <span className="text-[10px] dark:text-[#6b6e82] text-gray-500">{formatDate(post.createdAt)}</span>
               </div>
 

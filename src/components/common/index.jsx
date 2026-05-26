@@ -26,24 +26,28 @@ export const EmptyState = ({ icon, title, description, action }) => (
 
 // ── Badge ──────────────────────────────────────────────────────────────────────
 const badgeVariants = {
-  default:  'bg-gray-100 text-gray-600 dark:bg-[#242740] dark:text-[#a0a3b1]',
-  success:  'bg-[#51cf66]/12 text-[#51cf66]',
-  danger:   'bg-[#ff4d6d]/12 text-[#ff4d6d]',
-  warning:  'bg-[#ffa94d]/12 text-[#ffa94d]',
-  info:     'bg-[#6c63ff]/15 text-[#6c63ff]',
-  purple:   'bg-[#cc5de8]/12 text-[#cc5de8]',
-  accent:   'bg-[#00d4aa]/12 text-[#00d4aa]',
-  dark:     'bg-gray-200 text-gray-700 dark:bg-[#a0a3b1]/12 dark:text-[#a0a3b1]',
-  owner:    'bg-[#ffa94d]/15 text-[#ffa94d]',
-  manager:  'bg-[#6c63ff]/15 text-[#6c63ff]',
-  user:     'bg-[#00d4aa]/12 text-[#00d4aa]',
+  default:  'bg-gray-100 text-gray-600 dark:bg-[#242740] dark:text-[#a0a3b1] border border-gray-200/50 dark:border-[#2d3052]',
+  success:  'bg-[#51cf66]/15 dark:bg-[#51cf66]/20 text-[#51cf66] border border-[#51cf66]/30',
+  danger:   'bg-[#ff4d6d]/15 dark:bg-[#ff4d6d]/20 text-[#ff4d6d] border border-[#ff4d6d]/30',
+  warning:  'bg-[#ffa94d]/15 dark:bg-[#ffa94d]/20 text-[#ffa94d] border border-[#ffa94d]/30',
+  info:     'bg-[#6c63ff]/15 dark:bg-[#6c63ff]/20 text-[#6c63ff] border border-[#6c63ff]/30',
+  purple:   'bg-[#cc5de8]/15 dark:bg-[#cc5de8]/20 text-[#cc5de8] border border-[#cc5de8]/30',
+  accent:   'bg-[#00d4aa]/15 dark:bg-[#00d4aa]/20 text-[#00d4aa] border border-[#00d4aa]/30',
+  dark:     'bg-gray-200 text-gray-700 dark:bg-[#a0a3b1]/15 dark:text-[#a0a3b1] border border-gray-300 dark:border-[#a0a3b1]/30',
+  owner:    'bg-[#ffa94d]/15 dark:bg-[#ffa94d]/20 text-[#ffa94d] border border-[#ffa94d]/30',
+  manager:  'bg-[#6c63ff]/15 dark:bg-[#6c63ff]/20 text-[#6c63ff] border border-[#6c63ff]/30',
+  user:     'bg-[#00d4aa]/15 dark:bg-[#00d4aa]/20 text-[#00d4aa] border border-[#00d4aa]/30',
 };
 
-export const Badge = ({ children, variant = 'default' }) => (
-  <span className={cn(
-    'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold capitalize',
-    badgeVariants[variant] ?? badgeVariants.default
-  )}>
+export const Badge = ({ children, variant = 'default', className = '', style = {} }) => (
+  <span
+    className={cn(
+      'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold capitalize',
+      badgeVariants[variant] ?? badgeVariants.default,
+      className
+    )}
+    style={style}
+  >
     {children}
   </span>
 );

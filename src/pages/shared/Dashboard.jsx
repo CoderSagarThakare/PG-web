@@ -13,6 +13,7 @@ const statusConfig = {
   contacted:   { label: 'Contacted',   variant: 'warning' },
   visited:     { label: 'Visited',     variant: 'purple' },
   dealDone:    { label: 'Deal Done',   variant: 'success' },
+  dealdone:    { label: 'Deal Done',   variant: 'success' },
   rejected:    { label: 'Rejected',    variant: 'danger' },
 };
 
@@ -152,7 +153,7 @@ export default function Dashboard() {
           ) : (
             <div className="flex flex-col">
               {recentEnquiries.map(enq => {
-                const cfg = statusConfig[enq.status] || { label: enq.status, variant: 'default' };
+                const cfg = statusConfig[enq.status?.toLowerCase()] || statusConfig[enq.status] || { label: enq.status, variant: 'default' };
                 return (
                   <div key={enq._id} className="flex items-center gap-3 py-2.5 border-b border-[#2d3052]/50 dark:border-[#2d3052]/50 last:border-0">
                     <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] flex items-center justify-center flex-shrink-0 text-gray-500 dark:text-[#6b6e82]">

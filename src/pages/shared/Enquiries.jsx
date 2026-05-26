@@ -20,8 +20,14 @@ const statusOptions = [
 ];
 
 const statusVariant = {
-  interested: 'info', contacted: 'warning', visited: 'purple',
-  dealDone: 'success', rejected: 'danger', inventoryFull: 'dark',
+  interested: 'info',
+  contacted: 'warning',
+  visited: 'purple',
+  dealdone: 'success',
+  dealDone: 'success',
+  rejected: 'danger',
+  inventoryfull: 'dark',
+  inventoryFull: 'dark',
 };
 
 const LIMIT = 10;
@@ -217,8 +223,8 @@ export default function Enquiries() {
                     <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">
                       <div className="font-medium text-[13px] flex items-center gap-1.5 flex-wrap">
                         {enq.postId?.title || '—'}
-                        {enq.postId?.isDeleted && <Badge variant="danger" style={{ fontSize: 9, padding: '2px 4px' }}>Deleted</Badge>}
-                        {enq.postId && !enq.postId.isActive && !enq.postId.isDeleted && <Badge variant="warning" style={{ fontSize: 9, padding: '2px 4px' }}>Inactive</Badge>}
+                        {enq.postId?.isDeleted && <Badge variant="danger" className="text-[10px] px-1.5 py-0.5">Deleted</Badge>}
+                        {enq.postId && !enq.postId.isActive && !enq.postId.isDeleted && <Badge variant="warning" className="text-[10px] px-1.5 py-0.5">Inactive</Badge>}
                       </div>
                       <div className="text-xs dark:text-[#6b6e82] text-gray-500 mt-1.5 flex items-center gap-1.5 flex-wrap">
                         {enq.postId?.occupancyType && (
@@ -235,7 +241,7 @@ export default function Enquiries() {
                       </div>
                     </td>
                     <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">{enq.pgId?.name || '—'}</td>
-                    <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30"><Badge variant={statusVariant[enq.status] || 'default'}>{enq.status}</Badge></td>
+                    <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30"><Badge variant={statusVariant[enq.status?.toLowerCase()] || statusVariant[enq.status] || 'default'}>{enq.status}</Badge></td>
                     <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">
                       <div className="text-sm font-medium">{formatDate(enq.createdAt)}</div>
                       <div className="text-xs dark:text-[#6b6e82] text-gray-500">{formatTime(enq.createdAt)}</div>
