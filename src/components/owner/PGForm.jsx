@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Input, Button, ImageUploader } from '../common';
 import FacilitiesPicker from '../common/FacilitiesPicker';
-import { getPGImageUploadUrlApi } from '../../api/pg.api';
+import { getPGImageUploadUrlApi, deletePGImageFileApi } from '../../api/pg.api';
 
 const pgTypeOptions = [
   { value: 'male', label: 'Male' },
@@ -322,6 +322,7 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
                   initialImages={field.value}
                   onChange={field.onChange}
                   uploadUrlApi={getPGImageUploadUrlApi}
+                  deleteUrlApi={deletePGImageFileApi}
                   maxImages={10}
                 />
               )}

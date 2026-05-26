@@ -6,6 +6,7 @@ export default function ImageUploader({
   initialImages = [], 
   onChange, 
   uploadUrlApi, 
+  deleteUrlApi, 
   maxImages = 10 
 }) {
   const [images, setImages] = useState([]);
@@ -121,17 +122,14 @@ export default function ImageUploader({
 
     if (newItems.length === 0) return;
 
-    setImages(prev => {
-      const updated = [...prev, ...newItems];
-      // Trigger upload for each new file asynchronously
-      newItems.forEach(item => uploadFile(item));
-      return updated;
-    });
+    setImages(prev => [...prev, ...newItems]);
+    newItems.forEach(item => uploadFile(item));
   };
 
-  const removeImage = (id) => {
+  const removeImage = async (id) => {
+    let target = null;
     setImages(prev => {
-      const target = prev.find(img => img.id === id);
+      target = prev.find(img => img.id === id);
       if (target && target.url && target.url.startsWith('blob:')) {
         URL.revokeObjectURL(target.url);
       }
@@ -139,6 +137,14 @@ export default function ImageUploader({
       handleImagesChange(updated);
       return updated;
     });
+
+    if (target && target.isNew && target.status === 'success' && target.key && deleteUrlApi) {
+      try {
+        await deleteUrlApi(target.key);
+      } catch (err) {
+        console.error('Failed to clean up S3 file:', err);
+      }
+    }
   };
 
   const triggerFileSelect = () => {
