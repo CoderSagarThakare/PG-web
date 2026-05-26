@@ -290,3 +290,4 @@ export const Pagination = ({ currentPage, totalResults, limit, onPageChange, onL
 };
 
 export { Logo } from './Logo';
+export { default as ImageUploader } from './ImageUploader';

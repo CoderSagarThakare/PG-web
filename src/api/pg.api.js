@@ -7,6 +7,8 @@ export const getPgPriceRangeApi = (pgId) => api.get(`/pg/${pgId}/price-range`);
 export const createPGApi = (data) => api.post('/pg', data);
 export const updatePGApi = (pgId, data) => api.patch(`/pg/${pgId}`, data);
 export const deletePGApi = (pgId) => api.delete(`/pg/${pgId}`);
+export const getPGImageUploadUrlApi = (fileName, fileType) =>
+  api.get('/pg/upload-url', { params: { fileName, fileType } });
 
 // Manager PG access
 export const getManagerPGsApi = (params) => api.get('/post', { params });

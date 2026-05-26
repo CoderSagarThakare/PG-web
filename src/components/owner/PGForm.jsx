@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Input, Button } from '../common';
+import { Input, Button, ImageUploader } from '../common';
 import FacilitiesPicker from '../common/FacilitiesPicker';
+import { getPGImageUploadUrlApi } from '../../api/pg.api';
 
 const pgTypeOptions = [
   { value: 'male', label: 'Male' },
@@ -25,7 +26,8 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
       facilities: [],
       landline: '',
       locationLink: '',
-      pgStartedDate: ''
+      pgStartedDate: '',
+      images: []
     }
   });
 
@@ -63,7 +65,8 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
         facilities: initialData.facilities?.map(f => typeof f === 'object' ? f._id : f) || [],
         landline: initialData.landline || '',
         locationLink: initialData.locationLink || '',
-        pgStartedDate: initialData.pgStartedDate ? new Date(initialData.pgStartedDate).toISOString().slice(0, 10) : ''
+        pgStartedDate: initialData.pgStartedDate ? new Date(initialData.pgStartedDate).toISOString().slice(0, 10) : '',
+        images: initialData.images || []
       });
     }
   }, [initialData, reset, managers]);
@@ -303,6 +306,26 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
               )}
             />
             {errors.facilities && <span className="text-xs text-[#ff4d6d] font-medium mt-1 block">{errors.facilities.message}</span>}
+          </div>
+        </div>
+
+        <div className="col-span-full">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1] block mb-1">
+              Showcase Images
+            </label>
+            <Controller
+              name="images"
+              control={control}
+              render={({ field }) => (
+                <ImageUploader
+                  initialImages={field.value}
+                  onChange={field.onChange}
+                  uploadUrlApi={getPGImageUploadUrlApi}
+                  maxImages={10}
+                />
+              )}
+            />
           </div>
         </div>
       </div>

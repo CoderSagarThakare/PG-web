@@ -96,9 +96,13 @@ export default function BrowsePGs() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {pgs.map(pg => (
               <div key={pg._id} className="bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-xl overflow-hidden transition-all duration-200 flex flex-col hover:border-[#6c63ff] hover:shadow-md cursor-pointer" onClick={() => setSelectedPGId(pg._id)}>
-                <div className="h-[120px] bg-[#242740] dark:bg-[#242740] relative flex items-center justify-center">
-                  <Building2 size={40} className="opacity-10" />
-                  <div className="absolute top-2.5 right-2.5 bg-black/50 px-2 py-0.5 rounded flex items-center gap-1 text-white text-[11px]">
+                <div className="h-[120px] bg-[#242740] dark:bg-[#242740] relative flex items-center justify-center overflow-hidden">
+                  {pg.images && pg.images.length > 0 ? (
+                    <img src={pg.images[0]} alt={pg.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                  ) : (
+                    <Building2 size={40} className="opacity-10" />
+                  )}
+                  <div className="absolute top-2.5 right-2.5 bg-black/50 px-2 py-0.5 rounded flex items-center gap-1 text-white text-[11px] backdrop-blur-sm">
                     <Star size={12} fill="#ffa94d" color="#ffa94d" /> {pg.rating ?? 0}
                   </div>
                   <div className="absolute bottom-2.5 left-2.5">
@@ -165,9 +169,13 @@ export default function BrowsePGs() {
       <Modal isOpen={!!selectedPGId} onClose={() => setSelectedPGId(null)} title={pgDetail?.name || "Loading..."} size="lg">
         {isDetailLoading ? <Spinner center /> : pgDetail && (
           <div className="fade-in text-[13px]">
-            <div className="flex gap-5 mb-5">
-              <div className="flex-1 h-[140px] dark:bg-[#242740] bg-gray-100 rounded-xl flex items-center justify-center">
-                <Building2 size={48} className="opacity-10" />
+            <div className="flex gap-5 mb-5 flex-col sm:flex-row">
+              <div className="flex-1 h-[140px] dark:bg-[#242740] bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden">
+                {pgDetail.images && pgDetail.images.length > 0 ? (
+                  <img src={pgDetail.images[0]} alt={pgDetail.name} className="w-full h-full object-cover" />
+                ) : (
+                  <Building2 size={48} className="opacity-10" />
+                )}
               </div>
               <div className="flex-[1.5]">
                 <div className="flex items-center gap-1.5 mb-2">
@@ -261,6 +269,19 @@ export default function BrowsePGs() {
                 ))}
               </div>
             </div>
+
+            {pgDetail.images && pgDetail.images.length > 0 && (
+              <div className="detail-section mb-5">
+                <div className="detail-section-title text-[11px] mb-2">Property Gallery</div>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {pgDetail.images.map((img, idx) => (
+                    <a key={idx} href={img} target="_blank" rel="noopener noreferrer" className="aspect-video rounded-lg overflow-hidden border border-gray-200 dark:border-[#2d3052] block hover:border-[#6c63ff] transition-all">
+                      <img src={img} alt={`Showcase ${idx + 1}`} className="w-full h-full object-cover" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="p-3 bg-[#6c63ff]/15 rounded-[10px] flex items-center gap-2.5">
               <Info size={20} className="text-[#6c63ff]" />

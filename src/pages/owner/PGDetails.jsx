@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPGByIdApi, updatePGApi, getManagersApi, getFacilitiesApi } from '../../api/pg.api';
 import { Spinner, Card, Badge, EmptyState, Button, StatCard, Modal } from '../../components/common';
 import PGForm from '../../components/owner/PGForm';
-import { Building2, MapPin, ArrowLeft, Bed, Users, FileText, CheckCircle, Clock, Edit2 } from 'lucide-react';
+import { Building2, MapPin, ArrowLeft, Bed, Users, FileText, CheckCircle, Clock, Edit2, Image as ImageIcon } from 'lucide-react';
 import { getErrorMessage } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 
@@ -124,6 +124,27 @@ export default function PGDetails() {
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 items-start">
         {/* Left Column */}
         <div className="flex flex-col gap-6">
+          {pg.images && pg.images.length > 0 && (
+            <Card>
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2 dark:text-[#f0f0f8] text-gray-900">
+                <ImageIcon size={18} className="text-[#6c63ff]" /> Property Gallery
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {pg.images.map((img, idx) => (
+                  <a 
+                    key={idx} 
+                    href={img} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="aspect-video rounded-lg overflow-hidden border border-gray-200 dark:border-[#2d3052] block hover:border-[#6c63ff] hover:scale-[1.02] active:scale-95 transition-all shadow-sm"
+                  >
+                    <img src={img} alt={`Showcase ${idx + 1}`} className="w-full h-full object-cover" />
+                  </a>
+                ))}
+              </div>
+            </Card>
+          )}
+
           <Card>
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2 dark:text-[#f0f0f8] text-gray-900">
               <FileText size={18} className="text-[#6c63ff]" /> About PG
