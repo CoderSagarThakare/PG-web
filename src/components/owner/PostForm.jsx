@@ -62,8 +62,8 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <div className="form-grid">
-        <div className="full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="col-span-full">
           <Input 
             label="Select PG" 
             as="select" 
@@ -74,7 +74,7 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
           />
         </div>
         
-        <div className="full">
+        <div className="col-span-full">
           <Input 
             label="Post Title" 
             {...register('title', { required: 'Title is required' })} 
@@ -84,7 +84,7 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
           />
         </div>
         
-        <div className="full">
+        <div className="col-span-full">
           <Input 
             label="Description" 
             as="textarea" 
@@ -103,16 +103,7 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
           required 
         />
         {selectedPgId && (
-          <div className="full" style={{ 
-            fontSize: 12, 
-            background: 'var(--bg-elevated)', 
-            padding: '10px 14px', 
-            borderRadius: 8, 
-            borderLeft: '4px solid var(--primary)',
-            color: 'var(--text-muted)',
-            marginTop: 4,
-            marginBottom: 4 
-          }}>
+          <div className="col-span-full text-xs bg-gray-50 dark:bg-[#242740] px-3.5 py-2.5 rounded-lg border-l-4 border-[#6c63ff] text-gray-500 dark:text-[#6b6e82] my-1">
             💡 <strong>PG Bed Price Range:</strong> Available beds in this PG cost between <strong>₹{basePrice.min.toLocaleString('en-IN')}</strong> and <strong>₹{basePrice.max.toLocaleString('en-IN')}</strong>. You can customize the Min/Max price fields below.
           </div>
         )}
@@ -141,16 +132,15 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
           required
         />
         
-        <div className="form-group">
-          <label className="form-label">
-            PG Type {!isEdit && <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>(from selected PG)</span>}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1]">
+            PG Type {!isEdit && <span className="text-[11px] text-gray-500 dark:text-[#6b6e82] font-normal">(from selected PG)</span>}
           </label>
           <input
-            className="form-control"
+            className="w-full bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 py-2.5 text-sm transition-colors duration-200 outline-none text-gray-900 dark:text-[#f0f0f8] placeholder:text-gray-400 dark:placeholder:text-[#6b6e82] disabled:opacity-60 disabled:cursor-not-allowed"
             value={pgTypeOptions.find(o => o.value === currentPgType)?.label || currentPgType}
             readOnly
             disabled={!isEdit}
-            style={{ opacity: !isEdit ? 0.6 : 1, cursor: !isEdit ? 'not-allowed' : 'pointer' }}
           />
           <input type="hidden" {...register('pgType')} />
         </div>
@@ -164,29 +154,28 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
         />
 
         {isEdit && (
-          <div className="form-group">
-            <label className="form-label">Post Status</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, height: 42 }}>
-              <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, margin: 0 }}>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1]">Post Status</label>
+            <div className="flex items-center gap-3 h-[42px]">
+              <label className="relative inline-block w-11 h-6 cursor-pointer">
                 <input 
                   type="checkbox" 
                   {...register('isActive')} 
-                  style={{ opacity: 0, width: 0, height: 0 }}
+                  className="sr-only"
                 />
-                <span style={{
-                  position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
-                  backgroundColor: watch('isActive') ? 'var(--success)' : 'var(--border)',
-                  transition: '.3s', borderRadius: 24
-                }}>
-                  <span style={{
-                    position: 'absolute', height: 18, width: 18, left: 3, bottom: 3,
-                    backgroundColor: 'white', transition: '.3s', borderRadius: '50%',
-                    transform: watch('isActive') ? 'translateX(20px)' : 'translateX(0)',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                  }} />
-                </span>
+                <div className={cn(
+                  "w-full h-full rounded-full transition-colors duration-200",
+                  watch('isActive') ? "bg-[#51cf66]" : "bg-gray-300 dark:bg-[#2d3052]"
+                )} />
+                <div className={cn(
+                  "absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-200 shadow-sm",
+                  watch('isActive') ? "translate-x-5" : "translate-x-0"
+                )} />
               </label>
-              <span style={{ fontWeight: 600, fontSize: 14, color: watch('isActive') ? 'var(--success)' : 'var(--text-muted)' }}>
+              <span className={cn(
+                "text-sm font-semibold transition-colors duration-200",
+                watch('isActive') ? "text-[#51cf66]" : "text-gray-500 dark:text-[#6b6e82]"
+              )}>
                 {watch('isActive') ? 'Active' : 'Inactive'}
               </span>
             </div>
@@ -194,7 +183,7 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
         )}
       </div>
 
-      <div className="modal-footer" style={{ marginTop: 24 }}>
+      <div className="flex gap-3 justify-end mt-6 pt-5 border-t dark:border-[#2d3052] border-gray-200 flex-col-reverse sm:flex-row">
         <Button variant="ghost" type="button" onClick={() => onCancel ? onCancel() : reset()} disabled={loading}>Cancel</Button>
         <Button type="submit" loading={loading}>{buttonText}</Button>
       </div>

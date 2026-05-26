@@ -73,16 +73,17 @@ export default function PGDetails() {
 
   return (
     <div className="fade-in">
-      <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-7 flex-wrap gap-4">
         <Button variant="ghost" className="btn-icon" onClick={() => navigate('/pg')}>
           <ArrowLeft size={20} />
         </Button>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <h1 className="page-title">{pg.name}</h1>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900">{pg.name}</h1>
             <Badge variant={pgTypeColors[pg.pgType] || 'default'}>{pgTypeLabels[pg.pgType] || pg.pgType}</Badge>
           </div>
-          <p className="page-subtitle" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+          <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-1 flex items-center gap-1.5 flex-wrap">
             <MapPin size={14} /> {pg.address?.landmark && `${pg.address.landmark}, `}{pg.address?.city}, {pg.address?.state} - {pg.address?.pincode}
             {pg.address?.locationDescription && ` (${pg.address.locationDescription})`}
             {pg.locationLink && (
@@ -90,7 +91,7 @@ export default function PGDetails() {
                 href={pg.locationLink} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                style={{ color: 'var(--primary)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 8 }}
+                className="text-[#6c63ff] font-semibold inline-flex items-center gap-1 ml-2"
                 onClick={(e) => e.stopPropagation()}
               >
                 🗺️ View Map
@@ -98,11 +99,11 @@ export default function PGDetails() {
             )}
           </p>
         </div>
-        <div className="page-actions" style={{ display: 'flex', gap: 12 }}>
+        <div className="flex gap-3 items-center">
           <Button 
             variant="primary" 
             onClick={() => navigate(`/pg/${pgId}/inventory`)}
-            style={{ background: 'linear-gradient(135deg, var(--primary), var(--purple))', border: 'none', boxShadow: 'var(--shadow-md)' }}
+            className="bg-gradient-to-br from-[#6c63ff] to-[#a855f7] border-0 shadow-md"
           >
             <Building2 size={16} /> Manage Inventory
           </Button>
@@ -112,89 +113,93 @@ export default function PGDetails() {
         </div>
       </div>
 
-      <div className="stats-grid">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
         <StatCard label="Total Rooms" value={pg.totalRooms || 0} color="primary" icon={<Bed size={24} />} />
         <StatCard label="Occupied Beds" value={pg.occupiedBeds || 0} color="warning" icon={<Users size={24} />} />
         <StatCard label="Empty Beds" value={pg.emptyBeds || 0} color="success" icon={<CheckCircle size={24} />} />
       </div>
 
-      <div className="pg-details-grid">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* Main Details Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 items-start">
+        {/* Left Column */}
+        <div className="flex flex-col gap-6">
           <Card>
-            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <FileText size={18} className="text-primary" /> About PG
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 dark:text-[#f0f0f8] text-gray-900">
+              <FileText size={18} className="text-[#6c63ff]" /> About PG
             </h2>
-            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+            <p className="dark:text-[#a0a3b1] text-gray-600 leading-relaxed whitespace-pre-wrap">
               {pg.description || 'No description provided.'}
             </p>
           </Card>
 
           <Card>
-            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Building2 size={18} className="text-primary" /> Facilities
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 dark:text-[#f0f0f8] text-gray-900">
+              <Building2 size={18} className="text-[#6c63ff]" /> Facilities
             </h2>
             {pg.facilities?.length > 0 ? (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div className="flex flex-wrap gap-2">
                 {pg.facilities.map(f => (
-                  <Badge key={f._id || f} variant="outline" style={{ padding: '6px 12px' }}>{f.name || f}</Badge>
+                  <Badge key={f._id || f} variant="outline" className="px-3 py-1.5">{f.name || f}</Badge>
                 ))}
               </div>
             ) : (
-              <p className="text-muted">No facilities listed.</p>
+              <p className="dark:text-[#6b6e82] text-gray-500">No facilities listed.</p>
             )}
           </Card>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* Right Column */}
+        <div className="flex flex-col gap-6">
           <Card>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Operational Details</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: 8 }}>
-                <span className="text-muted" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={14} /> Check In</span>
-                <span className="font-semibold">{pg.checkInTime || '—'}</span>
+            <h3 className="text-base font-bold mb-4 dark:text-[#f0f0f8] text-gray-900">Operational Details</h3>
+            <div className="flex flex-col gap-3">
+              <div className="flex justify-between items-center border-b dark:border-[#2d3052]/40 border-gray-200 pb-2">
+                <span className="dark:text-[#6b6e82] text-gray-500 flex items-center gap-1.5 text-sm"><Clock size={14} /> Check In</span>
+                <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">{pg.checkInTime || '—'}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: 8 }}>
-                <span className="text-muted" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={14} /> Check Out</span>
-                <span className="font-semibold">{pg.checkOutTime || '—'}</span>
+              <div className="flex justify-between items-center border-b dark:border-[#2d3052]/40 border-gray-200 pb-2">
+                <span className="dark:text-[#6b6e82] text-gray-500 flex items-center gap-1.5 text-sm"><Clock size={14} /> Check Out</span>
+                <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">{pg.checkOutTime || '—'}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: 8 }}>
-                <span className="text-muted">Rent Due Day</span>
-                <span className="font-semibold">{pg.dueDayOfMonth ? `Day ${pg.dueDayOfMonth}` : '—'}</span>
+              <div className="flex justify-between items-center border-b dark:border-[#2d3052]/40 border-gray-200 pb-2">
+                <span className="dark:text-[#6b6e82] text-gray-500 text-sm">Rent Due Day</span>
+                <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">{pg.dueDayOfMonth ? `Day ${pg.dueDayOfMonth}` : '—'}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: 8 }}>
-                <span className="text-muted">Late Penalty</span>
-                <span className="font-semibold">{pg.lateFee ? `₹${pg.lateFee}` : '₹0'}</span>
+              <div className="flex justify-between items-center border-b dark:border-[#2d3052]/40 border-gray-200 pb-2">
+                <span className="dark:text-[#6b6e82] text-gray-500 text-sm">Late Penalty</span>
+                <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">{pg.lateFee ? `₹${pg.lateFee}` : '₹0'}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: 8 }}>
-                <span className="text-muted">Contact No</span>
-                <span className="font-semibold">{pg.landline || '—'}</span>
+              <div className="flex justify-between items-center border-b dark:border-[#2d3052]/40 border-gray-200 pb-2">
+                <span className="dark:text-[#6b6e82] text-gray-500 text-sm">Contact No</span>
+                <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">{pg.landline || '—'}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: 8 }}>
-                <span className="text-muted">Started Date</span>
-                <span className="font-semibold">{pg.pgStartedDate ? new Date(pg.pgStartedDate).toLocaleDateString() : '—'}</span>
+              <div className="flex justify-between items-center border-b dark:border-[#2d3052]/40 border-gray-200 pb-2">
+                <span className="dark:text-[#6b6e82] text-gray-500 text-sm">Started Date</span>
+                <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">{pg.pgStartedDate ? new Date(pg.pgStartedDate).toLocaleDateString() : '—'}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="text-muted">Rating</span>
-                <span className="font-semibold">⭐ {pg.rating ?? 0}</span>
+              <div className="flex justify-between items-center">
+                <span className="dark:text-[#6b6e82] text-gray-500 text-sm">Rating</span>
+                <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">⭐ {pg.rating ?? 0}</span>
               </div>
             </div>
           </Card>
 
           <Card>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Management</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <h3 className="text-base font-bold mb-4 dark:text-[#f0f0f8] text-gray-900">Management</h3>
+            <div className="flex flex-col gap-4">
               <div>
-                <span className="text-xs text-muted" style={{ textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700 }}>Owner</span>
-                <div style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>{pg.ownerId?.name || 'Unknown'}</div>
-                <div className="text-sm text-muted">{pg.ownerId?.mobNo1}</div>
+                <span className="text-xs dark:text-[#6b6e82] text-gray-500 uppercase tracking-wide font-bold">Owner</span>
+                <div className="text-[15px] font-semibold mt-1 dark:text-[#f0f0f8] text-gray-900">{pg.ownerId?.name || 'Unknown'}</div>
+                <div className="text-sm dark:text-[#6b6e82] text-gray-500">{pg.ownerId?.mobNo1}</div>
               </div>
               {pg.managerId && (
                 <>
-                  <div style={{ height: 1, background: 'var(--border-light)' }} />
+                  <div className="h-px dark:bg-[#2d3052] bg-gray-200" />
                   <div>
-                    <span className="text-xs text-muted" style={{ textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700 }}>Manager</span>
-                    <div style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>{pg.managerId?.name}</div>
-                    <div className="text-sm text-muted">{pg.managerId?.mobNo1}</div>
+                    <span className="text-xs dark:text-[#6b6e82] text-gray-500 uppercase tracking-wide font-bold">Manager</span>
+                    <div className="text-[15px] font-semibold mt-1 dark:text-[#f0f0f8] text-gray-900">{pg.managerId?.name}</div>
+                    <div className="text-sm dark:text-[#6b6e82] text-gray-500">{pg.managerId?.mobNo1}</div>
                   </div>
                 </>
               )}

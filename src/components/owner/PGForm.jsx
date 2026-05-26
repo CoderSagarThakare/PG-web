@@ -100,8 +100,8 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)}>
-      <div className="form-grid">
-        <div className="full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="col-span-full">
           <Input 
             label="PG Name" 
             {...register('name', { required: 'PG Name is required' })} 
@@ -224,49 +224,35 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
           required
         />
 
-        <div className="full" style={{ position: 'relative' }}>
-          <div className="form-group">
-            <label className="form-label" htmlFor="managerSearch">
-              Assign Manager / Owner <span style={{ color: 'var(--danger)' }}>*</span>
+        <div className="col-span-full relative">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1]" htmlFor="managerSearch">
+              Assign Manager / Owner <span className="text-[#ff4d6d]">*</span>
             </label>
             <input
               id="managerSearch"
               type="text"
-              className="form-control"
+              className="w-full h-11 bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] focus:ring-1 focus:ring-[#6c63ff]/40 transition-all placeholder:text-gray-400 dark:placeholder:text-[#6b6e82]"
               placeholder="Type to search and select manager/owner..."
               value={managerSearch}
               onChange={(e) => {
                 const val = e.target.value;
                 setManagerSearch(val);
-                setValue('managerId', '', { shouldValidate: true }); // Clear ID so validation forces choice
+                setValue('managerId', '', { shouldValidate: true });
               }}
               onFocus={() => setShowManagerDropdown(true)}
               onBlur={() => {
-                // Delay hiding dropdown so onClick event registers
                 setTimeout(() => setShowManagerDropdown(false), 200);
               }}
               required
             />
             <input type="hidden" {...register('managerId', { required: 'Please assign a manager or owner' })} />
-            {errors.managerId && <span className="form-error">{errors.managerId.message}</span>}
+            {errors.managerId && <span className="text-xs text-[#ff4d6d] font-medium mt-1 block">{errors.managerId.message}</span>}
 
             {showManagerDropdown && (
-              <div style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                right: 0,
-                zIndex: 100,
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border)',
-                borderRadius: 8,
-                maxHeight: 200,
-                overflowY: 'auto',
-                marginTop: 4,
-                boxShadow: 'var(--shadow-md)'
-              }}>
+              <div className="absolute top-[100%] left-0 right-0 z-[100] bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-lg max-h-[200px] overflow-y-auto mt-1.5 shadow-lg">
                 {filteredManagers.length === 0 ? (
-                  <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-muted)' }}>
+                  <div className="px-3 py-2.5 text-xs text-gray-500 dark:text-[#6b6e82]">
                     No managers/owners found matching search
                   </div>
                 ) : (
@@ -278,16 +264,7 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
                         setManagerSearch(m.role === 'owner' ? `${m.name} (Me)` : m.name);
                         setShowManagerDropdown(false);
                       }}
-                      style={{
-                        padding: '8px 12px',
-                        fontSize: 12,
-                        cursor: 'pointer',
-                        background: 'transparent',
-                        color: 'var(--text-primary)',
-                        borderBottom: '1px solid var(--border-light)'
-                      }}
-                      onMouseEnter={(e) => e.target.style.background = 'var(--bg-hover)'}
-                      onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                      className="px-3.5 py-2.5 cursor-pointer text-xs text-gray-900 dark:text-[#f0f0f8] hover:bg-gray-100 dark:hover:bg-[#242740] transition-colors border-b border-gray-100 dark:border-[#2d3052]/30 last:border-none"
                     >
                       {m.role === 'owner' ? `${m.name} (Me)` : m.name} ({m.email})
                     </div>
@@ -298,7 +275,7 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
           </div>
         </div>
 
-        <div className="full">
+        <div className="col-span-full">
           <Input 
             label="Description" 
             as="textarea" 
@@ -308,9 +285,11 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
           />
         </div>
 
-        <div className="full">
-          <div className="form-group">
-            <label className="form-label">Facilities <span style={{ color: 'var(--danger)' }}>*</span></label>
+        <div className="col-span-full">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1] block mb-1">
+              Facilities <span className="text-[#ff4d6d]">*</span>
+            </label>
             <Controller
               name="facilities"
               control={control}
@@ -323,12 +302,12 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
                 />
               )}
             />
-            {errors.facilities && <span className="form-error">{errors.facilities.message}</span>}
+            {errors.facilities && <span className="text-xs text-[#ff4d6d] font-medium mt-1 block">{errors.facilities.message}</span>}
           </div>
         </div>
       </div>
 
-      <div className="modal-footer" style={{ marginTop: 24 }}>
+      <div className="flex gap-3 justify-end mt-6 pt-5 border-t border-gray-200 dark:border-[#2d3052] flex-col-reverse sm:flex-row">
         <Button variant="ghost" type="button" onClick={() => { setManagerSearch(''); if (onCancel) onCancel(); }} disabled={loading}>Cancel</Button>
         <Button type="submit" loading={loading}>{buttonText}</Button>
       </div>

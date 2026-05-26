@@ -48,27 +48,28 @@ export default function BrowsePGs() {
 
   return (
     <div className="fade-in">
-      <div className="page-header" style={{ marginBottom: 16 }}>
+      <div className="flex items-start justify-between mb-4 flex-wrap gap-4">
         <div>
-          <h1 className="page-title">Explore Properties</h1>
-          <p className="page-subtitle">Find the best PG buildings in your favorite cities</p>
+          <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900">Explore Properties</h1>
+          <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-1">Find the best PG buildings in your favorite cities</p>
         </div>
       </div>
 
-      <div className="search-bar-inline">
-        <div style={{ display: 'flex', alignItems: 'center', flex: 1, paddingLeft: 12 }}>
-          <Search size={16} style={{ color: 'var(--text-muted)' }} />
+      <div className="flex items-center bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-full px-2 py-1 gap-2.5 mb-6 flex-wrap">
+        <div className="flex items-center flex-1 pl-3">
+          <Search size={16} className="dark:text-[#6b6e82] text-gray-400 shrink-0" />
           <input
+            className="bg-transparent border-none outline-none ml-2 text-[13px] dark:text-[#f0f0f8] text-gray-900 placeholder:text-gray-400 dark:placeholder:text-[#6b6e82] w-full"
             placeholder="Search city or property name..."
             value={filters.city}
             onChange={e => setFilters(f => ({ ...f, city: e.target.value }))}
           />
         </div>
         
-        <div className="divider" />
+        <div className="w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
 
         <select 
-          className="pill-select"
+          className="bg-transparent border-none dark:text-[#a0a3b1] text-gray-600 text-[13px] font-semibold px-3 py-2 cursor-pointer outline-none rounded-full hover:bg-[#2d3052]/20 dark:hover:bg-[#2d3052] hover:text-[#f0f0f8]"
           value={filters.pgType}
           onChange={e => setFilters(f => ({ ...f, pgType: e.target.value }))}
         >
@@ -81,9 +82,9 @@ export default function BrowsePGs() {
         <Button 
           variant="ghost" 
           onClick={() => setShowAdvancedFilters(true)}
-          style={{ borderRadius: 99, height: 32, padding: '0 16px', fontSize: 12, marginRight: 4 }}
+          className="rounded-full h-8 px-4 text-[12px] mr-1"
         >
-          <Filter size={14} style={{ marginRight: 6 }} /> More Filters
+          <Filter size={14} className="mr-1.5" /> More Filters
         </Button>
       </div>
 
@@ -92,35 +93,35 @@ export default function BrowsePGs() {
           description="We couldn't find any PGs in this location. Try a different city." />
       ) : (
         <>
-          <div className="browse-grid">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {pgs.map(pg => (
-              <div key={pg._id} className="sleek-card" onClick={() => setSelectedPGId(pg._id)} style={{ cursor: 'pointer' }}>
-                <div className="sleek-card-img">
-                  <Building2 size={40} style={{ opacity: 0.1 }} />
-                  <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 4, color: 'white', fontSize: 11 }}>
-                    <Star size={12} fill="var(--warning)" color="var(--warning)" /> {pg.rating ?? 0}
+              <div key={pg._id} className="bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-xl overflow-hidden transition-all duration-200 flex flex-col hover:border-[#6c63ff] hover:shadow-md cursor-pointer" onClick={() => setSelectedPGId(pg._id)}>
+                <div className="h-[120px] bg-[#242740] dark:bg-[#242740] relative flex items-center justify-center">
+                  <Building2 size={40} className="opacity-10" />
+                  <div className="absolute top-2.5 right-2.5 bg-black/50 px-2 py-0.5 rounded flex items-center gap-1 text-white text-[11px]">
+                    <Star size={12} fill="#ffa94d" color="#ffa94d" /> {pg.rating ?? 0}
                   </div>
-                  <div style={{ position: 'absolute', bottom: 10, left: 10 }}>
+                  <div className="absolute bottom-2.5 left-2.5">
                     <Badge variant={pg.pgType === 'male' ? 'info' : pg.pgType === 'female' ? 'danger' : 'accent'}>
                       {pg.pgType}
                     </Badge>
                   </div>
                 </div>
 
-                <div className="sleek-card-body">
-                  <h3 className="sleek-card-title truncate" style={{ fontSize: 16 }}>{pg.name}</h3>
-                  <div className="property-location" style={{ marginBottom: 12 }}>
-                    <MapPin size={12} className="text-primary" /> {pg.address?.city}, {pg.address?.state}
+                <div className="p-3.5 flex flex-col flex-1">
+                  <h3 className="text-[16px] font-bold dark:text-[#f0f0f8] text-gray-900 mb-1 leading-snug truncate">{pg.name}</h3>
+                  <div className="flex items-center gap-1 text-[12px] dark:text-[#6b6e82] text-gray-500 mb-3">
+                    <MapPin size={12} className="text-[#6c63ff]" /> {pg.address?.city}, {pg.address?.state}
                   </div>
 
-                  <div className="property-tags" style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-                    <Badge variant="primary" style={{ fontSize: 9 }}>{pg.emptyBeds} Beds Left</Badge>
-                    <Badge variant="ghost" style={{ fontSize: 9 }}>{pg.totalRooms} Rooms</Badge>
+                  <div className="flex gap-1.5 mb-3">
+                    <Badge variant="info" className="text-[9px] py-0.5">{pg.emptyBeds} Beds Left</Badge>
+                    <Badge variant="ghost" className="text-[9px] py-0.5">{pg.totalRooms} Rooms</Badge>
                   </div>
 
-                  <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Property View</span>
-                    <ChevronRight size={16} className="text-primary" />
+                  <div className="mt-auto flex justify-between items-center">
+                    <span className="text-[11px] dark:text-[#6b6e82] text-gray-500 font-semibold">Property View</span>
+                    <ChevronRight size={16} className="text-[#6c63ff]" />
                   </div>
                 </div>
               </div>
@@ -139,16 +140,20 @@ export default function BrowsePGs() {
 
       {/* Filters Modal */}
       <Modal isOpen={showAdvancedFilters} onClose={() => setShowAdvancedFilters(false)} title="Property Amenities">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="flex flex-col gap-5">
+          <div className="grid grid-cols-2 gap-3">
             {facilitiesList?.map(fac => (
-              <label key={fac._id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px', background: filters.facilities.includes(fac._id) ? 'var(--primary-light)' : 'transparent', borderRadius: 'var(--radius-sm)' }}>
+              <label
+                key={fac._id}
+                className={`flex items-center gap-2.5 cursor-pointer p-2 rounded-lg transition-all duration-200 ${filters.facilities.includes(fac._id) ? 'bg-[#6c63ff]/15' : 'bg-transparent'}`}
+              >
                 <input 
                   type="checkbox" 
                   checked={filters.facilities.includes(fac._id)}
                   onChange={() => handleFacilityToggle(fac._id)}
+                  className="accent-[#6c63ff]"
                 />
-                <span style={{ fontSize: 13 }}>{fac.name}</span>
+                <span className="text-[13px] dark:text-[#a0a3b1] text-gray-600">{fac.name}</span>
               </label>
             ))}
           </div>
@@ -159,111 +164,111 @@ export default function BrowsePGs() {
       {/* Property Details Modal */}
       <Modal isOpen={!!selectedPGId} onClose={() => setSelectedPGId(null)} title={pgDetail?.name || "Loading..."} size="lg">
         {isDetailLoading ? <Spinner center /> : pgDetail && (
-          <div className="fade-in" style={{ fontSize: '13px' }}>
-            <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
-              <div style={{ flex: 1, height: 140, background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Building2 size={48} style={{ opacity: 0.1 }} />
+          <div className="fade-in text-[13px]">
+            <div className="flex gap-5 mb-5">
+              <div className="flex-1 h-[140px] dark:bg-[#242740] bg-gray-100 rounded-xl flex items-center justify-center">
+                <Building2 size={48} className="opacity-10" />
               </div>
-              <div style={{ flex: 1.5 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                  <Badge variant="primary" style={{ fontSize: '10px' }}>{pgDetail.pgType}</Badge>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--warning)', fontWeight: 800, fontSize: '12px' }}>
-                    <Star size={14} fill="var(--warning)" /> {pgDetail.rating ?? 0}
+              <div className="flex-[1.5]">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Badge variant="info" className="text-[10px] py-0.5">{pgDetail.pgType}</Badge>
+                  <div className="flex items-center gap-1 text-[#ffa94d] font-extrabold text-[12px]">
+                    <Star size={14} fill="#ffa94d" /> {pgDetail.rating ?? 0}
                   </div>
                 </div>
-                <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: 4 }}>{pgDetail.name}</h2>
-                <p style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-muted)', fontSize: '12px' }}>
+                <h2 className="text-[20px] font-extrabold dark:text-[#f0f0f8] text-gray-900 mb-1">{pgDetail.name}</h2>
+                <p className="flex items-center gap-1 dark:text-[#6b6e82] text-gray-500 text-[12px]">
                   <MapPin size={14} /> {pgDetail.address?.city}, {pgDetail.address?.state}
                 </p>
-                <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <div style={{ background: 'var(--bg-base)', padding: '8px 10px', borderRadius: 8 }}>
-                    <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700 }}>CAPACITY</div>
-                    <div style={{ fontSize: '14px', fontWeight: 800 }}>{pgDetail.totalBeds} Beds</div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div className="dark:bg-[#1a1d2e] bg-white px-2.5 py-2 rounded-lg">
+                    <div className="text-[9px] dark:text-[#6b6e82] text-gray-500 font-bold">CAPACITY</div>
+                    <div className="text-[14px] font-extrabold dark:text-[#f0f0f8] text-gray-900">{pgDetail.totalBeds} Beds</div>
                   </div>
-                  <div style={{ background: 'var(--bg-base)', padding: '8px 10px', borderRadius: 8 }}>
-                    <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700 }}>AVAILABLE</div>
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--accent)' }}>{pgDetail.emptyBeds} Vacant</div>
+                  <div className="dark:bg-[#1a1d2e] bg-white px-2.5 py-2 rounded-lg">
+                    <div className="text-[9px] dark:text-[#6b6e82] text-gray-500 font-bold">AVAILABLE</div>
+                    <div className="text-[14px] font-extrabold text-[#00d4aa]">{pgDetail.emptyBeds} Vacant</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
-              <div className="detail-section" style={{ marginBottom: 0 }}>
-                <div className="detail-section-title" style={{ fontSize: '11px', marginBottom: 8 }}>Location Details</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                  <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>{pgDetail.address?.area}</div>
+            <div className="grid grid-cols-2 gap-5 mb-5">
+              <div className="detail-section mb-0">
+                <div className="detail-section-title text-[11px] mb-2">Location Details</div>
+                <div className="text-[12px] dark:text-[#a0a3b1] text-gray-600 leading-[1.4]">
+                  <div className="font-bold dark:text-[#f0f0f8] text-gray-900 mb-0.5">{pgDetail.address?.area}</div>
                   <div>{pgDetail.address?.city}, {pgDetail.address?.state} - {pgDetail.address?.pincode}</div>
-                  <div style={{ marginTop: 4, color: 'var(--primary)', fontWeight: 600 }}>{pgDetail.address?.landmark}</div>
+                  <div className="mt-1 text-[#6c63ff] font-semibold">{pgDetail.address?.landmark}</div>
                 </div>
               </div>
-              <div className="detail-section" style={{ marginBottom: 0 }}>
-                <div className="detail-section-title" style={{ fontSize: '11px', marginBottom: 8 }}>Management Team</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="detail-section mb-0">
+                <div className="detail-section-title text-[11px] mb-2">Management Team</div>
+                <div className="flex flex-col gap-2.5">
                   <div>
-                    <div style={{ fontSize: '11px', fontWeight: 700 }}>{pgDetail.ownerId?.name} <span style={{ color: 'var(--warning)', fontSize: '9px', textTransform: 'uppercase' }}>• Owner</span></div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{pgDetail.ownerId?.mobNo1}</div>
+                    <div className="text-[11px] font-bold dark:text-[#f0f0f8] text-gray-900">{pgDetail.ownerId?.name} <span className="text-[#ffa94d] text-[9px] uppercase">• Owner</span></div>
+                    <div className="text-[10px] dark:text-[#6b6e82] text-gray-500">{pgDetail.ownerId?.mobNo1}</div>
                   </div>
                   {pgDetail.managerId && (
                     <div>
-                      <div style={{ fontSize: '11px', fontWeight: 700 }}>{pgDetail.managerId?.name} <span style={{ color: 'var(--primary)', fontSize: '9px', textTransform: 'uppercase' }}>• Manager</span></div>
-                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{pgDetail.managerId?.mobNo1}</div>
+                      <div className="text-[11px] font-bold dark:text-[#f0f0f8] text-gray-900">{pgDetail.managerId?.name} <span className="text-[#6c63ff] text-[9px] uppercase">• Manager</span></div>
+                      <div className="text-[10px] dark:text-[#6b6e82] text-gray-500">{pgDetail.managerId?.mobNo1}</div>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="detail-section" style={{ marginBottom: 20 }}>
-              <div className="detail-section-title" style={{ fontSize: '11px', marginBottom: 8 }}>Property Inventory</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-                <div style={{ background: 'var(--bg-elevated)', padding: '10px', borderRadius: 8, textAlign: 'center' }}>
-                  <div style={{ fontSize: '18px', fontWeight: 800 }}>{pgDetail.totalRooms}</div>
-                  <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700 }}>ROOMS</div>
+            <div className="detail-section mb-5">
+              <div className="detail-section-title text-[11px] mb-2">Property Inventory</div>
+              <div className="grid grid-cols-4 gap-2.5">
+                <div className="dark:bg-[#242740] bg-gray-100 p-2.5 rounded-lg text-center">
+                  <div className="text-[18px] font-extrabold dark:text-[#f0f0f8] text-gray-900">{pgDetail.totalRooms}</div>
+                  <div className="text-[9px] dark:text-[#6b6e82] text-gray-500 font-bold">ROOMS</div>
                 </div>
-                <div style={{ background: 'var(--bg-elevated)', padding: '10px', borderRadius: 8, textAlign: 'center' }}>
-                  <div style={{ fontSize: '18px', fontWeight: 800 }}>{pgDetail.totalBeds}</div>
-                  <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700 }}>TOTAL BEDS</div>
+                <div className="dark:bg-[#242740] bg-gray-100 p-2.5 rounded-lg text-center">
+                  <div className="text-[18px] font-extrabold dark:text-[#f0f0f8] text-gray-900">{pgDetail.totalBeds}</div>
+                  <div className="text-[9px] dark:text-[#6b6e82] text-gray-500 font-bold">TOTAL BEDS</div>
                 </div>
-                <div style={{ background: 'var(--bg-elevated)', padding: '10px', borderRadius: 8, textAlign: 'center' }}>
-                  <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--danger)' }}>{pgDetail.occupiedBeds}</div>
-                  <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700 }}>OCCUPIED</div>
+                <div className="dark:bg-[#242740] bg-gray-100 p-2.5 rounded-lg text-center">
+                  <div className="text-[18px] font-extrabold text-[#ff4d6d]">{pgDetail.occupiedBeds}</div>
+                  <div className="text-[9px] dark:text-[#6b6e82] text-gray-500 font-bold">OCCUPIED</div>
                 </div>
-                <div style={{ background: 'var(--bg-elevated)', padding: '10px', borderRadius: 8, textAlign: 'center' }}>
-                  <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--accent)' }}>{pgDetail.emptyBeds}</div>
-                  <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700 }}>VACANT</div>
+                <div className="dark:bg-[#242740] bg-gray-100 p-2.5 rounded-lg text-center">
+                  <div className="text-[18px] font-extrabold text-[#00d4aa]">{pgDetail.emptyBeds}</div>
+                  <div className="text-[9px] dark:text-[#6b6e82] text-gray-500 font-bold">VACANT</div>
                 </div>
               </div>
             </div>
 
             {pgDetail.description && (
-              <div className="detail-section" style={{ marginBottom: 20 }}>
-                <div className="detail-section-title" style={{ fontSize: '11px', marginBottom: 8 }}>About this Property</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.6, background: 'var(--bg-base)', padding: '12px', borderRadius: '8px', borderLeft: '3px solid var(--primary)' }}>
+              <div className="detail-section mb-5">
+                <div className="detail-section-title text-[11px] mb-2">About this Property</div>
+                <div className="text-[12px] dark:text-[#a0a3b1] text-gray-600 leading-[1.6] dark:bg-[#1a1d2e] bg-white p-3 rounded-lg border-l-[3px] border-[#6c63ff]">
                   {pgDetail.description}
                 </div>
               </div>
             )}
 
-            <div className="detail-section" style={{ marginBottom: 20 }}>
-              <div className="detail-section-title" style={{ fontSize: '11px', marginBottom: 8 }}>Property Amenities</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <div className="detail-section mb-5">
+              <div className="detail-section-title text-[11px] mb-2">Property Amenities</div>
+              <div className="flex flex-wrap gap-1.5">
                 {pgDetail.facilities?.map(f => (
-                  <div key={f._id} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', background: 'var(--bg-elevated)', borderRadius: '99px', fontSize: '10px', border: '1px solid var(--border)', fontWeight: 600 }}>
-                    <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--accent)' }} />
+                  <div key={f._id} className="flex items-center gap-1 px-2 py-1 dark:bg-[#242740] bg-gray-100 rounded-full text-[10px] border border-gray-200 dark:border-[#2d3052] font-semibold dark:text-[#f0f0f8] text-gray-700">
+                    <div className="w-1 h-1 rounded-full bg-[#00d4aa]" />
                     {f.name}
                   </div>
                 ))}
               </div>
             </div>
 
-            <div style={{ padding: '12px', background: 'var(--primary-light)', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Info size={20} className="text-primary" />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '12px' }}>Interested in this Property?</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Book a specific room in this building via Discover Stays.</div>
+            <div className="p-3 bg-[#6c63ff]/15 rounded-[10px] flex items-center gap-2.5">
+              <Info size={20} className="text-[#6c63ff]" />
+              <div className="flex-1">
+                <div className="font-extrabold text-[#6c63ff] text-[12px]">Interested in this Property?</div>
+                <div className="text-[11px] dark:text-[#a0a3b1] text-gray-600">Book a specific room in this building via Discover Stays.</div>
               </div>
-              <Button size="sm" onClick={() => window.location.href = '/browse'} style={{ fontSize: '11px', padding: '6px 12px' }}>Go to Stays</Button>
+              <Button size="sm" onClick={() => window.location.href = '/browse'} className="text-[11px] px-3 py-1.5">Go to Stays</Button>
             </div>
           </div>
         )}

@@ -1,49 +1,45 @@
 import React from 'react';
+import { cn } from '../../utils/cn';
 
 export const Logo = ({ size = 48, showText = true, subtitle, className = '', centered = false }) => {
   return (
     <div 
-      className={`logo-container ${className}`} 
-      style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: centered ? 'center' : 'flex-start',
-        gap: '12px' 
-      }}
+      className={cn(
+        'flex items-center gap-3',
+        centered ? 'justify-center' : 'justify-start',
+        className
+      )}
     >
       <img 
         src="/Logo.png" 
         alt="StaySync Logo" 
+        className="object-contain drop-shadow-md"
         style={{ 
           width: size, 
-          height: size, 
-          objectFit: 'contain',
-          filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))'
+          height: size
         }} 
       />
       {showText && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: centered ? 'center' : 'flex-start' }}>
-          <h1 style={{ 
-            fontSize: size * 0.5, 
-            fontWeight: 800, 
-            margin: 0,
-            lineHeight: 1,
-            background: 'linear-gradient(135deg, var(--primary), var(--accent))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            letterSpacing: '-0.5px'
-          }}>
+        <div className={cn('flex flex-col', centered ? 'items-center' : 'items-start')}>
+          <h1 
+            className="font-extrabold tracking-tight bg-gradient-to-br from-[#6c63ff] to-[#00d4aa] bg-clip-text text-transparent"
+            style={{ 
+              fontSize: size * 0.5, 
+              lineHeight: 1
+            }}
+          >
             StaySync
           </h1>
           {subtitle && (
-            <p style={{ 
-              fontSize: size * 0.28, 
-              color: 'var(--text-muted)', 
-              margin: '4px 0 0 0',
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              lineHeight: 1
-            }}>
+            <p 
+              className="text-gray-500 dark:text-[#6b6e82] uppercase font-semibold"
+              style={{ 
+                fontSize: size * 0.28, 
+                letterSpacing: '1px',
+                lineHeight: 1,
+                marginTop: '4px'
+              }}
+            >
               {subtitle}
             </p>
           )}

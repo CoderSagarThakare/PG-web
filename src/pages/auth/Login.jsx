@@ -41,13 +41,17 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card slide-up">
-        <div className="auth-logo" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0f1117] px-4 py-6 relative overflow-hidden">
+      {/* Decorative background glows */}
+      <div className="absolute w-[600px] h-[600px] bg-[#6c63ff]/10 rounded-full top-[-200px] right-[-200px] blur-3xl pointer-events-none" />
+      <div className="absolute w-[400px] h-[400px] bg-[#00d4aa]/8 rounded-full bottom-[-100px] left-[-100px] blur-3xl pointer-events-none" />
+
+      <div className="bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-2xl p-8 sm:p-11 w-full max-w-[440px] shadow-[0_8px_40px_rgba(0,0,0,0.5)] relative z-10 animate-[slideUp_0.25s_ease]">
+        <div className="text-center mb-8 flex flex-col items-center">
           <Logo size={64} centered subtitle="Sign in to your account" />
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form" style={{ marginTop: '24px' }} noValidate>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-6" noValidate>
           <Input
             label="Email Address"
             name="email"
@@ -72,15 +76,16 @@ export default function Login() {
           </Button>
         </form>
 
-        <div style={{ marginTop: 20, padding: '16px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', fontSize: 12 }}>
-          <p style={{ color: 'var(--text-muted)', marginBottom: 6, fontWeight: 600 }}>Test Credentials</p>
-          <p style={{ color: 'var(--text-secondary)' }}>Owner: <strong>coder.sagarthakare@gmail.com</strong> (sagar123)</p>
-          <p style={{ color: 'var(--text-secondary)' }}>Manager: <strong>manager1@gmail.com</strong> (Sagar@123)</p>
-          <p style={{ color: 'var(--text-secondary)' }}>User: <strong>saggythakare01@gmail.com</strong> (Sagar@123)</p>
+        <div className="mt-5 p-4 bg-[#242740] dark:bg-[#242740] rounded-lg text-[12px] space-y-1">
+          <p className="text-[#6b6e82] mb-1.5 font-semibold">Test Credentials</p>
+          <p className="text-[#a0a3b1]">Owner: <strong>coder.sagarthakare@gmail.com</strong> (sagar123)</p>
+          <p className="text-[#a0a3b1]">Manager: <strong>manager1@gmail.com</strong> (Sagar@123)</p>
+          <p className="text-[#a0a3b1]">User: <strong>saggythakare01@gmail.com</strong> (Sagar@123)</p>
         </div>
-        <div style={{ marginTop: 16, textAlign: 'center', fontSize: 14 }}>
-          <span style={{ color: 'var(--text-muted)' }}>Don't have an account? </span>
-          <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 700 }}>Register Now</Link>
+
+        <div className="mt-4 text-center text-sm text-[#6b6e82]">
+          <span>Don't have an account? </span>
+          <Link to="/register" className="text-[#6c63ff] font-bold hover:underline">Register Now</Link>
         </div>
       </div>
     </div>

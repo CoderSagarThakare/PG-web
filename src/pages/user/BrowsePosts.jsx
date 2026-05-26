@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { searchPostsApi } from '../../api/post.api';
+import { getFacilitiesApi } from '../../api/pg.api';
 import { createEnquiryApi, updateEnquiryApi } from '../../api/enquiry.api';
 import { Search, MapPin, Bed, Filter, Phone, User as UserIcon, CheckCircle2, Building2 } from 'lucide-react';
 import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, Pagination } from '../../components/common';
@@ -119,10 +120,10 @@ export default function BrowsePosts() {
 
   return (
     <div className="fade-in">
-      <div className="page-header" style={{ alignItems: 'center' }}>
+      <div className="flex items-center justify-between mb-7 flex-wrap gap-4">
         <div>
-          <h1 className="page-title">Find Your Next Home</h1>
-          <p className="page-subtitle">Browse available PG rooms based on your preferences</p>
+          <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900">Find Your Next Home</h1>
+          <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-1">Browse available PG rooms based on your preferences</p>
         </div>
         {Object.values(filters).some(v => v !== '') && (
           <Button variant="ghost" size="sm" onClick={() => setFilters({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '' })}>
@@ -131,29 +132,30 @@ export default function BrowsePosts() {
         )}
       </div>
 
-      <div className="search-bar-inline">
-        <div style={{ display: 'flex', alignItems: 'center', flex: 1, paddingLeft: 12 }}>
-          <Search size={16} style={{ color: 'var(--text-muted)' }} />
+      <div className="flex items-center bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-full px-2 py-1 gap-2.5 mb-6 flex-wrap">
+        <div className="flex items-center flex-1 pl-3">
+          <Search size={16} className="dark:text-[#6b6e82] text-gray-400 shrink-0" />
           <input
+            className="bg-transparent border-none outline-none ml-2 text-[13px] dark:text-[#f0f0f8] text-gray-900 placeholder:text-gray-400 dark:placeholder:text-[#6b6e82] w-full"
             placeholder="Search by area, PG name..."
             value={filters.title}
             onChange={e => setFilters(f => ({ ...f, title: e.target.value }))}
           />
         </div>
         
-        <div className="divider" />
+        <div className="w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
         
         <input
-          style={{ width: 120 }}
+          className="bg-transparent border-none outline-none text-[13px] dark:text-[#f0f0f8] text-gray-900 placeholder:text-gray-400 dark:placeholder:text-[#6b6e82] w-[120px]"
           placeholder="City..."
           value={filters.city}
           onChange={e => setFilters(f => ({ ...f, city: e.target.value }))}
         />
 
-        <div className="divider" />
+        <div className="w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
 
         <select 
-          className="pill-select"
+          className="bg-transparent border-none dark:text-[#a0a3b1] text-gray-600 text-[13px] font-semibold px-3 py-2 cursor-pointer outline-none rounded-full hover:bg-[#2d3052]/20 dark:hover:bg-[#2d3052] hover:text-[#f0f0f8]"
           value={filters.pgType}
           onChange={e => setFilters(f => ({ ...f, pgType: e.target.value }))}
         >
@@ -164,10 +166,10 @@ export default function BrowsePosts() {
           <option value="coLiving">Co-Living</option>
         </select>
 
-        <div className="divider" />
+        <div className="w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
 
         <select 
-          className="pill-select"
+          className="bg-transparent border-none dark:text-[#a0a3b1] text-gray-600 text-[13px] font-semibold px-3 py-2 cursor-pointer outline-none rounded-full hover:bg-[#2d3052]/20 dark:hover:bg-[#2d3052] hover:text-[#f0f0f8]"
           value={filters.occupancyType}
           onChange={e => setFilters(f => ({ ...f, occupancyType: e.target.value }))}
         >
@@ -180,9 +182,9 @@ export default function BrowsePosts() {
         <Button 
           variant="primary" 
           onClick={() => setShowAdvancedFilters(true)}
-          style={{ borderRadius: 99, height: 32, padding: '0 16px', fontSize: 12, marginRight: 4 }}
+          className="rounded-full h-8 px-4 text-[12px] mr-1"
         >
-          <Filter size={14} style={{ marginRight: 6 }} /> Filters
+          <Filter size={14} className="mr-1.5" /> Filters
         </Button>
       </div>
 
@@ -191,64 +193,49 @@ export default function BrowsePosts() {
           description="Try adjusting your filters to find more results." />
       ) : (
         <>
-          <div className="browse-grid">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {posts.map(post => (
-              <div key={post._id} className="sleek-card" onClick={() => setViewPost(post)} style={{ cursor: 'pointer' }}>
-                <div className="sleek-card-img">
-                  <Building2 size={40} style={{ opacity: 0.1 }} />
-                  <div className="sleek-card-price" style={{ fontSize: 13, padding: '4px 10px' }}>{formatPrice(post.minPrice)} - {formatPrice(post.maxPrice)}</div>
-                  <div style={{ position: 'absolute', bottom: 10, left: 10 }}>
+              <div key={post._id} className="bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-xl overflow-hidden transition-all duration-200 flex flex-col hover:border-[#6c63ff] hover:shadow-md cursor-pointer" onClick={() => setViewPost(post)}>
+                <div className="h-[120px] bg-[#242740] dark:bg-[#242740] relative flex items-center justify-center">
+                  <Building2 size={40} className="opacity-10" />
+                  <div className="absolute top-2.5 right-2.5 bg-[#6c63ff] text-white px-2.5 py-1 rounded-md font-black text-[13px]">{formatPrice(post.minPrice)} - {formatPrice(post.maxPrice)}</div>
+                  <div className="absolute bottom-2.5 left-2.5">
                     <Badge variant={post.pgType === 'male' ? 'info' : post.pgType === 'female' ? 'danger' : 'accent'}>
                       {post.pgType}
                     </Badge>
                   </div>
                 </div>
 
-                <div className="sleek-card-body">
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 2 }}>{post.pgId?.name}</div>
-                  <h3 className="sleek-card-title truncate">{post.title}</h3>
-                  <div className="property-location" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
-                    <MapPin size={12} className="text-primary" /> {post.pgId?.address?.city}
+                <div className="p-3.5 flex flex-col flex-1">
+                  <div className="text-[10px] font-bold text-[#00d4aa] uppercase mb-0.5">{post.pgId?.name}</div>
+                  <h3 className="text-[15px] font-bold dark:text-[#f0f0f8] text-gray-900 mb-1 leading-snug truncate">{post.title}</h3>
+                  <div className="flex items-center gap-1 text-[11px] dark:text-[#6b6e82] text-gray-500 mb-3">
+                    <MapPin size={12} className="text-[#6c63ff]" /> {post.pgId?.address?.city}
                   </div>
 
-                  <div className="property-tags" style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-                    <Badge variant="accent" style={{ fontSize: 9 }}>{post.occupancyType}</Badge>
-                    <Badge variant="warning" style={{ fontSize: 9 }}>{post.vacancyCount} Left</Badge>
+                  <div className="flex gap-1.5 mb-3">
+                    <Badge variant="accent" className="text-[9px] py-0.5">{post.occupancyType}</Badge>
+                    <Badge variant="warning" className="text-[9px] py-0.5">{post.vacancyCount} Left</Badge>
                   </div>
 
-                  <p style={{ 
-                    fontSize: 11.5, 
-                    color: 'var(--text-muted)', 
-                    marginBottom: 14,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    lineHeight: '1.4',
-                    height: '2.8em'
-                  }}>
+                  <p className="text-[11.5px] dark:text-[#6b6e82] text-gray-500 mb-3.5 line-clamp-2 leading-[1.4] h-[2.8em] overflow-hidden">
                     {post.description}
                   </p>
 
-                  <div style={{ marginTop: 'auto' }}>
+                  <div className="mt-auto">
                     {!post.enquiryData ? (
                       <Button 
                         size="sm"
-                        style={{ width: '100%', fontWeight: 700 }}
+                        className="w-full font-bold"
                         onClick={(e) => { e.stopPropagation(); handleEnquire(post._id); }}
                         loading={enquiryMut.isPending && enquiryMut.variables?.postId === post._id}
                       >
                         Show Interest
                       </Button>
                     ) : (
-                      <div style={{ 
-                        background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', 
-                        padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        gap: 6, color: 'var(--success)', border: '1px solid var(--success-light)'
-                      }}>
+                      <div className="bg-[#242740] dark:bg-[#242740] rounded-lg px-2 py-2 flex items-center justify-center gap-1.5 text-[#51cf66] border border-[#51cf66]/30">
                         <CheckCircle2 size={14} />
-                        <span style={{ fontSize: 10, fontWeight: 800 }}>REQUESTED</span>
+                        <span className="text-[10px] font-extrabold">REQUESTED</span>
                       </div>
                     )}
                   </div>
@@ -273,10 +260,10 @@ export default function BrowsePosts() {
         onClose={() => setShowAdvancedFilters(false)}
         title="Advanced Filters"
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 12 }}>
+        <div className="flex flex-col gap-6 pb-3">
           <div className="detail-section">
             <div className="detail-section-title">Budget Range</div>
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div className="flex gap-3">
               <Input 
                 label="Min Price" type="number" value={filters.minPrice}
                 onChange={e => setFilters(f => ({ ...f, minPrice: e.target.value }))}
@@ -291,23 +278,26 @@ export default function BrowsePosts() {
           </div>
 
           <div className="detail-section">
-            <div className="detail-section-title">Amenities & Facilities</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="detail-section-title">Amenities &amp; Facilities</div>
+            <div className="grid grid-cols-2 gap-3">
               {facilitiesList?.map(fac => (
-                <label key={fac._id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px', background: filters.facilities.includes(fac._id) ? 'var(--primary-light)' : 'transparent', borderRadius: 'var(--radius-sm)', transition: '0.2s' }}>
+                <label
+                  key={fac._id}
+                  className={`flex items-center gap-2.5 cursor-pointer p-2 rounded-lg transition-all duration-200 ${filters.facilities.includes(fac._id) ? 'bg-[#6c63ff]/15' : 'bg-transparent'}`}
+                >
                   <input 
                     type="checkbox" 
                     checked={filters.facilities.includes(fac._id)}
                     onChange={() => handleFacilityToggle(fac._id)}
-                    style={{ width: 16, height: 16, accentColor: 'var(--primary)' }}
+                    className="w-4 h-4 accent-[#6c63ff]"
                   />
-                  <span style={{ fontSize: 14, color: filters.facilities.includes(fac._id) ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: filters.facilities.includes(fac._id) ? 700 : 500 }}>{fac.name}</span>
+                  <span className={`text-[14px] ${filters.facilities.includes(fac._id) ? 'text-[#6c63ff] font-bold' : 'dark:text-[#a0a3b1] text-gray-600 font-medium'}`}>{fac.name}</span>
                 </label>
               ))}
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+          <div className="flex gap-3 mt-3">
             <Button variant="ghost" className="flex-1" onClick={() => { setFilters({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '', facilities: [] }); setShowAdvancedFilters(false); }}>
               Reset All
             </Button>
@@ -327,28 +317,28 @@ export default function BrowsePosts() {
       >
         {viewPost && (
           <div className="fade-in">
-            <div style={{ display: 'flex', gap: 24, marginBottom: 24 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ position: 'relative', height: 200, background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--border)' }}>
-                  <Building2 size={64} style={{ opacity: 0.1 }} />
-                  <div style={{ position: 'absolute', bottom: 12, left: 12, display: 'flex', gap: 8 }}>
+            <div className="flex gap-6 mb-6">
+              <div className="flex-1">
+                <div className="relative h-[200px] dark:bg-[#242740] bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden border border-gray-200 dark:border-[#2d3052]">
+                  <Building2 size={64} className="opacity-10" />
+                  <div className="absolute bottom-3 left-3 flex gap-2">
                     <Badge variant="primary">{viewPost.pgType}</Badge>
                     <Badge variant="accent">{viewPost.occupancyType}</Badge>
                   </div>
                 </div>
               </div>
-              <div style={{ flex: 1 }}>
-                <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>{viewPost.title}</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', marginBottom: 16 }}>
+              <div className="flex-1">
+                <h2 className="text-2xl font-extrabold dark:text-[#f0f0f8] text-gray-900 mb-2">{viewPost.title}</h2>
+                <div className="flex items-center gap-2 dark:text-[#6b6e82] text-gray-500 mb-4">
                   <MapPin size={16} /> {viewPost.pgId?.name}, {viewPost.pgId?.address?.city}
                 </div>
                 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-                  <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--primary)' }}>{formatPrice(viewPost.minPrice)} - {formatPrice(viewPost.maxPrice)}</div>
-                  <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>/ month</div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="text-2xl font-black text-[#6c63ff]">{formatPrice(viewPost.minPrice)} - {formatPrice(viewPost.maxPrice)}</div>
+                  <div className="text-[14px] dark:text-[#6b6e82] text-gray-500">/ month</div>
                 </div>
 
-                <div className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--warning-light)', color: 'var(--warning)', borderRadius: 'var(--radius-sm)', fontWeight: 800 }}>
+                <div className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#ffa94d]/10 text-[#ffa94d] rounded-lg font-extrabold">
                   <Bed size={18} /> {viewPost.vacancyCount} Beds Remaining
                 </div>
               </div>
@@ -356,11 +346,11 @@ export default function BrowsePosts() {
 
             <div className="detail-section">
               <div className="detail-section-title">About this Property</div>
-              <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 20 }}>
+              <p className="text-[14px] dark:text-[#a0a3b1] text-gray-600 leading-[1.6] mb-5">
                 {viewPost.description}
               </p>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="detail-row">
                   <span className="detail-key">Exact Location</span>
                   <span className="detail-value">{viewPost.pgId?.address?.landmark}, {viewPost.pgId?.address?.city}, {viewPost.pgId?.address?.state}</span>
@@ -379,18 +369,18 @@ export default function BrowsePosts() {
                 </div>
                 <div className="detail-row">
                   <span className="detail-key">Property Rating</span>
-                  <span className="detail-value" style={{ color: 'var(--warning)', fontWeight: 700 }}>★ {viewPost.pgId?.rating || 0}</span>
+                  <span className="detail-value text-[#ffa94d] font-bold">★ {viewPost.pgId?.rating || 0}</span>
                 </div>
               </div>
             </div>
 
             {viewPost.pgId?.facilities?.length > 0 && (
               <div className="detail-section">
-                <div className="detail-section-title">Amenities & Facilities</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                <div className="detail-section-title">Amenities &amp; Facilities</div>
+                <div className="flex flex-wrap gap-2.5">
                   {viewPost.pgId.facilities.map(f => (
-                    <div key={f._id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--bg-elevated)', borderRadius: '99px', fontSize: 12, border: '1px solid var(--border)' }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} />
+                    <div key={f._id} className="flex items-center gap-1.5 px-3 py-1.5 dark:bg-[#242740] bg-gray-100 rounded-full text-[12px] border border-gray-200 dark:border-[#2d3052]">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#00d4aa]" />
                       {f.name}
                     </div>
                   ))}
@@ -398,34 +388,34 @@ export default function BrowsePosts() {
               </div>
             )}
 
-            <div style={{ marginTop: 32, borderTop: '1px solid var(--border)', paddingTop: 24 }}>
+            <div className="mt-8 border-t border-gray-200 dark:border-[#2d3052] pt-6">
               {!viewPost.enquiryData ? (
                 <Button 
                   onClick={() => handleEnquire(viewPost._id)}
                   loading={enquiryMut.isPending && enquiryMut.variables?.postId === viewPost._id}
-                  style={{ width: '100%', height: 52, fontSize: 16, fontWeight: 800 }}
+                  className="w-full h-[52px] text-[16px] font-extrabold"
                 >
-                  Show Interest & Connect
+                  Show Interest &amp; Connect
                 </Button>
               ) : (
-                <div style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--success-light)', padding: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: 'var(--success)' }}>
+                <div className="dark:bg-[#242740] bg-gray-50 rounded-xl border border-[#51cf66]/30 p-5">
+                  <div className="flex items-center gap-2 mb-4 text-[#51cf66]">
                     <CheckCircle2 size={20} />
-                    <span style={{ fontSize: 16, fontWeight: 800 }}>Enquiry Active!</span>
+                    <span className="text-[16px] font-extrabold">Enquiry Active!</span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+                  <div className="grid grid-cols-1 gap-4">
                     {viewPost.enquiryData.owner && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--bg-base)', borderRadius: 'var(--radius-sm)' }}>
+                      <div className="flex justify-between items-center p-3 dark:bg-[#1a1d2e] bg-white rounded-lg">
                         <div>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800, marginBottom: 2 }}>Property Owner</div>
-                          <div style={{ fontSize: 15, fontWeight: 700 }}>{viewPost.enquiryData.owner.name}</div>
+                          <div className="text-[10px] dark:text-[#6b6e82] text-gray-500 uppercase font-extrabold mb-0.5">Property Owner</div>
+                          <div className="text-[15px] font-bold dark:text-[#f0f0f8] text-gray-900">{viewPost.enquiryData.owner.name}</div>
                         </div>
                         
                         {viewPost.enquiryData.status === 'contacted' ? (
                           <a 
                             href={`tel:${viewPost.enquiryData.owner.mobNo1}`}
-                            style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--primary)', textDecoration: 'none', background: 'var(--primary-light)', padding: '8px 16px', borderRadius: 'var(--radius-sm)', fontWeight: 800 }}
+                            className="flex items-center gap-2 text-[#6c63ff] no-underline bg-[#6c63ff]/15 px-4 py-2 rounded-lg font-extrabold"
                           >
                             <Phone size={16} /> {viewPost.enquiryData.owner.mobNo1}
                           </a>

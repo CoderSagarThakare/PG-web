@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { MessageSquare, Search, ChevronLeft, ChevronRight, Phone, CheckCircle2, Bed, Building2 } from 'lucide-react';
 import { Badge, Card, Spinner, EmptyState, Modal, Input, Button } from '../../components/common';
 import { getErrorMessage, formatDate, formatTime, capitalize } from '../../utils/helpers';
+import { cn } from '../../utils/cn';
 
 const statusOptions = [
   { value: 'interested', label: 'Interested' },
@@ -122,24 +123,23 @@ export default function Enquiries() {
 
   return (
     <div className="fade-in">
-      <div className="page-header">
+      <div className="flex items-start justify-between mb-7 flex-wrap gap-4">
         <div>
-          <h1 className="page-title">{isUserRole ? 'My Enquiries' : 'Enquiries'}</h1>
-          <p className="page-subtitle">
+          <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900">{isUserRole ? 'My Enquiries' : 'Enquiries'}</h1>
+          <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-1">
             {isUserRole ? 'Track your PG applications' : `${total} total enquiries`}
           </p>
         </div>
       </div>
 
       {/* Filter bar */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20, alignItems: 'center' }}>
+      <div className="flex flex-wrap gap-3 mb-5 items-center">
         {/* Search by user name (staff only) */}
         {isStaff && (
-          <div style={{ position: 'relative', minWidth: 220 }}>
-            <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+          <div className="relative min-w-[220px]">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 dark:text-[#6b6e82] text-gray-400 pointer-events-none" />
             <input
-              className="form-control"
-              style={{ paddingLeft: 36 }}
+              className="pl-9 w-full dark:bg-[#242740] bg-white dark:border-[#2d3052] border-gray-200 border rounded-lg px-3 py-2 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-colors"
               placeholder="Search by user name..."
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
@@ -150,8 +150,7 @@ export default function Enquiries() {
         {/* PG filter (staff only) */}
         {isStaff && pgs.length > 0 && (
           <select
-            className="form-control"
-            style={{ width: 'auto', minWidth: 160 }}
+            className="dark:bg-[#242740] bg-white dark:border-[#2d3052] border-gray-200 border rounded-lg px-3 py-2 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] min-w-[160px] transition-colors"
             value={filterPgId}
             onChange={e => setFilterPgId(e.target.value)}
           >
@@ -163,11 +162,16 @@ export default function Enquiries() {
         )}
 
         {/* Status pills */}
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <div className="flex gap-1.5 flex-wrap">
           {['', ...statusOptions.map(s => s.value)].map(s => (
             <button
               key={s}
-              className={`btn btn-sm ${filterStatus === s ? 'btn-primary' : 'btn-ghost'}`}
+              className={cn(
+                'px-3 py-1.5 text-xs font-bold rounded-full transition-all border',
+                filterStatus === s
+                  ? 'bg-[#6c63ff] border-[#6c63ff] text-white'
+                  : 'bg-transparent border-gray-200 dark:border-[#2d3052] text-gray-600 dark:text-[#a0a3b1] hover:bg-gray-100 dark:hover:bg-[#2d3052] hover:text-gray-900 dark:hover:text-[#f0f0f8]'
+              )}
               onClick={() => setFilterStatus(s)}
             >
               {s ? capitalize(s) : 'All'}
@@ -181,62 +185,67 @@ export default function Enquiries() {
           description="No enquiries match your current filters." />
       ) : (
         <>
-          <div className="table-wrapper">
-            <table className="table">
+          <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-[#2d3052]">
+            <table className="w-full border-collapse">
               <thead>
-                 <tr>
-                  {!isUserRole && <th>User</th>}
-                  <th>Post</th>
-                  <th>PG</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                  {isStaff && <th>Contact</th>}
-                  {isStaff && <th>Action</th>}
+                 <tr className="dark:bg-[#242740] bg-gray-50 border-b border-gray-200 dark:border-[#2d3052]">
+                  {!isUserRole && <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">User</th>}
+                  <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Post</th>
+                  <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">PG</th>
+                  <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Status</th>
+                  <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Date</th>
+                  {isStaff && <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Contact</th>}
+                  {isStaff && <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Action</th>}
                 </tr>
               </thead>
               <tbody>
                 {enquiries.map(enq => (
-                  <tr key={enq._id}>
+                  <tr key={enq._id} className="transition-colors hover:bg-gray-50 dark:hover:bg-[#242740]">
                     {!isUserRole && (
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{
-                            width: 32, height: 32, borderRadius: '50%',
-                            background: 'var(--primary-light)', display: 'flex',
-                            alignItems: 'center', justifyContent: 'center',
-                            fontSize: 12, fontWeight: 700, color: 'var(--primary)'
-                          }}>
+                      <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full dark:bg-[#6c63ff]/20 bg-[#6c63ff]/10 flex items-center justify-center text-[12px] font-bold text-[#6c63ff]">
                             {enq.userId?.name?.[0]?.toUpperCase() || '?'}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 600, fontSize: 13 }}>{enq.userId?.name || '—'}</div>
-                            <div className="text-xs text-muted">{enq.userId?.mobNo1 || '—'}</div>
+                            <div className="font-semibold text-[13px] dark:text-[#f0f0f8] text-gray-900">{enq.userId?.name || '—'}</div>
+                            <div className="text-xs dark:text-[#6b6e82] text-gray-500">{enq.userId?.mobNo1 || '—'}</div>
                           </div>
                         </div>
                       </td>
                     )}
-                    <td>
-                      <div style={{ fontWeight: 500, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">
+                      <div className="font-medium text-[13px] flex items-center gap-1.5 flex-wrap">
                         {enq.postId?.title || '—'}
                         {enq.postId?.isDeleted && <Badge variant="danger" style={{ fontSize: 9, padding: '2px 4px' }}>Deleted</Badge>}
                         {enq.postId && !enq.postId.isActive && !enq.postId.isDeleted && <Badge variant="warning" style={{ fontSize: 9, padding: '2px 4px' }}>Inactive</Badge>}
                       </div>
-                      <div className="text-xs text-muted">
-                        {enq.postId?.occupancyType || '—'} · ₹{enq.postId?.minPrice?.toLocaleString() || '—'} - ₹{enq.postId?.maxPrice?.toLocaleString() || '—'}
+                      <div className="text-xs dark:text-[#6b6e82] text-gray-500 mt-1.5 flex items-center gap-1.5 flex-wrap">
+                        {enq.postId?.occupancyType && (
+                          <Badge variant="accent">{enq.postId.occupancyType}</Badge>
+                        )}
+                        {enq.postId?.pgType && (
+                          <Badge variant={enq.postId.pgType === 'male' ? 'info' : enq.postId.pgType === 'female' ? 'danger' : 'accent'}>
+                            {enq.postId.pgType}
+                          </Badge>
+                        )}
+                        <span className="font-semibold text-gray-600 dark:text-[#a0a3b1] ml-1">
+                          ₹{enq.postId?.minPrice?.toLocaleString() || '—'} - ₹{enq.postId?.maxPrice?.toLocaleString() || '—'}
+                        </span>
                       </div>
                     </td>
-                    <td className="text-sm">{enq.pgId?.name || '—'}</td>
-                    <td><Badge variant={statusVariant[enq.status] || 'default'}>{enq.status}</Badge></td>
-                    <td>
-                      <div className="text-sm" style={{ fontWeight: 500 }}>{formatDate(enq.createdAt)}</div>
-                      <div className="text-xs text-muted">{formatTime(enq.createdAt)}</div>
+                    <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">{enq.pgId?.name || '—'}</td>
+                    <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30"><Badge variant={statusVariant[enq.status] || 'default'}>{enq.status}</Badge></td>
+                    <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">
+                      <div className="text-sm font-medium">{formatDate(enq.createdAt)}</div>
+                      <div className="text-xs dark:text-[#6b6e82] text-gray-500">{formatTime(enq.createdAt)}</div>
                     </td>
 
                     {/* Contact / Call column — staff only */}
                     {isStaff && (
-                      <td>
+                      <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">
                         {enq.userId?.mobNo1 ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div className="flex items-center gap-1.5">
                             <a
                               href={`tel:${enq.userId.mobNo1}`}
                               onClick={() => {
@@ -244,30 +253,26 @@ export default function Enquiries() {
                                   callMut.mutate(enq._id);
                                 }
                               }}
-                              style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 6,
-                                padding: '5px 10px', borderRadius: 'var(--radius-sm)',
-                                background: enq.status === 'interested' ? 'var(--success-light)' : 'var(--bg-elevated)',
-                                color: enq.status === 'interested' ? 'var(--success)' : 'var(--text-secondary)',
-                                fontWeight: 600, fontSize: 12, textDecoration: 'none',
-                                border: enq.status === 'interested' ? '1px solid rgba(81,207,102,0.3)' : '1px solid var(--border)',
-                                transition: 'all 0.2s',
-                                whiteSpace: 'nowrap'
-                              }}
+                              className={[
+                                'inline-flex items-center gap-1.5 px-2.5 py-[5px] rounded-md font-semibold text-[12px] no-underline transition-all whitespace-nowrap border',
+                                enq.status === 'interested'
+                                  ? 'dark:bg-[#51cf66]/10 bg-[#51cf66]/10 text-[#51cf66] border-[#51cf66]/30'
+                                  : 'dark:bg-[#242740] bg-gray-100 dark:text-[#a0a3b1] text-gray-500 dark:border-[#2d3052] border-gray-200',
+                              ].join(' ')}
                             >
                               <Phone size={12} />
                               {enq.userId.mobNo1}
                             </a>
                           </div>
                         ) : (
-                          <span className="text-muted text-xs">—</span>
+                          <span className="text-xs dark:text-[#6b6e82] text-gray-500">—</span>
                         )}
                       </td>
                     )}
 
                     {/* Action column */}
                     {isStaff && (
-                      <td>
+                      <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">
                         <Button variant="ghost" size="sm" onClick={() => openUpdate(enq)}>
                           Update
                         </Button>
@@ -281,11 +286,11 @@ export default function Enquiries() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }}>
-              <span className="text-sm text-muted">
+            <div className="flex justify-between items-center mt-5">
+              <span className="text-sm dark:text-[#6b6e82] text-gray-500">
                 Showing {((page - 1) * LIMIT) + 1}–{Math.min(page * LIMIT, total)} of {total}
               </span>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div className="flex gap-2 items-center">
                 <Button variant="ghost" size="sm" onClick={() => setPage(p => p - 1)} disabled={page === 1}>
                   <ChevronLeft size={16} />
                 </Button>
@@ -297,10 +302,15 @@ export default function Enquiries() {
                     return acc;
                   }, [])
                   .map((p, i) => p === '...'
-                    ? <span key={`dot-${i}`} className="text-muted" style={{ padding: '0 4px' }}>…</span>
+                    ? <span key={`dot-${i}`} className="dark:text-[#6b6e82] text-gray-500 px-1">…</span>
                     : <button
                         key={p}
-                        className={`btn btn-sm ${page === p ? 'btn-primary' : 'btn-ghost'}`}
+                        className={cn(
+                          'px-2.5 py-1 text-xs font-bold rounded-lg transition-all min-w-[28px] h-7 border',
+                          page === p
+                            ? 'bg-[#6c63ff] border-[#6c63ff] text-white'
+                            : 'bg-transparent border-gray-200 dark:border-[#2d3052] text-gray-600 dark:text-[#a0a3b1] hover:bg-gray-100 dark:hover:bg-[#2d3052] hover:text-gray-900 dark:hover:text-[#f0f0f8]'
+                        )}
                         onClick={() => setPage(p)}
                       >{p}</button>
                   )
@@ -318,52 +328,49 @@ export default function Enquiries() {
       <Modal isOpen={!!selected} onClose={() => setSelected(null)} title="Update Enquiry Status">
         {selected && (
           <div>
-            <div style={{ padding: '12px 16px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', marginBottom: 20 }}>
-              <div style={{ fontWeight: 600 }}>{selected.userId?.name}</div>
-              <div className="text-sm text-muted">{selected.postId?.title}</div>
-              <div className="text-xs text-muted mt-4">{selected.userId?.email}</div>
+            <div className="px-4 py-3 dark:bg-[#242740] bg-gray-50 rounded-lg mb-5">
+              <div className="font-semibold dark:text-[#f0f0f8] text-gray-900">{selected.userId?.name}</div>
+              <div className="text-sm dark:text-[#6b6e82] text-gray-500">{selected.postId?.title}</div>
+              <div className="text-xs dark:text-[#6b6e82] text-gray-500 mt-4">{selected.userId?.email}</div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="flex flex-col gap-4">
               <Input label="New Status" name="status" as="select" value={newStatus}
                 onChange={e => setNewStatus(e.target.value)} options={statusOptions} />
               <Input label="Staff Remarks" name="remarks" as="textarea"
                 value={remarks} onChange={e => setRemarks(e.target.value)}
                 placeholder="Add notes about this enquiry..." rows={3} />
             </div>
-            <div className="modal-footer">
+            <div className="flex gap-3 justify-end mt-6 pt-5 border-t dark:border-[#2d3052] border-gray-200 flex-col-reverse sm:flex-row">
               <Button variant="ghost" onClick={() => setSelected(null)}>Cancel</Button>
               <Button onClick={handleUpdate} loading={updateMut.isPending}>Save Changes</Button>
             </div>
           </div>
         )}
       </Modal>
+
       {/* Success & Navigation Modal */}
       <Modal isOpen={!!assignUserModal} onClose={() => setAssignUserModal(null)} title="Deal Confirmed! 🚀">
         {assignUserModal && (
-          <div style={{ textAlign: 'center', padding: '10px 0' }}>
-            <div style={{ 
-              width: 64, height: 64, background: 'var(--success-light)', 
-              borderRadius: '50%', display: 'flex', alignItems: 'center', 
-              justifyContent: 'center', margin: '0 auto 16px', color: 'var(--success)' 
-            }}>
+          <div className="text-center py-2.5">
+            <div className="w-16 h-16 dark:bg-[#51cf66]/10 bg-[#51cf66]/10 rounded-full flex items-center justify-center mx-auto mb-4 text-[#51cf66]">
               <CheckCircle2 size={32} />
             </div>
-            <h3 style={{ marginBottom: 8 }}>Congratulations!</h3>
-            <p className="text-muted" style={{ fontSize: 14, marginBottom: 24 }}>
-              The deal for <strong>{assignUserModal.userName}</strong> is marked as done. 
+            <h3 className="mb-2 font-bold text-lg dark:text-[#f0f0f8] text-gray-900">Congratulations!</h3>
+            <p className="dark:text-[#6b6e82] text-gray-500 text-sm mb-6">
+              The deal for <strong>{assignUserModal.userName}</strong> is marked as done.{' '}
               Would you like to assign them to a room now?
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Button 
+            <div className="flex flex-col gap-2.5">
+              <Button
                 onClick={() => {
                   setAssignUserModal(null);
                   navigate(`/pg/${assignUserModal.pgId}/inventory`);
                 }}
-                style={{ width: '100%', background: 'linear-gradient(135deg, var(--primary), var(--purple))', border: 'none' }}
+                className="w-full bg-gradient-to-r from-[#6c63ff] to-[#a78bfa] border-0"
               >
-                Go to Manage Rooms & Beds
+                Go to Manage Rooms &amp; Beds
               </Button>
-              <Button variant="ghost" onClick={() => setAssignUserModal(null)} style={{ width: '100%' }}>
+              <Button variant="ghost" onClick={() => setAssignUserModal(null)} className="w-full">
                 I'll do it later
               </Button>
             </div>

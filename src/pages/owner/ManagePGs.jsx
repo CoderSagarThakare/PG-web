@@ -86,12 +86,12 @@ export default function ManagePGs() {
 
   return (
     <div className="fade-in">
-      <div className="page-header">
+      <div className="flex items-start justify-between mb-7 flex-wrap gap-4">
         <div>
-          <h1 className="page-title">My PGs</h1>
-          <p className="page-subtitle">Manage all your PG properties</p>
+          <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900">My PGs</h1>
+          <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-1">Manage all your PG properties</p>
         </div>
-        <div className="page-actions">
+        <div className="flex gap-3 items-center">
           {isOwner && (
             <Button onClick={() => setModalOpen(true)}>
               <Plus size={16} /> Add PG
@@ -101,7 +101,7 @@ export default function ManagePGs() {
       </div>
 
       {/* Stats */}
-      <div className="stats-grid">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total PGs" value={pgs.length} color="primary" icon={<Building2 size={40} />} />
         <StatCard label="Total Rooms" value={pgs.reduce((s, p) => s + (p.totalRooms || 0), 0)} color="accent" icon={<Bed size={40} />} />
         <StatCard label="Occupied Beds" value={pgs.reduce((s, p) => s + (p.occupiedBeds || 0), 0)} color="warning" />
@@ -116,68 +116,68 @@ export default function ManagePGs() {
           action={isOwner ? <Button onClick={() => setModalOpen(true)}><Plus size={16} /> Add PG</Button> : null}
         />
       ) : (
-        <div className="grid-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {pgs.map(pg => (
             <Card key={pg._id} hover onClick={() => navigate(`/pg/${pg._id}`)}>
-              <div className="card-header">
+              <div className="flex items-start justify-between mb-5">
                 <div>
-                  <div className="card-title">{pg.name}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                    <MapPin size={12} style={{ color: 'var(--text-muted)' }} />
-                    <span className="text-xs text-muted">{pg.address?.city}, {pg.address?.state}</span>
+                  <div className="text-base font-bold dark:text-[#f0f0f8] text-gray-900">{pg.name}</div>
+                  <div className="flex items-center gap-1 mt-1">
+                    <MapPin size={12} className="text-[#6b6e82]" />
+                    <span className="text-xs dark:text-[#6b6e82] text-gray-500">{pg.address?.city}, {pg.address?.state}</span>
                   </div>
                 </div>
                 <Badge variant={pgTypeColors[pg.pgType] || 'default'}>{pgTypeLabels[pg.pgType] || pg.pgType}</Badge>
               </div>
 
-              <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--primary)' }}>{pg.totalRooms}</div>
-                  <div className="text-xs text-muted">Rooms</div>
+              <div className="flex gap-4 mb-4">
+                <div className="text-center">
+                  <div className="text-xl font-black text-[#6c63ff]">{pg.totalRooms}</div>
+                  <div className="text-xs dark:text-[#6b6e82] text-gray-500">Rooms</div>
                 </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--accent)' }}>{pg.emptyBeds || 0}</div>
-                  <div className="text-xs text-muted">Empty Beds</div>
+                <div className="text-center">
+                  <div className="text-xl font-black text-[#00d4aa]">{pg.emptyBeds || 0}</div>
+                  <div className="text-xs dark:text-[#6b6e82] text-gray-500">Empty Beds</div>
                 </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--warning)' }}>{pg.occupiedBeds || 0}</div>
-                  <div className="text-xs text-muted">Occupied</div>
+                <div className="text-center">
+                  <div className="text-xl font-black text-[#ffa94d]">{pg.occupiedBeds || 0}</div>
+                  <div className="text-xs dark:text-[#6b6e82] text-gray-500">Occupied</div>
                 </div>
               </div>
 
               {pg.managerId && (
-                <div style={{ padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', marginBottom: 12 }}>
-                  <span className="text-xs text-muted">Manager: </span>
-                  <span className="text-sm font-semibold">{pg.managerId?.name || 'Assigned'}</span>
+                <div className="px-3 py-2 bg-gray-50 dark:bg-[#242740] rounded-lg mb-3">
+                  <span className="text-xs dark:text-[#6b6e82] text-gray-500">Manager: </span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-[#f0f0f8]">{pg.managerId?.name || 'Assigned'}</span>
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--warning-light)', color: 'var(--warning)', padding: '4px 8px', borderRadius: 'var(--radius-sm)', fontSize: 12, fontWeight: 700 }}>
+              <div className="flex justify-between items-center" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1 bg-[#ffa94d]/12 text-[#ffa94d] px-2 py-1 rounded-lg text-xs font-bold">
                     ★ {pg.rating || 0}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <div className="tooltip-wrapper">
+                <div className="flex gap-2">
+                  <div className="relative inline-flex group">
                     <Button variant="outline" size="sm" className="btn-icon" onClick={() => navigate(`/pg/${pg._id}/inventory`)}>
                       <Bed size={14} />
                     </Button>
-                    <span className="tooltip-content">Inventory Manager</span>
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[#1a1d2e] border border-[#2d3052] text-[#f0f0f8] text-[11px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all z-10 pointer-events-none">Inventory Manager</span>
                   </div>
                   
-                  <div className="tooltip-wrapper">
+                  <div className="relative inline-flex group">
                     <Button variant="ghost" size="sm" className="btn-icon" onClick={() => openEdit(pg)}>
                       <Edit2 size={14} />
                     </Button>
-                    <span className="tooltip-content">Edit Property</span>
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[#1a1d2e] border border-[#2d3052] text-[#f0f0f8] text-[11px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all z-10 pointer-events-none">Edit Property</span>
                   </div>
                   
-                  <div className="tooltip-wrapper">
+                  <div className="relative inline-flex group">
                     <Button variant="danger" size="sm" className="btn-icon" onClick={() => setConfirmId(pg._id)}>
                       <Trash2 size={14} />
                     </Button>
-                    <span className="tooltip-content">Delete Property</span>
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[#1a1d2e] border border-[#2d3052] text-[#f0f0f8] text-[11px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all z-10 pointer-events-none">Delete Property</span>
                   </div>
                 </div>
               </div>

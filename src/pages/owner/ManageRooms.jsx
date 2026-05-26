@@ -123,33 +123,23 @@ export default function ManageRooms() {
   if (isLoading) return <Spinner center />;
 
   return (
-    <div className="fade-in" style={{ 
-      background: 'radial-gradient(circle at top right, rgba(108, 99, 255, 0.03), transparent 600px)',
-      minHeight: '100%',
-    }}>
-      <div className="page-header" style={{ marginBottom: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div className="fade-in min-h-full">
+      {/* Page Header */}
+      <div className="flex items-start justify-between mb-3 flex-wrap gap-4">
+        <div className="flex items-center gap-3">
           <Button variant="ghost" className="btn-icon" onClick={() => navigate(`/pg/${pgId}`)}>
             <ArrowLeft size={20} />
           </Button>
           <div>
-            <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900 flex items-center gap-2 flex-wrap">
               Inventory Management
               {pg?.name && (
-                <span style={{ 
-                  fontSize: 13, 
-                  background: 'var(--primary-light)', 
-                  color: 'var(--primary)', 
-                  padding: '3px 10px', 
-                  borderRadius: 20, 
-                  fontWeight: 600,
-                  border: '1px solid var(--primary-light)'
-                }}>
+                <span className="text-[13px] bg-[#6c63ff]/15 text-[#6c63ff] px-2.5 py-0.5 rounded-full font-semibold border border-[#6c63ff]/20">
                   {pg.name}
                 </span>
               )}
             </h1>
-            <p className="page-subtitle">Track occupancy, rooms, and beds for this property</p>
+            <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-1">Track occupancy, rooms, and beds for this property</p>
           </div>
         </div>
         <Button onClick={() => setModalOpen(true)}>
@@ -158,37 +148,39 @@ export default function ManageRooms() {
       </div>
 
       {/* Filter Bar */}
-      <Card style={{ padding: '16px', marginBottom: 24, background: 'var(--bg-elevated)', border: '1px solid var(--border-light)' }}>
-        <div className="rooms-filter-bar">
-          <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 0 }}>
-            <Search size={18} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input 
-              type="text" 
-              placeholder="Search by Room No, Bed No, Tenant Name or Mobile..." 
+      <div className="p-4 mb-6 dark:bg-[#242740] bg-gray-50 border border-[#2d3052]/50 dark:border-[#2d3052]/50 rounded-xl">
+        <div className="flex flex-wrap gap-3 items-center">
+          {/* Search Input */}
+          <div className="relative flex-1 basis-[200px] min-w-0">
+            <Search
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 dark:text-[#6b6e82] text-gray-400 pointer-events-none"
+            />
+            <input
+              type="text"
+              placeholder="Search by Room No, Bed No, Tenant Name or Mobile..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="form-control"
-              style={{ paddingLeft: 40, background: 'var(--bg-base)', height: 44 }}
+              className="w-full pl-10 pr-3 dark:bg-[#0f1117] bg-white border border-[#2d3052] dark:border-[#2d3052] rounded-lg px-3 py-2.5 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] h-11"
             />
           </div>
-          
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <select 
-              className="form-control" 
-              value={typeFilter} 
+
+          {/* Select Filters */}
+          <div className="flex gap-2 flex-wrap">
+            <select
+              value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              style={{ height: 44, minWidth: 110, background: 'var(--bg-base)' }}
+              className="h-11 min-w-[110px] dark:bg-[#0f1117] bg-white border border-[#2d3052] dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff]"
             >
               <option value="all">All Types</option>
               <option value="AC">AC</option>
               <option value="Non-AC">Non-AC</option>
             </select>
 
-            <select 
-              className="form-control" 
-              value={statusFilter} 
+            <select
+              value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              style={{ height: 44, minWidth: 130, background: 'var(--bg-base)' }}
+              className="h-11 min-w-[130px] dark:bg-[#0f1117] bg-white border border-[#2d3052] dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff]"
             >
               <option value="all">All Status</option>
               <option value="occupied">Has Occupancy</option>
@@ -202,85 +194,100 @@ export default function ManageRooms() {
             </Button>
           )}
         </div>
-      </Card>
+      </div>
 
       {filteredRooms.length === 0 ? (
-        <EmptyState 
-          icon={<Search size={48} style={{ opacity: 0.5 }} />} 
-          title={rooms.length === 0 ? "No rooms added yet" : "No results found"} 
+        <EmptyState
+          icon={<Search size={48} className="opacity-50" />}
+          title={rooms.length === 0 ? "No rooms added yet" : "No results found"}
           description={rooms.length === 0 ? "Start by adding rooms and configuring sharing types." : "Try adjusting your filters or search query."}
           action={rooms.length === 0 ? <Button onClick={() => setModalOpen(true)}><Plus size={16} /> Add First Room</Button> : null}
         />
       ) : (
-        <div className="grid-3" style={{ gap: 12 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredRooms.map(room => (
-            <Card key={room._id} className="room-card hover-container" style={{ padding: '12px' }}>
-              <div className="hover-actions" style={{ top: 8, right: 8 }}>
-                <Button variant="ghost" size="sm" className="btn-icon" onClick={() => setEditRoom(room)} style={{ background: 'var(--bg-surface)', padding: 4 }}>
-                  <Edit2 size={12} className="text-primary" />
+            <Card key={room._id} className="hover-container p-3">
+              {/* Hover action buttons */}
+              <div className="hover-actions top-2 right-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="btn-icon dark:bg-[#242740] bg-gray-100 p-1"
+                  onClick={() => setEditRoom(room)}
+                >
+                  <Edit2 size={12} className="text-[#6c63ff]" />
                 </Button>
-                <Button variant="ghost" size="sm" className="btn-icon" onClick={() => handleDeleteRoom(room._id)} style={{ background: 'var(--bg-surface)', padding: 4 }}>
-                  <Trash2 size={12} className="text-danger" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="btn-icon dark:bg-[#242740] bg-gray-100 p-1"
+                  onClick={() => handleDeleteRoom(room._id)}
+                >
+                  <Trash2 size={12} className="text-[#ff4d6d]" />
                 </Button>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, borderBottom: '1px solid var(--border-light)', paddingBottom: 8 }}>
+              {/* Room Header */}
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#2d3052]/50 dark:border-[#2d3052]/50">
                 <div>
-                  <span style={{ fontSize: 16, fontWeight: 800 }}>Room {room.roomNumber}</span>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>F{room.floor} · {room.roomType}</span>
+                  <span className="text-base font-black dark:text-[#f0f0f8] text-gray-900">Room {room.roomNumber}</span>
+                  <span className="text-[11px] dark:text-[#6b6e82] text-gray-400 ml-2">F{room.floor} · {room.roomType}</span>
                 </div>
-                <Badge variant="accent" style={{ fontSize: 10, padding: '2px 6px' }}>{room.sharingType} Beds</Badge>
+                <Badge variant="accent" className="text-[10px] px-1.5 py-0.5">{room.sharingType} Beds</Badge>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {/* Bed List */}
+              <div className="flex flex-col gap-1">
                 {room.beds?.map(bed => (
-                  <div key={bed._id} style={{ 
-                    padding: '6px 8px', 
-                    borderRadius: 'var(--radius-sm)', 
-                    border: '1px solid var(--border-light)',
-                    background: bed.status === 'occupied' ? 'var(--bg-elevated)' : 'transparent',
-                    display: 'grid',
-                    gridTemplateColumns: '30px 1fr 80px',
-                    gap: 8,
-                    alignItems: 'center',
-                    fontSize: 12
-                  }}>
-                    <div style={{ color: bed.status === 'occupied' ? 'var(--warning)' : 'var(--success)', display: 'flex' }}>
+                  <div
+                    key={bed._id}
+                    className={[
+                      'px-2 py-1.5 rounded-lg border border-[#2d3052]/30 dark:border-[#2d3052]/30 grid grid-cols-[30px_1fr_80px] items-center gap-2 text-xs',
+                      bed.status === 'occupied' ? 'dark:bg-[#242740] bg-gray-100' : 'bg-transparent',
+                    ].join(' ')}
+                  >
+                    {/* Bed Icon */}
+                    <div className={bed.status === 'occupied' ? 'text-[#ffa94d] flex' : 'text-[#51cf66] flex'}>
                       <Bed size={14} />
                     </div>
-                    
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ fontWeight: 700 }}>Bed {bed.bedNumber.includes('-') ? bed.bedNumber.split('-')[1] : bed.bedNumber}</span>
-                        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>({bed.position || 'No Pos'} · {formatPrice(bed.price)})</span>
+
+                    {/* Tenant Info */}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1">
+                        <span className="font-bold dark:text-[#f0f0f8] text-gray-900">
+                          Bed {bed.bedNumber.includes('-') ? bed.bedNumber.split('-')[1] : bed.bedNumber}
+                        </span>
+                        <span className="text-[10px] dark:text-[#6b6e82] text-gray-400">
+                          ({bed.position || 'No Pos'} · {formatPrice(bed.price)})
+                        </span>
                       </div>
                       {bed.status === 'occupied' ? (
-                        <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div className="text-[11px] text-[#6c63ff] font-semibold truncate">
                           {bed.userId?.name || 'Assigned'} {bed.userId?.mobNo1 && `· ${bed.userId.mobNo1}`}
                         </div>
                       ) : (
-                        <div style={{ fontSize: 10, color: 'var(--success)' }}>Available</div>
+                        <div className="text-[10px] text-[#51cf66]">Available</div>
                       )}
                     </div>
 
-                    <div style={{ textAlign: 'right' }}>
+                    {/* Bed Action Buttons */}
+                    <div className="text-right">
                       {bed.status === 'occupied' ? (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-danger" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-[#ff4d6d] text-[10px] px-1 py-0.5 h-auto"
                           onClick={() => unassignMut.mutate(bed._id)}
                           loading={unassignMut.isPending && unassignMut.variables === bed._id}
-                          style={{ padding: '2px 4px', height: 'auto', fontSize: 10 }}
                         >
                           Vacate
                         </Button>
                       ) : (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-[10px] px-1.5 py-0.5 h-auto"
                           onClick={() => setAssignModal({ bedId: bed._id, roomNumber: room.roomNumber, bedNum: bed.bedNumber.split('-')[1] })}
-                          style={{ padding: '2px 6px', height: 'auto', fontSize: 10, borderColor: 'var(--text-primary)', color: 'var(--text-primary)' }}
                         >
                           Assign
                         </Button>
@@ -302,11 +309,11 @@ export default function ManageRooms() {
       {/* Edit Room Modal */}
       <Modal isOpen={!!editRoom} onClose={() => setEditRoom(null)} title={pg?.name ? `Edit Room Details - ${pg.name}` : "Edit Room Details"} size="lg">
         {editRoom && (
-          <RoomForm 
-            initialData={editRoom} 
-            onSubmit={(data) => updateRoomMut.mutate({ id: editRoom._id, data })} 
-            loading={updateRoomMut.isPending} 
-            isEdit 
+          <RoomForm
+            initialData={editRoom}
+            onSubmit={(data) => updateRoomMut.mutate({ id: editRoom._id, data })}
+            loading={updateRoomMut.isPending}
+            isEdit
             onCancel={() => setEditRoom(null)}
           />
         )}
@@ -314,12 +321,12 @@ export default function ManageRooms() {
 
       {/* Assign Tenant Modal */}
       <Modal isOpen={!!assignModal} onClose={() => setAssignModal(null)} title="Assign Tenant">
-        <AssignForm 
-          bedInfo={assignModal} 
+        <AssignForm
+          bedInfo={assignModal}
           pgId={pgId}
           pgName={pg?.name}
-          onSubmit={(userId, joiningDate) => assignMut.mutate({ bedId: assignModal.bedId, userId, joiningDate })} 
-          loading={assignMut.isPending} 
+          onSubmit={(userId, joiningDate) => assignMut.mutate({ bedId: assignModal.bedId, userId, joiningDate })}
+          loading={assignMut.isPending}
         />
       </Modal>
     </div>
@@ -364,55 +371,60 @@ function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <div className="form-grid">
-        <Input 
-          label="Room Number" required 
-          {...register('roomNumber', { required: 'Room number is required' })} 
-          error={errors.roomNumber?.message} 
-          placeholder="e.g. 101" 
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input
+          label="Room Number" required
+          {...register('roomNumber', { required: 'Room number is required' })}
+          error={errors.roomNumber?.message}
+          placeholder="e.g. 101"
         />
-        <Input 
+        <Input
           label="Floor" type="number" required min={0}
-          {...register('floor', { required: 'Floor is required', min: { value: 0, message: 'Cannot be negative' } })} 
-          error={errors.floor?.message} 
+          {...register('floor', { required: 'Floor is required', min: { value: 0, message: 'Cannot be negative' } })}
+          error={errors.floor?.message}
         />
-        <Input 
+        <Input
           label="Occupancy (Beds)" type="number" required min={1}
-          {...register('sharingType', { required: 'Occupancy is required', min: { value: 1, message: 'Minimum 1' } })} 
+          {...register('sharingType', { required: 'Occupancy is required', min: { value: 1, message: 'Minimum 1' } })}
           onChange={handleSharingChange}
           error={errors.sharingType?.message}
         />
-        <Input 
-          label="Room Type" as="select" 
-          {...register('roomType')} 
-          options={[{ value: 'AC', label: 'AC' }, { value: 'Non-AC', label: 'Non-AC' }]} 
+        <Input
+          label="Room Type" as="select"
+          {...register('roomType')}
+          options={[{ value: 'AC', label: 'AC' }, { value: 'Non-AC', label: 'Non-AC' }]}
         />
-        
-        <div className="full" style={{ marginTop: 16 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>Bed Configurations</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+        {/* Bed Configurations — full-width across both columns */}
+        <div className="col-span-1 sm:col-span-2 mt-2">
+          <h3 className="text-[14px] font-bold mb-3 pb-2 border-b dark:border-[#2d3052] border-gray-200 dark:text-[#f0f0f8] text-gray-900">
+            Bed Configurations
+          </h3>
+          <div className="flex flex-col gap-3">
             {fields.map((field, index) => (
-              <div key={field.id} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr', gap: 12, alignItems: 'end' }}>
+              <div key={field.id} className="grid grid-cols-[80px_1fr_1fr] items-end gap-3">
                 <Input label={`Bed ${field.bedNumber}`} disabled value={field.bedNumber} />
-                <Input 
+                <Input
                   label="Price" type="number" required min={0}
-                  {...register(`beds.${index}.price`, { required: 'Price is required', min: { value: 0, message: 'Cannot be negative' } })} 
-                  placeholder="Price" 
+                  {...register(`beds.${index}.price`, { required: 'Price is required', min: { value: 0, message: 'Cannot be negative' } })}
+                  placeholder="Price"
                   error={errors.beds?.[index]?.price?.message}
                 />
-                <Input 
-                  label="Position" 
-                  {...register(`beds.${index}.position`)} 
-                  placeholder="e.g. Window" 
+                <Input
+                  label="Position"
+                  {...register(`beds.${index}.position`)}
+                  placeholder="e.g. Window"
                 />
               </div>
             ))}
           </div>
         </div>
       </div>
-      <div className="modal-footer" style={{ marginTop: 24, display: 'flex', gap: 10 }}>
-        <Button variant="ghost" type="button" onClick={onCancel} style={{ flex: 1 }}>Cancel</Button>
-        <Button type="submit" loading={loading} style={{ flex: 2 }}>
+
+      {/* Modal Footer */}
+      <div className="flex gap-3 justify-end mt-6 pt-5 border-t dark:border-[#2d3052] border-gray-200 flex-col-reverse sm:flex-row">
+        <Button variant="ghost" type="button" onClick={onCancel} className="flex-1">Cancel</Button>
+        <Button type="submit" loading={loading} className="flex-[2]">
           {isEdit ? 'Update Room' : 'Create Room & Beds'}
         </Button>
       </div>
@@ -431,55 +443,50 @@ function AssignForm({ bedInfo, onSubmit, loading, pgId, pgName }) {
     const today = new Date();
     return today.toISOString().slice(0, 10);
   });
-  
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ background: 'var(--primary-light)', padding: '10px 12px', borderRadius: 'var(--radius-md)', color: 'var(--primary)', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <span>Assigning tenant to <strong>Room {bedInfo?.roomNumber} - Bed {bedInfo?.bedNum}</strong></span>
+    <div className="flex flex-col gap-4">
+      {/* Bed Info Banner */}
+      <div className="bg-[#6c63ff]/15 px-3 py-2.5 rounded-xl text-[#6c63ff] text-[13px] flex items-center justify-between flex-wrap gap-2">
+        <span>
+          Assigning tenant to <strong>Room {bedInfo?.roomNumber} - Bed {bedInfo?.bedNum}</strong>
+        </span>
         {pgName && (
-          <span style={{ 
-            fontSize: 11, 
-            background: 'var(--bg-surface)', 
-            color: 'var(--primary)', 
-            padding: '2px 8px', 
-            borderRadius: 12, 
-            fontWeight: 700,
-            border: '1px solid var(--primary-light)'
-          }}>
+          <span className="text-[11px] dark:bg-[#242740] bg-white text-[#6c63ff] px-2 py-0.5 rounded-full font-bold border border-[#6c63ff]/20">
             {pgName}
           </span>
         )}
       </div>
-      
+
+      {/* Tenant Selector */}
       <div>
-        <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Select Tenant (with "Deal Done" status)</h4>
-        
-        {isLoading ? <Spinner /> : tenants.length === 0 ? (
-          <div className="text-center py-4 text-muted">
-            <Users size={32} style={{ opacity: 0.3, marginBottom: 8 }} />
-            <p>No eligible tenants found.<br/><small>Users must have an enquiry with "Deal Done" status.</small></p>
+        <h4 className="text-[13px] font-bold mb-2.5 dark:text-[#f0f0f8] text-gray-900">
+          Select Tenant (with "Deal Done" status)
+        </h4>
+
+        {isLoading ? (
+          <Spinner />
+        ) : tenants.length === 0 ? (
+          <div className="text-center py-4 dark:text-[#6b6e82] text-gray-500">
+            <Users size={32} className="opacity-30 mb-2 mx-auto" />
+            <p>No eligible tenants found.<br /><small>Users must have an enquiry with "Deal Done" status.</small></p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 200, overflowY: 'auto', padding: 4 }}>
+          <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto p-1">
             {tenants.map(user => (
-              <div 
-                key={user._id} 
+              <div
+                key={user._id}
                 onClick={() => setSelectedUser(user._id)}
-                style={{ 
-                  padding: '8px 12px', 
-                  borderRadius: 'var(--radius-sm)', 
-                  border: `1px solid ${selectedUser === user._id ? 'var(--primary)' : 'var(--border-primary)'}`,
-                  background: selectedUser === user._id ? 'var(--primary-light)' : 'var(--bg-elevated)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  transition: 'all 0.2s'
-                }}
+                className={[
+                  'px-3 py-2 rounded-lg border cursor-pointer flex justify-between items-center transition-all duration-200',
+                  selectedUser === user._id
+                    ? 'border-[#6c63ff] bg-[#6c63ff]/15'
+                    : 'dark:border-[#2d3052] border-gray-200 dark:bg-[#242740] bg-gray-50',
+                ].join(' ')}
               >
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{user.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user.mobNo1} · {user.email}</div>
+                  <div className="font-semibold text-sm dark:text-[#f0f0f8] text-gray-900">{user.name}</div>
+                  <div className="text-[11px] dark:text-[#6b6e82] text-gray-400">{user.mobNo1} · {user.email}</div>
                 </div>
                 {selectedUser === user._id && <Badge variant="primary">Selected</Badge>}
               </div>
@@ -488,18 +495,25 @@ function AssignForm({ bedInfo, onSubmit, loading, pgId, pgName }) {
         )}
       </div>
 
+      {/* Joining Date */}
       <div>
-        <Input 
-          label="Check-in / Joining Date" 
-          type="date" 
+        <Input
+          label="Check-in / Joining Date"
+          type="date"
           required
-          value={joiningDate} 
-          onChange={e => setJoiningDate(e.target.value)} 
+          value={joiningDate}
+          onChange={e => setJoiningDate(e.target.value)}
         />
       </div>
 
-      <div className="modal-footer" style={{ borderTop: '1px solid var(--border-light)', paddingTop: 16 }}>
-        <Button onClick={() => onSubmit(selectedUser, joiningDate)} loading={loading} disabled={!selectedUser || !joiningDate} style={{ width: '100%' }}>
+      {/* Modal Footer */}
+      <div className="border-t dark:border-[#2d3052] border-gray-200 pt-4">
+        <Button
+          onClick={() => onSubmit(selectedUser, joiningDate)}
+          loading={loading}
+          disabled={!selectedUser || !joiningDate}
+          className="w-full"
+        >
           Confirm Assignment
         </Button>
       </div>

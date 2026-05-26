@@ -16,6 +16,7 @@ import {
 } from '../../api/rent.api';
 import { Badge, Button, Card, Modal, Spinner, EmptyState, Input, ConfirmModal } from '../../components/common';
 import { getErrorMessage, formatDate, formatDateTime, formatTime } from '../../utils/helpers';
+import { cn } from '../../utils/cn';
 import {
   IndianRupee, TrendingUp, Clock, AlertCircle, Phone, Plus,
   Edit2, Trash2, CheckCircle2, Zap, Check, X, ShieldAlert, FileCheck,
@@ -358,19 +359,18 @@ export default function RentTracker() {
     }
   };
 
-
   const f = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
   return (
     <div className="fade-in">
       {/* Header */}
-      <div className="page-header" style={{ marginBottom: 20 }}>
+      <div className="flex items-start justify-between mb-7 flex-wrap gap-4">
         <div>
-          <h1 className="page-title">Rent Tracker</h1>
-          <p className="page-subtitle">Track payments, verification approvals, and monthly collections</p>
+          <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900">Rent Tracker</h1>
+          <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-1">Track payments, verification approvals, and monthly collections</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button variant="ghost" size="sm" onClick={() => { setForm(f => ({ ...f, _genPgId: filterPgId || '' })); setModal('generate'); }} style={{ gap: 6 }}>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={() => { setForm(f => ({ ...f, _genPgId: filterPgId || '' })); setModal('generate'); }} className="flex items-center gap-1.5">
             <Zap size={14} /> Generate Rent Bills
           </Button>
           <Button size="sm" onClick={() => { 
@@ -380,7 +380,7 @@ export default function RentTracker() {
             setShowBedDropdown(false);
             setModal('record'); 
             loadBeds(filterPgId, initialForm.rentMonth); 
-          }} style={{ gap: 6 }}>
+          }} className="flex items-center gap-1.5">
             <Plus size={14} /> Record Payment
           </Button>
         </div>
@@ -388,80 +388,61 @@ export default function RentTracker() {
 
       {/* Summary Cards */}
       {summary && (
-        <div className="rent-summary-grid">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[
             { 
               icon: <IndianRupee size={18} />, 
               label: 'Collected', 
               value: f(summary.totalCollected), 
               sub: `${summary.totalDue > 0 ? Math.round((summary.totalCollected / summary.totalDue) * 100) : 0}% of ${f(summary.totalDue)}`, 
-              color: 'var(--success)' 
+              colorClass: 'text-[#51cf66]'
             },
-            { icon: <TrendingUp size={18} />, label: 'Collection Rate', value: `${summary.paid || 0} / ${summary.tenantCount || 0}`, sub: `${summary.collectionRate}% tenants paid`, color: 'var(--primary)' },
-            { icon: <Clock size={18} />, label: 'Pending', value: (summary.pending || 0) + (summary.partial || 0) + (summary.under_review || 0), sub: 'payments due', color: 'var(--warning)' },
-            { icon: <AlertCircle size={18} />, label: 'Overdue', value: summary.overdue || 0, sub: 'past due date', color: 'var(--danger)' },
+            { icon: <TrendingUp size={18} />, label: 'Collection Rate', value: `${summary.paid || 0} / ${summary.tenantCount || 0}`, sub: `${summary.collectionRate}% tenants paid`, colorClass: 'text-[#6c63ff]' },
+            { icon: <Clock size={18} />, label: 'Pending', value: (summary.pending || 0) + (summary.partial || 0) + (summary.under_review || 0), sub: 'payments due', colorClass: 'text-[#ffa94d]' },
+            { icon: <AlertCircle size={18} />, label: 'Overdue', value: summary.overdue || 0, sub: 'past due date', colorClass: 'text-[#ff4d6d]' },
           ].map((s, i) => (
-            <Card key={i} style={{ padding: '16px 20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <div style={{ color: s.color }}>{s.icon}</div>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{s.label}</span>
+            <Card key={i} className="p-4 md:p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <div className={s.colorClass}>{s.icon}</div>
+                <span className="text-[10px] font-bold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.9px]">{s.label}</span>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{s.sub}</div>
+              <div className={`text-2xl font-black ${s.colorClass}`}>{s.value}</div>
+              <div className="text-xs dark:text-[#6b6e82] text-gray-500 mt-1">{s.sub}</div>
             </Card>
           ))}
         </div>
       )}
 
       {/* Dynamic Tab Selector */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 20, gap: 20 }}>
+      <div className="flex border-b border-gray-200 dark:border-[#2d3052] mb-5 gap-0">
         <button
           onClick={() => setActiveTab('records')}
-          style={{
-            padding: '10px 4px',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'records' ? '2px solid var(--primary)' : 'none',
-            color: activeTab === 'records' ? 'var(--primary)' : 'var(--text-muted)',
-            fontWeight: 800,
-            cursor: 'pointer',
-            fontSize: 14,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6
-          }}
+          className={cn(
+            "px-4 py-2.5 text-[13px] font-bold transition-colors border-b-2 cursor-pointer outline-none",
+            activeTab === 'records'
+              ? "border-[#6c63ff] text-[#6c63ff]"
+              : "border-transparent text-gray-500 dark:text-[#a0a3b1] hover:text-gray-900 dark:hover:text-[#f0f0f8]"
+          )}
         >
           All Rent Records
         </button>
         <button
           onClick={() => setActiveTab('approvals')}
-          style={{
-            padding: '10px 4px',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'approvals' ? '2px solid var(--primary)' : 'none',
-            color: activeTab === 'approvals' ? 'var(--primary)' : 'var(--text-muted)',
-            fontWeight: 800,
-            cursor: 'pointer',
-            fontSize: 14,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8
-          }}
-        >
-          Approvals Inbox
-          {approvals.length > 0 && (
-            <span style={{
-              background: 'var(--danger)',
-              color: '#fff',
-              fontSize: 10,
-              padding: '1px 6px',
-              borderRadius: 10,
-              fontWeight: 900
-            }}>
-              {approvals.length}
-            </span>
+          className={cn(
+            "px-4 py-2.5 text-[13px] font-bold transition-colors border-b-2 cursor-pointer outline-none",
+            activeTab === 'approvals'
+              ? "border-[#6c63ff] text-[#6c63ff]"
+              : "border-transparent text-gray-500 dark:text-[#a0a3b1] hover:text-gray-900 dark:hover:text-[#f0f0f8]"
           )}
+        >
+          <div className="flex items-center gap-2">
+            Approvals Inbox
+            {approvals.length > 0 && (
+              <span className="bg-[#ff4d6d] text-white text-[10px] px-2 py-0.5 rounded-full font-black">
+                {approvals.length}
+              </span>
+            )}
+          </div>
         </button>
       </div>
 
@@ -469,13 +450,13 @@ export default function RentTracker() {
       {activeTab === 'approvals' && (
         <div className="fade-in">
           {/* Action header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-2.5">
             <div>
-              <h3 style={{ fontSize: 15, fontWeight: 800 }}>Student Payment Submissions</h3>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Confirm or reject self-reported transactions submitted by tenants</p>
+              <h3 className="text-base font-bold dark:text-[#f0f0f8] text-gray-900">Student Payment Submissions</h3>
+              <p className="text-xs dark:text-[#6b6e82] text-gray-500">Confirm or reject self-reported transactions submitted by tenants</p>
             </div>
             {selectedIds.length > 0 && (
-              <Button size="sm" onClick={handleBulkApprove} style={{ gap: 6 }}>
+              <Button size="sm" onClick={handleBulkApprove} className="flex items-center gap-1.5">
                 <Check size={14} /> Approve Selected ({selectedIds.length})
               </Button>
             )}
@@ -485,111 +466,87 @@ export default function RentTracker() {
             <EmptyState icon={<FileCheck size={48} />} title="Approvals Inbox is Empty"
               description="Excellent! No pending student payment proofs require verification." />
           ) : (
-            <div className="table-wrapper">
-              <table className="table">
+            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-[#2d3052] mb-4">
+              <table className="w-full border-collapse">
                 <thead>
-                  <tr>
-                    <th style={{ width: 40 }}>
+                  <tr className="bg-gray-50 dark:bg-[#242740] border-b border-gray-200 dark:border-[#2d3052]">
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left w-10">
                       <input
                         type="checkbox"
                         checked={selectedIds.length === approvals.length}
                         onChange={e => handleSelectAll(e.target.checked)}
                       />
                     </th>
-                    <th>Student Details</th>
-                    <th>Bed / PG</th>
-                    <th>Month</th>
-                    <th>Days</th>
-                    <th>Amount Due</th>
-                    <th>Paid Amount</th>
-                    <th>Mode</th>
-                    <th>Txn Ref ID</th>
-                    <th>Tenant Notes</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Student Details</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Bed / PG</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Month</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Days</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Amount Due</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Paid Amount</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Mode</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Txn Ref ID</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Tenant Notes</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {approvals.map(rec => (
-                    <tr key={rec._id}>
-                      <td>
+                    <tr key={rec._id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-[#242740]/50 last:[&>td]:border-0">
+                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(rec._id)}
                           onChange={e => handleSelectRow(rec._id, e.target.checked)}
                         />
                       </td>
-                      <td>
-                        <div style={{ fontWeight: 700, fontSize: 13 }}>{rec.userId?.name || '—'}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
+                        <div className="font-bold text-[13px] dark:text-[#f0f0f8] text-gray-900">{rec.userId?.name || '—'}</div>
+                        <div className="text-[11px] dark:text-[#6b6e82] text-gray-500 flex items-center gap-1 mt-0.5">
                           {rec.userId?.mobNo1 && <><Phone size={10} />{rec.userId.mobNo1}</>}
                         </div>
                       </td>
-                      <td style={{ fontSize: 12 }}>
-                        <div style={{ fontWeight: 600 }}>Bed {rec.bedId?.bedNumber}</div>
-                        <div style={{ color: 'var(--text-muted)' }}>{rec.pgId?.name}</div>
+                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900">
+                        <div className="font-semibold">Bed {rec.bedId?.bedNumber}</div>
+                        <div className="text-gray-500 dark:text-[#6b6e82]">{rec.pgId?.name}</div>
                       </td>
-                      <td style={{ fontSize: 12, fontWeight: 700 }}>{rec.rentMonth}</td>
-                      <td style={{ fontSize: 12, fontWeight: 600 }}>{getActiveDays(rec)}</td>
-                       <td style={{ fontSize: 13, fontWeight: 700 }}>
+                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs font-bold dark:text-[#f0f0f8] text-gray-900">{rec.rentMonth}</td>
+                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900">{getActiveDays(rec)}</td>
+                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-[13px] font-bold dark:text-[#f0f0f8] text-gray-900">
                         <div>{f(rec.amount + (rec.penaltyAmount || 0))}</div>
                         {rec.penaltyAmount > 0 ? (
-                          <div style={{ fontSize: 10, color: 'var(--danger)', fontWeight: 500, marginTop: 2 }}>
+                          <div className="text-[10px] text-[#ff4d6d] font-medium mt-0.5">
                             Base: {f(rec.amount)} + Late Fee: {f(rec.penaltyAmount)}
                           </div>
                         ) : rec.bedId?.price && rec.amount < rec.bedId.price ? (
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, marginTop: 2 }}>
+                          <div className="text-[10px] text-gray-500 dark:text-[#6b6e82] font-medium mt-0.5">
                             Base: {f(rec.bedId.price)} (Prorated)
                           </div>
                         ) : null}
                       </td>
-                      <td style={{ fontSize: 13, fontWeight: 800, color: 'var(--success)' }}>{f(rec.amountPaid)}</td>
-                      <td style={{ fontSize: 12 }}>{rec.paymentMode ? MODE_LABELS[rec.paymentMode] : '—'}</td>
-                      <td style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{rec.referenceNo || '—'}</td>
-                      <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
+                        <Badge variant="info">{f(rec.amountPaid)}</Badge>
+                      </td>
+                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900">{rec.paymentMode ? MODE_LABELS[rec.paymentMode] : '—'}</td>
+                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-[11px] text-gray-500 dark:text-[#6b6e82] font-mono">{rec.referenceNo || '—'}</td>
+                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-[11px] text-gray-500 dark:text-[#6b6e82] max-w-[140px] truncate" title={rec.notes}>
                         {rec.notes || '—'}
                       </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
+                        <div className="flex gap-1.5 justify-end items-center">
                           <button onClick={() => setBreakdownTarget(rec)}
-                            style={{ padding: '6px 10px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--primary)', display: 'flex', alignItems: 'center', height: '28px' }}
+                            className="p-1.5 bg-gray-50 dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg cursor-pointer text-[#6c63ff] hover:bg-gray-100 dark:hover:bg-[#2d3052] flex items-center justify-center h-8 w-8 transition-colors"
                             title="View Breakdown">
                             <FileText size={13} />
                           </button>
                           <button
                             onClick={() => setApproveTarget(rec)}
-                            style={{
-                              padding: '6px 10px',
-                              background: 'var(--success-light)',
-                              border: 'none',
-                              borderRadius: 6,
-                              cursor: 'pointer',
-                              color: 'var(--success)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4,
-                              fontWeight: 800,
-                              fontSize: 11,
-                              height: '28px'
-                            }}
+                            className="px-2.5 py-1.5 bg-[#51cf66]/12 hover:bg-[#51cf66]/20 border border-transparent rounded-lg cursor-pointer text-[#51cf66] flex items-center gap-1 font-bold text-[11px] h-8 transition-colors"
                           >
                             <Check size={12} /> Approve
                           </button>
                           <button
                             onClick={() => openReject(rec._id)}
-                            style={{
-                              padding: '6px 10px',
-                              background: 'var(--danger-light)',
-                              border: 'none',
-                              borderRadius: 6,
-                              cursor: 'pointer',
-                              color: 'var(--danger)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4,
-                              fontWeight: 800,
-                              fontSize: 11,
-                              height: '28px'
-                            }}
+                            className="px-2.5 py-1.5 bg-[#ff4d6d]/12 hover:bg-[#ff4d6d]/20 border border-transparent rounded-lg cursor-pointer text-[#ff4d6d] flex items-center gap-1 font-bold text-[11px] h-8 transition-colors"
                           >
                             <X size={12} /> Reject
                           </button>
@@ -608,19 +565,19 @@ export default function RentTracker() {
       {activeTab === 'records' && (
         <div className="fade-in">
           {/* Filter bar */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-            <select className="form-control" style={{ width: 'auto', minWidth: 160, fontSize: 12 }}
+          <div className="flex gap-2.5 mb-4 flex-wrap items-center">
+            <select className="h-10 w-full sm:w-auto min-w-[160px] bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all"
               value={filterPgId} onChange={e => { setFilterPgId(e.target.value); setPage(1); }}>
               <option value="">All PGs</option>
               {pgs.map(pg => <option key={pg._id} value={pg._id}>{pg.name}</option>)}
             </select>
 
-            <select className="form-control" style={{ width: 'auto', fontSize: 12 }}
+            <select className="h-10 w-full sm:w-auto bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all"
               value={filterMonth} onChange={e => { setFilterMonth(e.target.value); setPage(1); }}>
               {monthOptions().map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
 
-            <select className="form-control" style={{ width: 'auto', fontSize: 12 }}
+            <select className="h-10 w-full sm:w-auto bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all"
               value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}>
               <option value="">All Status</option>
               <option value="paid">Paid</option>
@@ -630,7 +587,7 @@ export default function RentTracker() {
               <option value="overdue">Overdue</option>
             </select>
 
-            <select className="form-control" style={{ width: 'auto', fontSize: 12 }}
+            <select className="h-10 w-full sm:w-auto bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all"
               value={filterMode} onChange={e => { setFilterMode(e.target.value); setPage(1); }}>
               <option value="">All Modes</option>
               <option value="cash">Cash</option>
@@ -645,7 +602,7 @@ export default function RentTracker() {
                 Clear
               </Button>
             )}
-            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>{total} records</span>
+            <span className="sm:ml-auto text-xs dark:text-[#6b6e82] text-gray-500 font-semibold">{total} records</span>
           </div>
 
           {/* Table */}
@@ -654,84 +611,86 @@ export default function RentTracker() {
               description="Record a payment or auto-generate rent for this month." />
           ) : (
             <>
-              <div className="table-wrapper">
-                <table className="table">
+              <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-[#2d3052] mb-4">
+                <table className="w-full border-collapse">
                   <thead>
-                    <tr>
-                      <th>Tenant</th>
-                      <th>Bed / Room</th>
-                      <th>PG</th>
-                      <th>Month</th>
-                      <th>Days</th>
-                      <th>Due</th>
-                      <th>Paid</th>
-                      <th>Status</th>
-                      <th>Mode</th>
-                      <th>Paid On</th>
-                      <th>Ref#</th>
-                      <th>Actions</th>
+                    <tr className="bg-gray-50 dark:bg-[#242740] border-b border-gray-200 dark:border-[#2d3052]">
+                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Tenant</th>
+                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Bed / Room</th>
+                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">PG</th>
+                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Month</th>
+                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Days</th>
+                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Due</th>
+                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Paid</th>
+                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Status</th>
+                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Mode</th>
+                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Paid On</th>
+                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Ref#</th>
+                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-right whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {records.map(rec => (
-                      <tr key={rec._id}>
-                        <td>
-                          <div style={{ fontWeight: 600, fontSize: 13 }}>{rec.userId?.name || '—'}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <tr key={rec._id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-[#242740]/50 last:[&>td]:border-0">
+                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
+                          <div className="font-bold text-[13px] dark:text-[#f0f0f8] text-gray-900">{rec.userId?.name || '—'}</div>
+                          <div className="text-[11px] dark:text-[#6b6e82] text-gray-500 flex items-center gap-1 mt-0.5">
                             {rec.userId?.mobNo1 && <><Phone size={10} />{rec.userId.mobNo1}</>}
                           </div>
                         </td>
-                        <td style={{ fontSize: 12 }}>
-                          <div style={{ fontWeight: 600 }}>Bed {rec.bedId?.bedNumber}</div>
-                          <div style={{ color: 'var(--text-muted)' }}>Room {rec.roomId?.roomNumber}</div>
+                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900">
+                          <div className="font-semibold">Bed {rec.bedId?.bedNumber}</div>
+                          <div className="text-gray-500 dark:text-[#6b6e82]">Room {rec.roomId?.roomNumber}</div>
                         </td>
-                        <td style={{ fontSize: 12 }}>{rec.pgId?.name || '—'}</td>
-                        <td style={{ fontSize: 12, fontWeight: 600 }}>{rec.rentMonth}</td>
-                        <td style={{ fontSize: 12, fontWeight: 600 }}>{getActiveDays(rec)}</td>
-                        <td style={{ fontSize: 13, fontWeight: 700 }}>
+                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900">{rec.pgId?.name || '—'}</td>
+                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs font-bold dark:text-[#f0f0f8] text-gray-900">{rec.rentMonth}</td>
+                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900">{getActiveDays(rec)}</td>
+                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-[13px] font-bold dark:text-[#f0f0f8] text-gray-900">
                           <div>{f(rec.amount + (rec.penaltyAmount || 0))}</div>
                           {rec.penaltyAmount > 0 ? (
-                            <div style={{ fontSize: 10, color: 'var(--danger)', fontWeight: 500, marginTop: 2 }}>
+                            <div className="text-[10px] text-[#ff4d6d] font-medium mt-0.5">
                               Base: {f(rec.amount)} + Late Fee: {f(rec.penaltyAmount)}
                             </div>
                           ) : rec.bedId?.price && rec.amount < rec.bedId.price ? (
-                            <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, marginTop: 2 }}>
+                            <div className="text-[10px] text-gray-500 dark:text-[#6b6e82] font-medium mt-0.5">
                               Base: {f(rec.bedId.price)} (Prorated)
                             </div>
                           ) : null}
                         </td>
-                        <td style={{ fontSize: 13, fontWeight: 700, color: rec.status === 'paid' ? 'var(--success)' : 'var(--warning)' }}>
-                          {f(rec.amountPaid)}
+                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
+                          <Badge variant={rec.status === 'paid' ? 'success' : rec.status === 'partial' ? 'info' : 'default'}>
+                            {f(rec.amountPaid)}
+                          </Badge>
                         </td>
-                        <td>
+                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
                           <Badge variant={STATUS_VARIANT[rec.status] || 'default'}>{rec.status}</Badge>
                           {rec.penaltyAmount > 0 && rec.status === 'paid' && (
-                            <div style={{ fontSize: 10, color: 'var(--danger)', fontWeight: 600, marginTop: 2 }}>
+                            <div className="text-[10px] text-[#ff4d6d] font-semibold mt-0.5">
                               (Late Fee Applied)
                             </div>
                           )}
                         </td>
-                        <td style={{ fontSize: 12 }}>{rec.paymentMode ? MODE_LABELS[rec.paymentMode] : '—'}</td>
-                        <td style={{ fontSize: 12 }} title={rec.paidDate ? formatDateTime(rec.paidDate) : '—'}>
+                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900">{rec.paymentMode ? MODE_LABELS[rec.paymentMode] : '—'}</td>
+                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900" title={rec.paidDate ? formatDateTime(rec.paidDate) : '—'}>
                           {rec.paidDate ? (
                             <>
-                              <div style={{ fontWeight: 600 }}>{formatDate(rec.paidDate)}</div>
-                              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{formatTime(rec.paidDate)}</div>
+                              <div className="font-semibold">{formatDate(rec.paidDate)}</div>
+                              <div className="text-[10px] text-gray-500 dark:text-[#6b6e82]">{formatTime(rec.paidDate)}</div>
                             </>
                           ) : '—'}
                         </td>
-                        <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-[11px] text-gray-500 dark:text-[#6b6e82] max-w-[80px] truncate">
                           {rec.referenceNo || '—'}
                         </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: 6 }}>
+                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
+                          <div className="flex gap-1.5 justify-end items-center">
                             <button onClick={() => setBreakdownTarget(rec)}
-                              style={{ padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--primary)' }}
+                              className="p-1.5 bg-gray-50 dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg cursor-pointer text-[#6c63ff] hover:bg-gray-100 dark:hover:bg-[#2d3052] h-7 w-7 flex items-center justify-center transition-colors"
                               title="View Breakdown">
                               <FileText size={13} />
                             </button>
                             <button onClick={() => openEdit(rec)}
-                              style={{ padding: '4px 8px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--primary)' }}
+                              className="p-1.5 bg-gray-50 dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg cursor-pointer text-[#6c63ff] hover:bg-gray-100 dark:hover:bg-[#2d3052] h-7 w-7 flex items-center justify-center transition-colors"
                               title="Edit Record">
                               <Edit2 size={13} />
                             </button>
@@ -745,11 +704,11 @@ export default function RentTracker() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                <div className="flex justify-between items-center mt-4">
+                  <span className="text-xs text-gray-500 dark:text-[#6b6e82]">
                     Page {page} of {totalPages} · {total} records
                   </span>
-                  <div style={{ display: 'flex', gap: 6 }}>
+                  <div className="flex gap-1.5">
                     <Button variant="ghost" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
                     <Button variant="ghost" size="sm" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
                   </div>
@@ -766,14 +725,14 @@ export default function RentTracker() {
         onClose={() => { setModal(null); setEditTarget(null); setForm(emptyForm); }}
         title={modal === 'edit' ? 'Edit Payment Record' : 'Record Payment'}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="flex flex-col gap-4">
           {modal === 'record' && (
             <>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>
-                  SELECT PG <span style={{ color: 'var(--danger)' }}>*</span>
+                <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">
+                  SELECT PG <span className="text-[#ff4d6d]">*</span>
                 </label>
-                <select className="form-control" required value={form._pgId || ''}
+                <select className="w-full h-11 bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all" required value={form._pgId || ''}
                   onChange={e => { 
                     const newPg = e.target.value;
                     setForm(f => ({ ...f, _pgId: newPg, bedId: '', userId: '' })); 
@@ -785,13 +744,13 @@ export default function RentTracker() {
                   {pgs.map(pg => <option key={pg._id} value={pg._id}>{pg.name}</option>)}
                 </select>
               </div>
-              <div style={{ position: 'relative' }}>
-                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>
-                  SELECT TENANT BED <span style={{ color: 'var(--danger)' }}>*</span>
+              <div className="relative">
+                <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">
+                  SELECT TENANT BED <span className="text-[#ff4d6d]">*</span>
                 </label>
                 <input
                   type="text"
-                  className="form-control"
+                  className="w-full h-11 bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all"
                   placeholder="🔍 Type tenant name, bed no, or room no..."
                   value={bedSearch}
                   onFocus={() => setShowBedDropdown(true)}
@@ -802,27 +761,14 @@ export default function RentTracker() {
                   }}
                   required={!form.bedId}
                 />
-                <span style={{ fontSize: 10, color: 'var(--text-muted)', display: 'block', marginTop: 4 }}>
+                <span className="text-[10px] text-gray-500 dark:text-[#6b6e82] block mt-1.5 leading-normal">
                   ℹ️ Only displaying occupied beds that do not have an existing rent record for the selected month.
                 </span>
                 
                 {showBedDropdown && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    zIndex: 100,
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 8,
-                    maxHeight: 200,
-                    overflowY: 'auto',
-                    marginTop: 4,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                  }}>
+                  <div className="absolute top-[100%] left-0 right-0 z-[100] bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg max-h-[200px] overflow-y-auto mt-1.5 shadow-lg">
                     {filteredBeds.length === 0 ? (
-                      <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-muted)' }}>
+                      <div className="px-3 py-2.5 text-xs text-gray-500 dark:text-[#6b6e82]">
                         No occupied beds found matching search
                       </div>
                     ) : (
@@ -834,14 +780,10 @@ export default function RentTracker() {
                             setBedSearch(b.label.split(' — ')[0]);
                             setShowBedDropdown(false);
                           }}
-                          style={{
-                            padding: '8px 12px',
-                            fontSize: 12,
-                            cursor: 'pointer',
-                            background: form.bedId === b._id ? 'var(--primary-light)' : 'transparent',
-                            color: form.bedId === b._id ? 'var(--primary)' : 'var(--text-primary)',
-                            borderBottom: '1px solid var(--border-light)'
-                          }}
+                          className={cn(
+                            "px-3 py-2 text-xs cursor-pointer border-b border-gray-100 dark:border-[#2d3052]/30 hover:bg-[#6c63ff]/10 hover:text-[#6c63ff]",
+                            form.bedId === b._id ? "bg-[#6c63ff]/15 text-[#6c63ff]" : "text-gray-900 dark:text-[#f0f0f8]"
+                          )}
                         >
                           {b.label}
                         </div>
@@ -854,12 +796,12 @@ export default function RentTracker() {
           )}
 
           {modal === 'edit' && editTarget && (
-            <div style={{ padding: '10px 14px', background: 'var(--bg-elevated)', borderRadius: 8, fontSize: 12 }}>
+            <div className="px-3.5 py-2.5 bg-gray-50 dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg text-xs font-semibold text-gray-900 dark:text-[#f0f0f8]">
               <strong>{editTarget.userId?.name}</strong> · Bed {editTarget.bedId?.bedNumber} · {editTarget.rentMonth}
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Rent Month" type="month" value={form.rentMonth} required
               onChange={e => {
                 const newMonth = e.target.value;
@@ -925,8 +867,8 @@ export default function RentTracker() {
               }} />
 
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>PAYMENT STATUS</label>
-              <select className="form-control" value={form.status}
+              <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">PAYMENT STATUS</label>
+              <select className="w-full h-11 bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all" value={form.status}
                 onChange={e => {
                   const newStatus = e.target.value;
                   setForm(f => ({
@@ -955,8 +897,8 @@ export default function RentTracker() {
               }} />
 
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>PAYMENT MODE</label>
-              <select className="form-control" value={form.status === 'pending' ? '' : (form.paymentMode || '')}
+              <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">PAYMENT MODE</label>
+              <select className="w-full h-11 bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all" value={form.status === 'pending' ? '' : (form.paymentMode || '')}
                 disabled={form.status === 'pending'}
                 onChange={e => setForm(f => ({ ...f, paymentMode: e.target.value || null }))}>
                 {form.status === 'pending' ? <option value="">— No Payment Mode —</option> : null}
@@ -979,9 +921,9 @@ export default function RentTracker() {
           <Input label="Notes" value={form.notes}
             onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Any remarks..." />
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-            <Button variant="ghost" style={{ flex: 1 }} onClick={() => { setModal(null); setEditTarget(null); }}>Cancel</Button>
-            <Button style={{ flex: 1 }} loading={recordMut.isPending || updateMut.isPending} onClick={handleSubmit}>
+          <div className="flex gap-3 mt-2 flex-col-reverse sm:flex-row pt-4 border-t border-gray-200 dark:border-[#2d3052]">
+            <Button variant="ghost" className="flex-1" onClick={() => { setModal(null); setEditTarget(null); }}>Cancel</Button>
+            <Button className="flex-1" loading={recordMut.isPending || updateMut.isPending} onClick={handleSubmit}>
               {modal === 'edit' ? 'Save Changes' : 'Record Payment'}
             </Button>
           </div>
@@ -990,16 +932,18 @@ export default function RentTracker() {
 
       {/* Auto-Generate Modal */}
       <Modal isOpen={modal === 'generate'} onClose={() => setModal(null)} title="Auto-Generate Monthly Rent">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '4px 0' }}>
-          <div style={{ padding: 14, background: 'var(--primary-light)', borderRadius: 10, fontSize: 13, color: 'var(--primary)', fontWeight: 600 }}>
-            <CheckCircle2 size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
-            Creates pending rent records for all currently occupied beds in the selected PG. Existing records are skipped.
+        <div className="flex flex-col gap-4 mt-1">
+          <div className="p-3.5 bg-[#6c63ff]/10 text-[#6c63ff] border border-[#6c63ff]/20 rounded-lg text-xs font-semibold leading-relaxed flex items-start gap-2">
+            <CheckCircle2 size={16} className="mt-0.5 flex-shrink-0" />
+            <div>
+              Creates pending rent records for all currently occupied beds in the selected PG. Existing records are skipped.
+            </div>
           </div>
           <div>
-            <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>
-              SELECT PG <span style={{ color: 'var(--danger)' }}>*</span>
+            <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">
+              SELECT PG <span className="text-[#ff4d6d]">*</span>
             </label>
-            <select className="form-control" required value={form._genPgId || ''}
+            <select className="w-full h-11 bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all" required value={form._genPgId || ''}
               onChange={e => setForm(f => ({ ...f, _genPgId: e.target.value }))}>
               <option value="">-- Select PG --</option>
               {pgs.map(pg => <option key={pg._id} value={pg._id}>{pg.name}</option>)}
@@ -1009,24 +953,15 @@ export default function RentTracker() {
             onChange={e => setForm(f => ({ ...f, rentMonth: e.target.value }))} />
 
           {form.rentMonth && form.rentMonth > currentMonth() && (
-            <div style={{ 
-              padding: '10px 14px', 
-              background: 'var(--danger-light)', 
-              border: '1px solid var(--danger)', 
-              borderRadius: 8, 
-              color: 'var(--danger)', 
-              fontSize: 12, 
-              fontWeight: 600,
-              lineHeight: 1.4
-            }}>
+            <div className="p-3 bg-[#ff4d6d]/10 text-[#ff4d6d] border border-[#ff4d6d]/20 rounded-lg text-xs font-semibold leading-relaxed flex items-start gap-2">
               ⚠️ You cannot generate bills for {getMonthName(form.rentMonth)} month in {getMonthName(currentMonth())} month.
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            <Button variant="ghost" style={{ flex: 1 }} onClick={() => setModal(null)}>Cancel</Button>
+          <div className="flex gap-3 mt-2 flex-col-reverse sm:flex-row pt-4 border-t border-gray-200 dark:border-[#2d3052]">
+            <Button variant="ghost" className="flex-1" onClick={() => setModal(null)}>Cancel</Button>
             <Button 
-              style={{ flex: 1 }} 
+              className="flex-1" 
               loading={generateMut.isPending}
               disabled={!form._genPgId || !form.rentMonth || (form.rentMonth > currentMonth())}
               title={form.rentMonth && form.rentMonth > currentMonth() ? `You cannot generate bills for ${getMonthName(form.rentMonth)} month in ${getMonthName(currentMonth())} month.` : ''}
@@ -1042,7 +977,7 @@ export default function RentTracker() {
                 generateMut.mutate({ pgId: form._genPgId, rentMonth: form.rentMonth });
               }}
             >
-              <Zap size={14} style={{ marginRight: 6 }} /> Generate Rent Slips
+              <Zap size={14} className="mr-1.5" /> Generate Rent Slips
             </Button>
           </div>
         </div>
@@ -1050,9 +985,9 @@ export default function RentTracker() {
 
       {/* Rejection Notes Modal */}
       <Modal isOpen={modal === 'reject'} onClose={() => { setModal(null); setRejectTargetId(null); setRejectionNotes(''); }} title="Reject Payment Proof">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '4px 0' }}>
-          <div style={{ padding: 14, background: 'var(--danger-light)', borderRadius: 10, fontSize: 13, color: 'var(--danger)', fontWeight: 600, display: 'flex', gap: 10, alignItems: 'center' }}>
-            <ShieldAlert size={20} />
+        <div className="flex flex-col gap-4 mt-1">
+          <div className="p-3.5 bg-[#ff4d6d]/10 text-[#ff4d6d] border border-[#ff4d6d]/20 rounded-lg text-xs font-semibold leading-relaxed flex items-start gap-2">
+            <ShieldAlert size={20} className="flex-shrink-0" />
             <div>
               Rejection will return the rent status back to "Pending" and clear transaction details so the student can resubmit.
             </div>
@@ -1065,9 +1000,9 @@ export default function RentTracker() {
             placeholder="e.g., Reference ID doesn't match bank records / Wrong amount entered..."
           />
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            <Button variant="ghost" style={{ flex: 1 }} onClick={() => { setModal(null); setRejectTargetId(null); }}>Cancel</Button>
-            <Button style={{ flex: 1 }} variant="danger" loading={rejectMut.isPending}
+          <div className="flex gap-3 mt-2 flex-col-reverse sm:flex-row pt-4 border-t border-gray-200 dark:border-[#2d3052]">
+            <Button variant="ghost" className="flex-1" onClick={() => { setModal(null); setRejectTargetId(null); }}>Cancel</Button>
+            <Button className="flex-1" variant="danger" loading={rejectMut.isPending}
               onClick={() => rejectMut.mutate({ id: rejectTargetId, notes: rejectionNotes })}>
               Confirm Reject
             </Button>
@@ -1083,58 +1018,58 @@ export default function RentTracker() {
         size="lg"
       >
         {breakdownTarget && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="flex flex-col gap-4">
             {/* Header section in card */}
-            <div style={{ padding: '16px 20px', background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--border)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>Rent Period</span>
+            <div className="p-4 bg-gray-50 dark:bg-[#242740] rounded-xl border border-gray-200 dark:border-[#2d3052]">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[10px] font-bold text-[#6c63ff] uppercase tracking-[0.9px]">Rent Period</span>
                 <Badge variant={STATUS_VARIANT[breakdownTarget.status] || 'default'}>{breakdownTarget.status}</Badge>
               </div>
-              <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)' }}>{getMonthName(breakdownTarget.rentMonth)} {breakdownTarget.rentMonth.split('-')[0]}</h3>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+              <h3 className="text-lg font-black text-gray-900 dark:text-[#f0f0f8]">{getMonthName(breakdownTarget.rentMonth)} {breakdownTarget.rentMonth.split('-')[0]}</h3>
+              <p className="text-xs text-gray-500 dark:text-[#6b6e82] mt-1">
                 {breakdownTarget.pgId?.name} · Bed {breakdownTarget.bedId?.bedNumber} · Room {breakdownTarget.roomId?.roomNumber}
               </p>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6, fontWeight: 600 }}>
-                Days Occupied: <span style={{ color: 'var(--primary)' }}>{getActiveDays(breakdownTarget) !== '—' ? getActiveDays(breakdownTarget).replace('D', ' days') : '—'}</span>
+              <div className="text-xs text-gray-500 dark:text-[#6b6e82] mt-2 font-semibold">
+                Days Occupied: <span className="text-[#6c63ff]">{getActiveDays(breakdownTarget) !== '—' ? getActiveDays(breakdownTarget).replace('D', ' days') : '—'}</span>
               </div>
             </div>
 
             {/* Tenant details if present */}
             {breakdownTarget.userId && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '12px 16px', background: 'var(--bg-base)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 12 }}>
-                <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tenant Details</span>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 4 }}>
+              <div className="flex flex-col gap-1.5 p-3.5 bg-gray-50 dark:bg-[#242740]/40 border border-gray-200 dark:border-[#2d3052]/40 rounded-lg text-xs text-gray-900 dark:text-[#f0f0f8]">
+                <span className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.9px] mb-1">Tenant Details</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
                   <div><strong>Name:</strong> {breakdownTarget.userId.name}</div>
                   {breakdownTarget.userId.mobNo1 && <div><strong>Phone:</strong> {breakdownTarget.userId.mobNo1}</div>}
-                  {breakdownTarget.userId.email && <div style={{ gridColumn: 'span 2' }}><strong>Email:</strong> {breakdownTarget.userId.email}</div>}
+                  {breakdownTarget.userId.email && <div className="sm:col-span-2"><strong>Email:</strong> {breakdownTarget.userId.email}</div>}
                 </div>
               </div>
             )}
 
             {/* Price breakdown details */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 16, background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
-              <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Financial Breakdown</span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13, marginTop: 4 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Base Rent:</span>
-                  <span style={{ fontWeight: 600 }}>{f(breakdownTarget.amount)}</span>
+            <div className="flex flex-col gap-2.5 p-4 bg-gray-50 dark:bg-[#242740] rounded-xl border border-gray-200 dark:border-[#2d3052]">
+              <span className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.9px]">Financial Breakdown</span>
+              <div className="flex flex-col gap-2 text-xs mt-1">
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-[#6b6e82]">Base Rent:</span>
+                  <span className="font-semibold">{f(breakdownTarget.amount)}</span>
                 </div>
                 {breakdownTarget.penaltyAmount > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--danger)' }}>
+                  <div className="flex justify-between text-[#ff4d6d]">
                     <span>Late Fee Penalty:</span>
-                    <span style={{ fontWeight: 700 }}>+ {f(breakdownTarget.penaltyAmount)}</span>
+                    <span className="font-bold">+ {f(breakdownTarget.penaltyAmount)}</span>
                   </div>
                 )}
-                <div style={{ borderTop: '1px solid var(--border)', paddingRow: 4 }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 800 }}>
+                <div className="border-t border-gray-200 dark:border-[#2d3052] my-1" />
+                <div className="flex justify-between text-sm font-bold text-gray-900 dark:text-[#f0f0f8]">
                   <span>Total Due:</span>
-                  <span style={{ color: 'var(--text-primary)' }}>{f(breakdownTarget.amount + (breakdownTarget.penaltyAmount || 0))}</span>
+                  <span>{f(breakdownTarget.amount + (breakdownTarget.penaltyAmount || 0))}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 800, color: 'var(--success)' }}>
+                <div className="flex justify-between text-sm font-bold text-[#51cf66]">
                   <span>Amount Paid:</span>
                   <span>{f(breakdownTarget.amountPaid)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 800, color: breakdownTarget.status === 'paid' ? 'var(--text-muted)' : 'var(--warning)' }}>
+                <div className={cn("flex justify-between text-xs font-bold", breakdownTarget.status === 'paid' ? "text-gray-500 dark:text-[#6b6e82]" : "text-[#ffa94d]")}>
                   <span>Outstanding Balance:</span>
                   <span>{f(Math.max(0, (breakdownTarget.amount + (breakdownTarget.penaltyAmount || 0)) - breakdownTarget.amountPaid))}</span>
                 </div>
@@ -1143,39 +1078,39 @@ export default function RentTracker() {
 
             {/* Payment Transaction details */}
             {(breakdownTarget.paymentMode || breakdownTarget.referenceNo || breakdownTarget.paidDate || breakdownTarget.notes) && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 16, background: 'var(--bg-base)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 12 }}>
-                <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Transaction Info</span>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 4 }}>
+              <div className="flex flex-col gap-2.5 p-4 bg-gray-50 dark:bg-[#242740]/40 border border-gray-200 dark:border-[#2d3052]/40 rounded-lg text-xs text-gray-900 dark:text-[#f0f0f8]">
+                <span className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.9px]">Transaction Info</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
                   <div>
-                    <span style={{ color: 'var(--text-muted)', display: 'block' }}>Payment Method</span>
+                    <span className="text-gray-500 dark:text-[#6b6e82] block text-[10px]">Payment Method</span>
                     <strong>{breakdownTarget.paymentMode ? MODE_LABELS[breakdownTarget.paymentMode] : '—'}</strong>
                   </div>
                   <div>
-                    <span style={{ color: 'var(--text-muted)', display: 'block' }}>Transaction Date</span>
+                    <span className="text-gray-500 dark:text-[#6b6e82] block text-[10px]">Transaction Date</span>
                     <strong>{breakdownTarget.paidDate ? formatDate(breakdownTarget.paidDate) : '—'}</strong>
                   </div>
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <span style={{ color: 'var(--text-muted)', display: 'block' }}>Transaction Reference / Txn ID</span>
-                    <strong style={{ fontFamily: 'monospace' }}>{breakdownTarget.referenceNo || '—'}</strong>
+                  <div className="sm:col-span-2">
+                    <span className="text-gray-500 dark:text-[#6b6e82] block text-[10px]">Transaction Reference / Txn ID</span>
+                    <strong className="font-mono text-xs">{breakdownTarget.referenceNo || '—'}</strong>
                   </div>
                   {breakdownTarget.recordedBy && (
-                    <div style={{ gridColumn: 'span 2' }}>
-                      <span style={{ color: 'var(--text-muted)', display: 'block' }}>Recorded By</span>
+                    <div className="sm:col-span-2">
+                      <span className="text-gray-500 dark:text-[#6b6e82] block text-[10px]">Recorded By</span>
                       <strong>{breakdownTarget.recordedBy.name}</strong>
                     </div>
                   )}
                   {breakdownTarget.notes && (
-                    <div style={{ gridColumn: 'span 2', padding: 8, background: 'var(--bg-elevated)', borderRadius: 6, borderLeft: '3px solid var(--primary)' }}>
-                      <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: 10, fontWeight: 700, marginBottom: 2 }}>REMARKS / NOTES</span>
-                      <span style={{ fontStyle: 'italic' }}>{breakdownTarget.notes}</span>
+                    <div className="sm:col-span-2 p-2.5 bg-white dark:bg-[#242740] rounded-lg border-l-4 border-[#6c63ff]">
+                      <span className="text-gray-500 dark:text-[#6b6e82] block text-[10px] font-bold mb-1">REMARKS / NOTES</span>
+                      <span className="italic text-gray-700 dark:text-gray-300">{breakdownTarget.notes}</span>
                     </div>
                   )}
                 </div>
               </div>
             )}
 
-            <div style={{ display: 'flex', marginTop: 8 }}>
-              <Button style={{ flex: 1 }} onClick={() => setBreakdownTarget(null)}>Close Details</Button>
+            <div className="flex mt-2">
+              <Button className="w-full" onClick={() => setBreakdownTarget(null)}>Close Details</Button>
             </div>
           </div>
         )}

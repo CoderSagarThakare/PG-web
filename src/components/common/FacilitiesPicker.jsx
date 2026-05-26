@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { cn } from '../../utils/cn';
 
 /**
  * Searchable multi-select facilities picker
@@ -24,7 +25,6 @@ export default function FacilitiesPicker({ options = [], selected = [], onChange
 
   const add = (id) => {
     onChange([...selected, id]);
-    // Don't clear search — let user keep filtering and selecting multiple
   };
 
   const remove = (id) => {
@@ -32,30 +32,20 @@ export default function FacilitiesPicker({ options = [], selected = [], onChange
   };
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="relative">
       {/* Selected chips */}
       {selectedFacilities.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+        <div className="flex flex-wrap gap-1.5 mb-2.5">
           {selectedFacilities.map(f => (
             <span
               key={f._id}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                padding: '4px 10px', borderRadius: 99,
-                background: 'var(--primary-light)', color: 'var(--primary)',
-                fontSize: 12, fontWeight: 600, border: '1px solid rgba(108,99,255,0.3)'
-              }}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#6c63ff]/15 text-[#6c63ff] border border-[#6c63ff]/20 text-xs font-semibold leading-none"
             >
               {f.name}
               <button
                 type="button"
                 onClick={() => remove(f._id)}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--primary)', lineHeight: 1, padding: 0,
-                  fontSize: 14, fontWeight: 700, marginLeft: 2,
-                  display: 'flex', alignItems: 'center'
-                }}
+                className="bg-transparent border-none cursor-pointer text-[#6c63ff] font-bold text-sm leading-none ml-1 hover:text-red-500 transition-colors p-0 flex items-center justify-center"
                 title={`Remove ${f.name}`}
               >×</button>
             </span>
@@ -67,7 +57,7 @@ export default function FacilitiesPicker({ options = [], selected = [], onChange
       <input
         ref={inputRef}
         type="text"
-        className="form-control"
+        className="w-full h-11 bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all"
         placeholder={options.length === 0 ? 'Loading facilities...' : 'Click or type to search facilities...'}
         value={search}
         onChange={e => { setSearch(e.target.value); setOpen(true); }}
@@ -78,29 +68,14 @@ export default function FacilitiesPicker({ options = [], selected = [], onChange
 
       {/* Dropdown — shown on focus OR when typing */}
       {showDropdown && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200,
-          background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-sm)', boxShadow: 'var(--shadow-md)',
-          maxHeight: 220, overflowY: 'auto', marginTop: 4
-        }}>
+        <div className="absolute top-[100%] left-0 right-0 z-[200] bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-lg shadow-lg max-h-[220px] overflow-y-auto mt-1.5">
           {filtered.map(f => (
             <div
               key={f._id}
               onMouseDown={(e) => { e.preventDefault(); add(f._id); }}
-              style={{
-                padding: '10px 14px', cursor: 'pointer', fontSize: 14,
-                color: 'var(--text-primary)', transition: 'background 0.15s',
-                display: 'flex', alignItems: 'center', gap: 8
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              className="px-3.5 py-2.5 cursor-pointer text-sm text-gray-900 dark:text-[#f0f0f8] hover:bg-gray-100 dark:hover:bg-[#242740] transition-colors flex items-center gap-2 border-b border-gray-100 dark:border-[#2d3052]/30 last:border-none"
             >
-              <span style={{
-                width: 16, height: 16, borderRadius: 4, flexShrink: 0,
-                border: '2px solid var(--primary)', background: 'transparent',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
-              }} />
+              <span className="w-3.5 h-3.5 rounded border border-gray-300 dark:border-[#2d3052] flex-shrink-0 flex items-center justify-center bg-transparent" />
               {f.name}
             </div>
           ))}
@@ -108,18 +83,13 @@ export default function FacilitiesPicker({ options = [], selected = [], onChange
       )}
 
       {open && search && filtered.length === 0 && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200,
-          background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginTop: 4,
-          fontSize: 13, color: 'var(--text-muted)'
-        }}>
+        <div className="absolute top-[100%] left-0 right-0 z-[200] bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-lg p-3 mt-1.5 text-xs text-gray-500 dark:text-[#6b6e82]">
           No matching facilities found
         </div>
       )}
 
       {selected.length > 0 && (
-        <div style={{ marginTop: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+        <div className="mt-1.5 text-xs text-gray-500 dark:text-[#6b6e82]">
           {selected.length} facilit{selected.length === 1 ? 'y' : 'ies'} selected
         </div>
       )}
