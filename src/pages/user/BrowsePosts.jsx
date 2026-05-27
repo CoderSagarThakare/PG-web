@@ -217,8 +217,10 @@ export default function BrowsePosts() {
                     <MapPin size={12} className="text-[#6c63ff]" /> {post.pgId?.address?.city}
                   </div>
 
-                  <div className="flex gap-1.5 mb-3">
-                    <Badge variant="accent" className="text-[9px] py-0.5">{post.occupancyType}</Badge>
+                  <div className="flex gap-1.5 mb-3 flex-wrap">
+                    {post.occupancyTypes?.map(type => (
+                      <Badge key={type} variant="accent" className="text-[9px] py-0.5 capitalize">{type}</Badge>
+                    ))}
                     {post.pgType === 'unisex' ? (
                       <Badge variant="warning" className="text-[9px] py-0.5">
                         ♂ {post.maleVacancyCount ?? 0} M · ♀ {post.femaleVacancyCount ?? 0} F
@@ -335,9 +337,11 @@ export default function BrowsePosts() {
                   ) : (
                     <Building2 size={64} className="opacity-10" />
                   )}
-                  <div className="absolute bottom-3 left-3 flex gap-2">
+                  <div className="absolute bottom-3 left-3 flex gap-2 flex-wrap">
                     <Badge variant="primary">{viewPost.pgType}</Badge>
-                    <Badge variant="accent">{viewPost.occupancyType}</Badge>
+                    {viewPost.occupancyTypes?.map(type => (
+                      <Badge key={type} variant="accent" className="capitalize">{type}</Badge>
+                    ))}
                   </div>
                 </div>
               </div>

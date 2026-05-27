@@ -4,6 +4,7 @@ import api from './axios';
 export const getMyPGsApi = (params) => api.get('/pg', { params });
 export const getPGByIdApi = (pgId) => api.get(`/pg/${pgId}`);
 export const getPgPriceRangeApi = (pgId) => api.get(`/pg/${pgId}/price-range`);
+export const getPgOccupancyStatsApi = (pgId) => api.get(`/pg/${pgId}/occupancy-stats`);
 export const createPGApi = (data) => api.post('/pg', data);
 export const updatePGApi = (pgId, data) => api.patch(`/pg/${pgId}`, data);
 export const deletePGApi = (pgId) => api.delete(`/pg/${pgId}`);

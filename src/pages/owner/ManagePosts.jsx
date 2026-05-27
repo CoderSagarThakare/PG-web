@@ -223,6 +223,10 @@ export default function ManagePosts() {
   const posts = postsData?.posts || [];
   const pgs = pgsData?.pgs || [];
 
+  const availablePgsForForm = editPost
+    ? pgs
+    : pgs.filter(pg => !posts.some(post => (post.pgId?._id || post.pgId) === pg._id));
+
   const createMut = useMutation({
     mutationFn: createPostApi,
     onSuccess: () => { toast.success('Post created!'); qc.invalidateQueries(['posts']); closeModal(); },
@@ -308,7 +312,9 @@ export default function ManagePosts() {
                 <div className="text-[11px] dark:text-[#6b6e82] text-gray-500 mb-2.5 whitespace-nowrap overflow-hidden text-ellipsis">{post.pgId?.name}</div>
 
                 <div className="flex flex-wrap gap-1 mb-2.5">
-                  <Badge variant="accent">{post.occupancyType}</Badge>
+                  {post.occupancyTypes?.map(type => (
+                    <Badge key={type} variant="accent">{type}</Badge>
+                  ))}
                   <Badge variant={post.pgType === 'male' ? 'info' : post.pgType === 'female' ? 'danger' : 'accent'}>
                     {post.pgType}
                   </Badge>
@@ -379,7 +385,7 @@ export default function ManagePosts() {
             initialData={editPost}
             onSubmit={onSubmit}
             loading={createMut.isPending || updateMut.isPending}
-            pgs={pgs}
+            pgs={availablePgsForForm}
             buttonText={editPost ? 'Update Post' : 'Create Post'}
             onCancel={closeModal}
           />
