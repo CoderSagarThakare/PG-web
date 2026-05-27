@@ -1,16 +1,44 @@
 import { forwardRef } from 'react';
 import { cn } from '../../utils/cn';
 
-// ── Spinner ────────────────────────────────────────────────────────────────────
+// ── Spinner / Animated Loader ──────────────────────────────────────────────────
 export const Spinner = ({ size = 'md', center = false }) => {
+  const sizeCls = size === 'sm' ? 'w-8 h-8' : size === 'lg' ? 'w-24 h-24' : 'w-16 h-16';
+  
   const el = (
-    <div className={cn(
-      'animate-spinner rounded-full border-2 border-gray-200 dark:border-[#2d3052] border-t-[#6c63ff] dark:border-t-[#6c63ff]',
-      size === 'sm' ? 'w-5 h-5' : 'w-9 h-9'
-    )} />
+    <div className={cn("relative flex items-center justify-center", sizeCls)}>
+      {/* Sonar Expanding Pulse Ring */}
+      <div className="absolute inset-0 rounded-full border-2 border-[#6c63ff]/15 animate-ping opacity-60 pointer-events-none" />
+      
+      {/* Spinning Dual Gradient Ring matching Logo color style */}
+      <div className="absolute inset-0 rounded-full border-2 border-t-[#6c63ff] border-r-transparent border-b-[#00d4aa] border-l-transparent animate-spin pointer-events-none" />
+      <div className="absolute inset-[-4px] rounded-full border border-t-transparent border-r-[#00d4aa]/30 border-b-transparent border-l-[#6c63ff]/30 animate-[spin_3s_linear_infinite_reverse] pointer-events-none" />
+      
+      {/* Central StaySync Logo with breathing pulse scale */}
+      <div className="w-[65%] h-[65%] rounded-full bg-white dark:bg-[#1a1d2e] p-1 flex items-center justify-center shadow-lg animate-[pulse_2.5s_ease-in-out_infinite]">
+        <img 
+          src="/Logo.png" 
+          alt="StaySync" 
+          className="w-full h-full object-contain filter drop-shadow-sm select-none"
+        />
+      </div>
+    </div>
   );
+
   return center
-    ? <div className="flex items-center justify-center min-h-[200px]">{el}</div>
+    ? <div className="flex flex-col items-center justify-center min-h-[240px] gap-4 text-center">
+        {el}
+        {size !== 'sm' && (
+          <div className="flex flex-col items-center gap-1.5 animate-[pulse_2s_infinite]">
+            <span className="text-sm font-black bg-gradient-to-r from-[#6c63ff] via-[#00d4aa] to-[#6c63ff] bg-[length:200%_auto] bg-clip-text text-transparent animate-[pulse_2s_infinite]">
+              StaySync
+            </span>
+            <span className="text-[9px] font-bold text-gray-400 dark:text-[#6b6e82] uppercase tracking-[2px]">
+              Finding Your Perfect Stay
+            </span>
+          </div>
+        )}
+      </div>
     : el;
 };
 
