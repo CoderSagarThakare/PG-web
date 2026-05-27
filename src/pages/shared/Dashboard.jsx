@@ -181,7 +181,7 @@ export default function Dashboard() {
           </div>
 
           {/* Column headers */}
-          <div className="grid grid-cols-2 md:grid-cols-6 py-2 pb-2.5 border-b border-gray-200 dark:border-[#2d3052] mb-1">
+          <div className="grid grid-cols-[1.4fr_0.6fr] md:grid-cols-[2.5fr_1.5fr_1fr_0.8fr_1.2fr_0.8fr] py-2 pb-2.5 border-b border-gray-200 dark:border-[#2d3052] mb-1">
             <span className="text-[10px] font-bold dark:text-[#6b6e82] text-gray-400 uppercase tracking-[0.8px]">PG NAME</span>
             <span className="text-[10px] font-bold dark:text-[#6b6e82] text-gray-400 uppercase tracking-[0.8px]">LOCATION</span>
             <span className="hidden md:inline text-[10px] font-bold dark:text-[#6b6e82] text-gray-400 uppercase tracking-[0.8px]">TYPE</span>
@@ -192,7 +192,7 @@ export default function Dashboard() {
 
           <div className="flex flex-col">
             {recentPGs.map(pg => (
-              <div key={pg._id} className="grid grid-cols-2 md:grid-cols-6 py-3 border-b border-[#2d3052]/50 dark:border-[#2d3052]/50 gap-2 last:border-0 items-center">
+              <div key={pg._id} className="grid grid-cols-[1.4fr_0.6fr] md:grid-cols-[2.5fr_1.5fr_1fr_0.8fr_1.2fr_0.8fr] py-3 border-b border-[#2d3052]/50 dark:border-[#2d3052]/50 gap-2 last:border-0 items-center">
                 <span className="text-[13px] font-semibold dark:text-[#f0f0f8] text-gray-900 leading-snug">{pg.name}</span>
                 <span className="text-[13px] dark:text-[#a0a3b1] text-gray-500 leading-snug">
                   {pg.address?.city}{pg.address?.state ? `, ${pg.address.state}` : ''}

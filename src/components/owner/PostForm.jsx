@@ -19,6 +19,7 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
   const { register, handleSubmit, watch, setValue, reset, control, formState: { errors } } = useForm({
     defaultValues: {
       pgId: '', title: '', description: '', vacancyCount: '',
+      maleVacancyCount: '', femaleVacancyCount: '',
       occupancyType: 'single', pgType: 'unisex', minPrice: '', maxPrice: '', availableFrom: '',
       images: [],
     }
@@ -35,6 +36,8 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
         title: initialData.title || '',
         description: initialData.description || '',
         vacancyCount: initialData.vacancyCount || '',
+        maleVacancyCount: initialData.maleVacancyCount ?? '',
+        femaleVacancyCount: initialData.femaleVacancyCount ?? '',
         occupancyType: initialData.occupancyType || 'single',
         pgType: initialData.pgType || 'unisex',
         minPrice: initialData.minPrice || '',
@@ -46,6 +49,10 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
       setBasePrice({ min: initialData.minPrice || 0, max: initialData.maxPrice || 0 });
     }
   }, [initialData, reset]);
+
+  const isUnisex = watch('pgType') === 'unisex';
+  const maleCount   = Number(watch('maleVacancyCount'))   || 0;
+  const femaleCount = Number(watch('femaleVacancyCount')) || 0;
 
   // Auto-fill pgType and fetch price range when PG changes (on create and edit)
   useEffect(() => {
@@ -74,6 +81,7 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
             {...register('pgId', { required: 'Please select a PG' })}
             error={errors.pgId?.message}
             required
+            disabled={isEdit}
             options={[{ value: '', label: '— Select PG —' }, ...pgs.map(p => ({ value: p._id, label: p.name }))]}
           />
         </div>
@@ -98,44 +106,74 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
           />
         </div>
         
-        <Input 
-          label="Vacancy Count" 
-          type="number" 
-          {...register('vacancyCount', { required: 'Count is required', min: 1 })} 
-          error={errors.vacancyCount?.message}
-          min={1}
-          required 
-        />
+        {/* Vacancy count — single field for male/female/coLiving, split for unisex */}
+        {isUnisex ? (
+          <>
+            <Input
+              label="♂ Male Vacancy Count"
+              type="number"
+              {...register('maleVacancyCount', { required: 'Required', min: { value: 0, message: 'Min 0' } })}
+              error={errors.maleVacancyCount?.message}
+              min={0}
+              required
+            />
+            <Input
+              label="♀ Female Vacancy Count"
+              type="number"
+              {...register('femaleVacancyCount', { required: 'Required', min: { value: 0, message: 'Min 0' } })}
+              error={errors.femaleVacancyCount?.message}
+              min={0}
+              required
+            />
+            {/* Computed total */}
+            <div className="col-span-full">
+              <div className="flex items-center gap-3 bg-[#6c63ff]/8 dark:bg-[#6c63ff]/10 border border-[#6c63ff]/25 rounded-xl px-4 py-3 text-[13px]">
+                <span className="dark:text-[#a0a3b1] text-gray-500">Total vacancies:</span>
+                <span className="font-extrabold text-[#6c63ff] text-base">{maleCount + femaleCount}</span>
+                <span className="dark:text-[#6b6e82] text-gray-400 text-[11px]">(♂ {maleCount} male + ♀ {femaleCount} female)</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <Input
+            label="Vacancy Count"
+            type="number"
+            {...register('vacancyCount', { required: 'Count is required', min: { value: 1, message: 'Min 1' } })}
+            error={errors.vacancyCount?.message}
+            min={1}
+            required
+          />
+        )}
         {selectedPgId && (
           <div className="col-span-full text-xs bg-gray-50 dark:bg-[#242740] px-3.5 py-2.5 rounded-lg border-l-4 border-[#6c63ff] text-gray-500 dark:text-[#6b6e82] my-1">
             💡 <strong>PG Bed Price Range:</strong> Available beds in this PG cost between <strong>₹{basePrice.min.toLocaleString('en-IN')}</strong> and <strong>₹{basePrice.max.toLocaleString('en-IN')}</strong>. You can customize the Min/Max price fields below.
           </div>
         )}
-        <Input 
-          label="Min Price (₹)" 
-          type="number" 
-          {...register('minPrice', { required: 'Min Price is required', min: 0 })} 
+        <Input
+          label="Min Price (₹)"
+          type="number"
+          {...register('minPrice', { required: 'Min Price is required', min: 0 })}
           error={errors.minPrice?.message}
           min={0}
-          required 
-        />
-        <Input 
-          label="Max Price (₹)" 
-          type="number" 
-          {...register('maxPrice', { required: 'Max Price is required', min: 0 })} 
-          error={errors.maxPrice?.message}
-          min={0}
-          required 
-        />
-        
-        <Input 
-          label="Occupancy Type" 
-          as="select" 
-          {...register('occupancyType', { required: 'Required' })} 
-          options={occupancyOptions} 
           required
         />
-        
+        <Input
+          label="Max Price (₹)"
+          type="number"
+          {...register('maxPrice', { required: 'Max Price is required', min: 0 })}
+          error={errors.maxPrice?.message}
+          min={0}
+          required
+        />
+
+        <Input
+          label="Occupancy Type"
+          as="select"
+          {...register('occupancyType', { required: 'Required' })}
+          options={occupancyOptions}
+          required
+        />
+
         <div className="flex flex-col gap-1.5">
           <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1]">
             PG Type {!isEdit && <span className="text-[11px] text-gray-500 dark:text-[#6b6e82] font-normal">(from selected PG)</span>}

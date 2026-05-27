@@ -219,7 +219,13 @@ export default function BrowsePosts() {
 
                   <div className="flex gap-1.5 mb-3">
                     <Badge variant="accent" className="text-[9px] py-0.5">{post.occupancyType}</Badge>
-                    <Badge variant="warning" className="text-[9px] py-0.5">{post.vacancyCount} Left</Badge>
+                    {post.pgType === 'unisex' ? (
+                      <Badge variant="warning" className="text-[9px] py-0.5">
+                        ♂ {post.maleVacancyCount ?? 0} M · ♀ {post.femaleVacancyCount ?? 0} F
+                      </Badge>
+                    ) : (
+                      <Badge variant="warning" className="text-[9px] py-0.5">{post.vacancyCount} Left</Badge>
+                    )}
                   </div>
 
                   <p className="text-[11.5px] dark:text-[#6b6e82] text-gray-500 mb-3.5 line-clamp-2 leading-[1.4] h-[2.8em] overflow-hidden">
@@ -346,9 +352,20 @@ export default function BrowsePosts() {
                   <div className="text-[14px] dark:text-[#6b6e82] text-gray-500">/ month</div>
                 </div>
 
-                <div className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#ffa94d]/10 text-[#ffa94d] rounded-lg font-extrabold">
-                  <Bed size={18} /> {viewPost.vacancyCount} Beds Remaining
-                </div>
+                {viewPost.pgType === 'unisex' ? (
+                  <div className="flex flex-col gap-1.5">
+                    <div className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#ffa94d]/10 text-[#ffa94d] rounded-lg font-extrabold text-sm self-start">
+                      <Bed size={18} /> {viewPost.vacancyCount} Beds Remaining
+                    </div>
+                    <div className="text-[12px] dark:text-[#a0a3b1] text-gray-600 font-bold px-1">
+                      (♂ {viewPost.maleVacancyCount ?? 0} Male · ♀ {viewPost.femaleVacancyCount ?? 0} Female)
+                    </div>
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#ffa94d]/10 text-[#ffa94d] rounded-lg font-extrabold self-start">
+                    <Bed size={18} /> {viewPost.vacancyCount} Beds Remaining
+                  </div>
+                )}
               </div>
             </div>
 

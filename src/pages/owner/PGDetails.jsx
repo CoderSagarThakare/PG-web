@@ -67,8 +67,7 @@ export default function PGDetails() {
   const pgTypeColors = { male: 'info', female: 'purple', unisex: 'accent', coLiving: 'warning' };
 
   const onSubmit = (formData) => {
-    const payload = { ...formData, totalRooms: Number(formData.totalRooms) };
-    updateMutation.mutate({ id: pgId, data: payload });
+    updateMutation.mutate({ id: pgId, data: formData });
   };
 
   return (

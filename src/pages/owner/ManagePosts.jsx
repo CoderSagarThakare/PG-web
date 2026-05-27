@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { getPostsApi, createPostApi, updatePostApi, deletePostApi } from '../../api/post.api';
 import { getMyPGsApi } from '../../api/pg.api';
-import { FileText, Plus, Edit2, Trash2, Bed, ChevronLeft, ChevronRight, X, Image as ImageIcon, ZoomIn } from 'lucide-react';
+import { FileText, Plus, Edit2, Trash2, Bed, ChevronLeft, ChevronRight, X, Image as ImageIcon, ZoomIn, AlertTriangle } from 'lucide-react';
 import { Button, Card, Badge, Modal, Spinner, EmptyState, ConfirmModal } from '../../components/common';
 import PostForm from '../../components/owner/PostForm';
 import { getErrorMessage, formatPrice, formatDate } from '../../utils/helpers';
@@ -250,8 +250,12 @@ export default function ManagePosts() {
 
   const onSubmit = (formData) => {
     const payload = { ...formData, vacancyCount: Number(formData.vacancyCount), minPrice: Number(formData.minPrice), maxPrice: Number(formData.maxPrice) };
-    if (editPost) updateMut.mutate({ id: editPost._id, data: payload });
-    else createMut.mutate(payload);
+    if (editPost) {
+      payload.pgId = editPost.pgId?._id || editPost.pgId;
+      updateMut.mutate({ id: editPost._id, data: payload });
+    } else {
+      createMut.mutate(payload);
+    }
   };
 
   if (isLoading) return <Spinner center />;
@@ -308,10 +312,34 @@ export default function ManagePosts() {
                   <Badge variant={post.pgType === 'male' ? 'info' : post.pgType === 'female' ? 'danger' : 'accent'}>
                     {post.pgType}
                   </Badge>
-                  <Badge variant="default" className="flex items-center gap-1">
-                    <Bed size={10} /> {post.vacancyCount} Left
-                  </Badge>
+
+                  {/* Vacancy badge — gender split for unisex, single count otherwise */}
+                  {post.pgType === 'unisex' ? (
+                    <Badge variant="default" className="flex items-center gap-1">
+                      ♂ {post.maleVacancyCount ?? '?'} Male · ♀ {post.femaleVacancyCount ?? '?'} Female
+                    </Badge>
+                  ) : (
+                    <Badge variant="default" className="flex items-center gap-1">
+                      <Bed size={10} /> {post.vacancyCount} Left
+                    </Badge>
+                  )}
                 </div>
+
+                {/* Warning: unisex post with null gender counts */}
+                {post.pgType === 'unisex' && (post.maleVacancyCount === null || post.femaleVacancyCount === null) && (
+                  <div className="flex items-center gap-1.5 text-[#ffa94d] bg-[#ffa94d]/8 border border-[#ffa94d]/25 rounded-lg px-2.5 py-1.5 mb-2 text-[11px] font-semibold">
+                    <AlertTriangle size={11} className="shrink-0" />
+                    Set ♂/♀ vacancy split — edit this post
+                  </div>
+                )}
+
+                {/* Warning: manually deactivated but still has vacancies */}
+                {!post.isActive && post.vacancyCount > 0 && (
+                  <div className="flex items-center gap-1.5 text-[#6b6e82] bg-gray-100 dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-2.5 py-1.5 mb-2 text-[11px] font-semibold">
+                    <AlertTriangle size={11} className="shrink-0 text-[#ffa94d]" />
+                    Deactivated — {post.vacancyCount} vacancies still available
+                  </div>
+                )}
 
                 <p
                   className="text-[11.5px] dark:text-[#6b6e82] text-gray-500 mb-2.5 overflow-hidden flex-1"
