@@ -127,7 +127,7 @@ export default function ManageRooms() {
       {/* Page Header */}
       <div className="flex items-start justify-between mb-3 flex-wrap gap-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" className="btn-icon" onClick={() => navigate(`/pg/${pgId}`)}>
+          <Button variant="ghost" className="btn-icon" onClick={() => navigate(-1)}>
             <ArrowLeft size={20} />
           </Button>
           <div>
