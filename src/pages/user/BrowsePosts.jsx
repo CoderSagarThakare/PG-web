@@ -11,7 +11,7 @@ import { getErrorMessage, formatPrice } from '../../utils/helpers';
 export default function BrowsePosts() {
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(9);
+  const [limit, setLimit] = useState(12);
   const [filters, setFilters] = useState({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '', facilities: [] });
   const [activeFilters, setActiveFilters] = useState({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '', facilities: [] });
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);

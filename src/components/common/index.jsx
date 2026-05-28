@@ -307,10 +307,10 @@ export const Pagination = ({ currentPage, totalResults, limit, onPageChange, onL
           value={limit}
           onChange={e => onLimitChange(Number(e.target.value))}
         >
-          <option value={9}>9 per page</option>
-          <option value={18}>18 per page</option>
-          <option value={36}>36 per page</option>
-          <option value={77}>Show All</option>
+          <option value={12}>12 per page</option>
+          <option value={16}>16 per page</option>
+          <option value={24}>24 per page</option>
+          <option value={48}>48 per page</option>
         </select>
       </div>
     </div>

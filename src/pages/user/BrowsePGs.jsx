@@ -6,7 +6,7 @@ import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, Pagination } fr
 
 export default function BrowsePGs() {
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(9);
+  const [limit, setLimit] = useState(12);
   const [filters, setFilters] = useState({ city: '', pgType: '', facilities: [] });
   const [activeFilters, setActiveFilters] = useState({ city: '', pgType: '', facilities: [] });
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
