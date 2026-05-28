@@ -11,6 +11,7 @@ export default function Register() {
     name: '', 
     email: '', 
     password: '', 
+    confirmPassword: '',
     mobNo1: '', 
     role: 'user' 
   });
@@ -20,9 +21,14 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.password !== form.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
     setLoading(true);
     try {
-      await registerApi(form);
+      const { confirmPassword, ...payload } = form;
+      await registerApi(payload);
       toast.success('Registration successful! Please sign in.');
       navigate('/login');
     } catch (err) {
@@ -88,19 +94,32 @@ export default function Register() {
             />
 
             <Input
-              label="I am a..."
-              name="role"
-              as="select"
-              value={form.role}
+              label="Confirm Password"
+              name="confirmPassword"
+              type="password"
+              value={form.confirmPassword}
               onChange={handleChange}
+              placeholder="Re-enter password"
               required
-              options={[
-                { value: 'user', label: 'Tenant / Student' },
-                { value: 'owner', label: 'PG Owner' },
-                { value: 'manager', label: 'Property Manager' },
-                { value: 'employee', label: 'Staff / Employee' },
-              ]}
+              error={form.confirmPassword && form.password !== form.confirmPassword ? "Passwords do not match" : null}
             />
+
+            <div className="col-span-2">
+              <Input
+                label="I am a..."
+                name="role"
+                as="select"
+                value={form.role}
+                onChange={handleChange}
+                required
+                options={[
+                  { value: 'user', label: 'Tenant / Student' },
+                  { value: 'owner', label: 'PG Owner' },
+                  { value: 'manager', label: 'Property Manager' },
+                  { value: 'employee', label: 'Staff / Employee' },
+                ]}
+              />
+            </div>
           </div>
 
           <Button type="submit" loading={loading} className="w-full mt-2" size="lg">
