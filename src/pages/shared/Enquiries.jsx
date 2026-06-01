@@ -7,7 +7,7 @@ import { getRoomsApi, assignTenantApi } from '../../api/room.api';
 import { getMyPGsApi } from '../../api/pg.api';
 import { useAuth } from '../../context/AuthContext';
 import { MessageSquare, Search, ChevronLeft, ChevronRight, Phone, CheckCircle2, Bed, Building2 } from 'lucide-react';
-import { Badge, Card, Spinner, EmptyState, Modal, Input, Button } from '../../components/common';
+import { Badge, Card, Spinner, EmptyState, Modal, Input, Button, SelectDropdown } from '../../components/common';
 import { getErrorMessage, formatDate, formatTime, capitalize } from '../../utils/helpers';
 import { cn } from '../../utils/cn';
 
@@ -155,16 +155,12 @@ export default function Enquiries() {
 
         {/* PG filter (staff only) */}
         {isStaff && pgs.length > 0 && (
-          <select
-            className="dark:bg-[#242740] bg-white dark:border-[#2d3052] border-gray-200 border rounded-lg px-3 py-2 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] min-w-[160px] transition-colors"
+          <SelectDropdown
             value={filterPgId}
             onChange={e => setFilterPgId(e.target.value)}
-          >
-            <option value="">All PGs</option>
-            {pgs.map(pg => (
-              <option key={pg._id} value={pg._id}>{pg.name}</option>
-            ))}
-          </select>
+            options={[{ value: '', label: 'All PGs' }, ...pgs.map(pg => ({ value: pg._id, label: pg.name }))]}
+            className="min-w-[160px]"
+          />
         )}
 
         {/* Status pills */}

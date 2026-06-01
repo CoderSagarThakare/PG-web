@@ -5,7 +5,7 @@ import { searchPostsApi } from '../../api/post.api';
 import { getFacilitiesApi } from '../../api/pg.api';
 import { createEnquiryApi, updateEnquiryApi } from '../../api/enquiry.api';
 import { Search, MapPin, Bed, Filter, Phone, User as UserIcon, CheckCircle2, Building2 } from 'lucide-react';
-import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, Pagination } from '../../components/common';
+import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, Pagination, SelectDropdown } from '../../components/common';
 import { getErrorMessage, formatPrice } from '../../utils/helpers';
 
 export default function BrowsePosts() {
@@ -154,30 +154,52 @@ export default function BrowsePosts() {
 
         <div className="w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
 
-        <select 
-          className="bg-transparent border-none dark:text-[#a0a3b1] text-gray-600 text-[13px] font-semibold px-3 py-2 cursor-pointer outline-none rounded-full hover:bg-[#2d3052]/20 dark:hover:bg-[#2d3052] hover:text-[#f0f0f8]"
+        <SelectDropdown
           value={filters.pgType}
           onChange={e => setFilters(f => ({ ...f, pgType: e.target.value }))}
-        >
-          <option value="">Any Type</option>
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-          <option value="unisex">Unisex</option>
-          <option value="coLiving">Co-Living</option>
-        </select>
+          options={[
+            { value: '', label: 'Any Type' },
+            { value: 'male', label: 'Male' },
+            { value: 'female', label: 'Female' },
+            { value: 'unisex', label: 'Unisex' },
+            { value: 'coLiving', label: 'Co-Living' }
+          ]}
+          styles={{
+            control: (base) => ({
+              ...base,
+              border: 0,
+              backgroundColor: 'transparent',
+              minHeight: 'auto',
+              boxShadow: 'none',
+              '&:hover': { border: 0 }
+            })
+          }}
+          className="min-w-[130px]"
+        />
 
         <div className="w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
 
-        <select 
-          className="bg-transparent border-none dark:text-[#a0a3b1] text-gray-600 text-[13px] font-semibold px-3 py-2 cursor-pointer outline-none rounded-full hover:bg-[#2d3052]/20 dark:hover:bg-[#2d3052] hover:text-[#f0f0f8]"
+        <SelectDropdown
           value={filters.occupancyType}
           onChange={e => setFilters(f => ({ ...f, occupancyType: e.target.value }))}
-        >
-          <option value="">Sharing</option>
-          <option value="single">Single</option>
-          <option value="double">Double</option>
-          <option value="triple">Triple</option>
-        </select>
+          options={[
+            { value: '', label: 'Sharing' },
+            { value: 'single', label: 'Single' },
+            { value: 'double', label: 'Double' },
+            { value: 'triple', label: 'Triple' }
+          ]}
+          styles={{
+            control: (base) => ({
+              ...base,
+              border: 0,
+              backgroundColor: 'transparent',
+              minHeight: 'auto',
+              boxShadow: 'none',
+              '&:hover': { border: 0 }
+            })
+          }}
+          className="min-w-[120px]"
+        />
 
         <Button 
           variant="primary" 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { getMyRentPaymentsApi, submitPaymentProofApi } from '../../api/rent.api';
-import { Badge, Button, Card, Modal, Spinner, EmptyState, Input } from '../../components/common';
+import { Badge, Button, Card, Modal, Spinner, EmptyState, Input, SelectDropdown } from '../../components/common';
 import { getErrorMessage, formatDate } from '../../utils/helpers';
 import { IndianRupee, Clock, CheckCircle2, AlertCircle, FileText, Send, QrCode, Phone, Landmark } from 'lucide-react';
 
@@ -303,12 +303,16 @@ export default function MyRent() {
             {/* Inputs */}
             <div>
               <label className="text-[11px] font-bold dark:text-[#6b6e82] text-gray-500 mb-1 block">PAYMENT METHOD</label>
-              <select className="w-full bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 py-2.5 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] focus:ring-1 focus:ring-[#6c63ff]/40 transition-all cursor-pointer" value={paymentMode} onChange={e => setPaymentMode(e.target.value)}>
-                <option value="upi">📱 UPI Scanner / PayTM / GPay</option>
-                <option value="bank_transfer">🏦 Bank Transfer (IMPS/NEFT)</option>
-                <option value="online">🌐 Online Transfer</option>
-                <option value="cash">💵 Handover Cash to Manager</option>
-              </select>
+              <SelectDropdown
+                value={paymentMode}
+                onChange={e => setPaymentMode(e.target.value)}
+                options={[
+                  { value: 'upi', label: 'UPI Scanner / PayTM / GPay' },
+                  { value: 'bank_transfer', label: 'Bank Transfer (IMPS/NEFT)' },
+                  { value: 'online', label: 'Online Transfer' },
+                  { value: 'cash', label: 'Handover Cash to Manager' }
+                ]}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-3">

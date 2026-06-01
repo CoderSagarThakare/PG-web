@@ -3,11 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getRoomsApi, createRoomApi, updateRoomApi, deleteRoomApi, assignTenantApi, unassignTenantApi, updateBedApi, getEligibleTenantsApi } from '../../api/room.api';
 import { getPGByIdApi } from '../../api/pg.api';
-import { Button, Card, Badge, Modal, Spinner, EmptyState, Input } from '../../components/common';
+import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, SelectDropdown } from '../../components/common';
 import { Building2, Plus, Bed, Users, Trash2, Edit2, ArrowLeft, Search, UserPlus, LogOut } from 'lucide-react';
 import { getErrorMessage, formatPrice } from '../../utils/helpers';
 import toast from 'react-hot-toast';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 
 export default function ManageRooms() {
   const { pgId } = useParams();
@@ -167,25 +167,27 @@ export default function ManageRooms() {
 
           {/* Select Filters */}
           <div className="flex gap-2 flex-wrap">
-            <select
+            <SelectDropdown
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="h-11 min-w-[110px] dark:bg-[#0f1117] bg-white border border-[#2d3052] dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff]"
-            >
-              <option value="all">All Types</option>
-              <option value="AC">AC</option>
-              <option value="Non-AC">Non-AC</option>
-            </select>
+              options={[
+                { value: 'all', label: 'All Types' },
+                { value: 'AC', label: 'AC' },
+                { value: 'Non-AC', label: 'Non-AC' }
+              ]}
+              className="min-w-[120px]"
+            />
 
-            <select
+            <SelectDropdown
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-11 min-w-[130px] dark:bg-[#0f1117] bg-white border border-[#2d3052] dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff]"
-            >
-              <option value="all">All Status</option>
-              <option value="occupied">Has Occupancy</option>
-              <option value="available">Has Vacancy</option>
-            </select>
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'occupied', label: 'Has Occupancy' },
+                { value: 'available', label: 'Has Vacancy' }
+              ]}
+              className="min-w-[140px]"
+            />
           </div>
 
           {(searchTerm || typeFilter !== 'all' || statusFilter !== 'all') && (
@@ -389,10 +391,19 @@ function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
           onChange={handleSharingChange}
           error={errors.sharingType?.message}
         />
-        <Input
-          label="Room Type" as="select"
-          {...register('roomType')}
-          options={[{ value: 'AC', label: 'AC' }, { value: 'Non-AC', label: 'Non-AC' }]}
+        <Controller
+          name="roomType"
+          control={control}
+          render={({ field }) => (
+            <Input
+              label="Room Type"
+              as="select"
+              value={field.value}
+              onChange={field.onChange}
+              ref={field.ref}
+              options={[{ value: 'AC', label: 'AC' }, { value: 'Non-AC', label: 'Non-AC' }]}
+            />
+          )}
         />
 
         {/* Bed Configurations — full-width across both columns */}

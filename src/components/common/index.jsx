@@ -1,5 +1,151 @@
 import { forwardRef } from 'react';
 import { cn } from '../../utils/cn';
+import ReactSelect from 'react-select';
+import ReactDatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+
+const customSelectStyles = (isDark) => ({
+  control: (base, state) => ({
+    ...base,
+    backgroundColor: isDark ? '#242740' : '#ffffff',
+    borderColor: state.isFocused ? '#6c63ff' : (isDark ? '#2d3052' : '#e5e7eb'),
+    minHeight: '44px',
+    borderRadius: '8px',
+    color: isDark ? '#f0f0f8' : '#111827',
+    boxShadow: state.isFocused ? '0 0 0 1px rgba(108,99,255,0.4)' : 'none',
+    borderWidth: '1px',
+    '&:hover': {
+      borderColor: '#6c63ff',
+    }
+  }),
+  menu: (base) => ({
+    ...base,
+    backgroundColor: isDark ? '#1a1d2e' : '#ffffff',
+    border: `1px solid ${isDark ? '#2d3052' : '#e5e7eb'}`,
+    borderRadius: '8px',
+    zIndex: 9999,
+  }),
+  option: (base, state) => ({
+    ...base,
+    backgroundColor: state.isSelected 
+      ? '#6c63ff' 
+      : (state.isFocused 
+          ? (isDark ? '#242740' : '#f3f4f6') 
+          : 'transparent'),
+    color: state.isSelected 
+      ? '#ffffff' 
+      : (isDark ? '#f0f0f8' : '#111827'),
+    cursor: 'pointer',
+    fontSize: '14px',
+    padding: '10px 14px',
+    '&:active': {
+      backgroundColor: '#6c63ff',
+    }
+  }),
+  singleValue: (base) => ({
+    ...base,
+    color: isDark ? '#f0f0f8' : '#111827',
+    fontSize: '14px',
+  }),
+  placeholder: (base) => ({
+    ...base,
+    color: isDark ? '#6b6e82' : '#9ca3af',
+    fontSize: '14px',
+  }),
+  input: (base) => ({
+    ...base,
+    color: isDark ? '#f0f0f8' : '#111827',
+  }),
+  dropdownIndicator: (base) => ({
+    ...base,
+    color: isDark ? '#a0a3b1' : '#9ca3af',
+    '&:hover': {
+      color: '#6c63ff',
+    }
+  }),
+  indicatorSeparator: () => ({
+    display: 'none',
+  })
+});
+
+export const SelectDropdown = forwardRef(({
+  value, onChange, options, placeholder = 'Select...', disabled, className, name, styles, ...props
+}, ref) => {
+  const isDark = document.documentElement.classList.contains('dark') || document.documentElement.getAttribute('data-theme') === 'dark';
+  const currentOption = options?.find(opt => opt.value === value) || null;
+
+  const defaultStyles = customSelectStyles(isDark);
+  const mergedStyles = {};
+  Object.keys(defaultStyles).forEach(key => {
+    mergedStyles[key] = (base, state) => {
+      const defaultVal = defaultStyles[key](base, state);
+      if (styles && styles[key]) {
+        return styles[key](defaultVal, state);
+      }
+      return defaultVal;
+    };
+  });
+
+  return (
+    <ReactSelect
+      ref={ref}
+      unstyled={false}
+      options={options}
+      value={currentOption}
+      onChange={(opt) => {
+        const val = opt ? opt.value : '';
+        onChange && onChange({ target: { value: val, name } });
+      }}
+      placeholder={placeholder}
+      isDisabled={disabled}
+      styles={mergedStyles}
+      className={className}
+      name={name}
+      {...props}
+    />
+  );
+});
+SelectDropdown.displayName = 'SelectDropdown';
+
+export const DatePickerComponent = forwardRef(({
+  value, onChange, placeholder = 'Select date...', disabled, className, name, ...props
+}, ref) => {
+  let selectedDate = null;
+  if (value) {
+    const d = new Date(value);
+    if (!isNaN(d.getTime())) {
+      selectedDate = d;
+    }
+  }
+
+  return (
+    <ReactDatePicker
+      ref={ref}
+      selected={selectedDate}
+      onChange={(date) => {
+        let dateStr = '';
+        if (date) {
+          const offset = date.getTimezoneOffset();
+          const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+          dateStr = localDate.toISOString().slice(0, 10);
+        }
+        onChange && onChange({ target: { value: dateStr, name } });
+      }}
+      placeholderText={placeholder}
+      disabled={disabled}
+      className={cn(
+        'w-full bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 py-2.5 text-sm transition-colors duration-200 outline-none text-gray-900 dark:text-[#f0f0f8] placeholder:text-gray-400 dark:placeholder:text-[#6b6e82] focus:border-[#6c63ff] focus:ring-1 focus:ring-[#6c63ff]/40',
+        className
+      )}
+      dateFormat="yyyy-MM-dd"
+      autoComplete="off"
+      name={name}
+      {...props}
+    />
+  );
+});
+DatePickerComponent.displayName = 'DatePickerComponent';
+
 
 // ── Spinner / Animated Loader ──────────────────────────────────────────────────
 export const Spinner = ({ size = 'md', center = false }) => {
@@ -166,11 +312,26 @@ export const Input = forwardRef(({
         </label>
       )}
       {as === 'select' ? (
-        <select {...commonProps}>
-          {options?.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
+        <SelectDropdown
+          ref={ref}
+          name={name}
+          value={value}
+          onChange={onChange}
+          options={options}
+          placeholder={placeholder}
+          disabled={disabled}
+          {...props}
+        />
+      ) : type === 'date' ? (
+        <DatePickerComponent
+          ref={ref}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          disabled={disabled}
+          {...props}
+        />
       ) : as === 'textarea' ? (
         <textarea rows={rows || 4} {...commonProps} />
       ) : (
@@ -302,16 +463,34 @@ export const Pagination = ({ currentPage, totalResults, limit, onPageChange, onL
 
       <div className="flex items-center gap-2 text-[13px] text-gray-500 dark:text-[#6b6e82]">
         Rows:
-        <select
-          className="px-2 py-1 bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg text-[12px] font-semibold text-gray-900 dark:text-[#f0f0f8] cursor-pointer outline-none"
+        <SelectDropdown
           value={limit}
           onChange={e => onLimitChange(Number(e.target.value))}
-        >
-          <option value={12}>12 per page</option>
-          <option value={16}>16 per page</option>
-          <option value={24}>24 per page</option>
-          <option value={48}>48 per page</option>
-        </select>
+          options={[
+            { value: 12, label: '12 per page' },
+            { value: 16, label: '16 per page' },
+            { value: 24, label: '24 per page' },
+            { value: 48, label: '48 per page' }
+          ]}
+          styles={{
+            control: (base) => ({
+              ...base,
+              minHeight: '32px',
+              height: '32px',
+              borderRadius: '6px',
+            }),
+            valueContainer: (base) => ({
+              ...base,
+              padding: '0 6px',
+              height: '30px',
+            }),
+            indicatorsContainer: (base) => ({
+              ...base,
+              height: '30px',
+            })
+          }}
+          className="min-w-[120px]"
+        />
       </div>
     </div>
   );

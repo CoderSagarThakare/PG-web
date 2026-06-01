@@ -184,20 +184,39 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
               />
             </div>
             
-            <Input
-              label="PG Type" 
-              as="select" 
-              {...register('pgType', { required: 'PG Type is required' })} 
-              options={pgTypeOptions}
-              error={errors.pgType?.message}
-              required
+            <Controller
+              name="pgType"
+              control={control}
+              rules={{ required: 'PG Type is required' }}
+              render={({ field }) => (
+                <Input
+                  label="PG Type"
+                  as="select"
+                  value={field.value}
+                  onChange={field.onChange}
+                  ref={field.ref}
+                  options={pgTypeOptions}
+                  error={errors.pgType?.message}
+                  required
+                />
+              )}
             />
-            <Input 
-              label="PG Started Date" 
-              type="date" 
-              {...register('pgStartedDate', { required: 'PG Started Date is required' })} 
-              error={errors.pgStartedDate?.message} 
-              required
+            
+            <Controller
+              name="pgStartedDate"
+              control={control}
+              rules={{ required: 'PG Started Date is required' }}
+              render={({ field }) => (
+                <Input
+                  label="PG Started Date"
+                  type="date"
+                  value={field.value}
+                  onChange={field.onChange}
+                  ref={field.ref}
+                  error={errors.pgStartedDate?.message}
+                  required
+                />
+              )}
             />
 
             <div className="col-span-full relative">

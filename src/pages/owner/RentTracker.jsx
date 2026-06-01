@@ -14,7 +14,7 @@ import {
   rejectPaymentApi,
   bulkApprovePaymentsApi
 } from '../../api/rent.api';
-import { Badge, Button, Card, Modal, Spinner, EmptyState, Input, ConfirmModal } from '../../components/common';
+import { Badge, Button, Card, Modal, Spinner, EmptyState, Input, ConfirmModal, SelectDropdown } from '../../components/common';
 import { getErrorMessage, formatDate, formatDateTime, formatTime } from '../../utils/helpers';
 import { cn } from '../../utils/cn';
 import {
@@ -608,36 +608,47 @@ export default function RentTracker() {
         <div className="fade-in">
           {/* Filter bar */}
           <div className="flex gap-2.5 mb-4 flex-wrap items-center">
-            <select className="h-10 w-full sm:w-auto min-w-[160px] bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all"
-              value={filterPgId} onChange={e => { setFilterPgId(e.target.value); setPage(1); }}>
-              <option value="">All PGs</option>
-              {pgs.map(pg => <option key={pg._id} value={pg._id}>{pg.name}</option>)}
-            </select>
+            <SelectDropdown
+              value={filterPgId}
+              onChange={e => { setFilterPgId(e.target.value); setPage(1); }}
+              options={[{ value: '', label: 'All PGs' }, ...pgs.map(pg => ({ value: pg._id, label: pg.name }))]}
+              className="min-w-[160px]"
+            />
 
-            <select className="h-10 w-full sm:w-auto bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all"
-              value={filterMonth} onChange={e => { setFilterMonth(e.target.value); setPage(1); }}>
-              {monthOptions().map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
+            <SelectDropdown
+              value={filterMonth}
+              onChange={e => { setFilterMonth(e.target.value); setPage(1); }}
+              options={monthOptions()}
+              className="min-w-[150px]"
+            />
 
-            <select className="h-10 w-full sm:w-auto bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all"
-              value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}>
-              <option value="">All Status</option>
-              <option value="paid">Paid</option>
-              <option value="under_review">Under Review</option>
-              <option value="partial">Partial</option>
-              <option value="pending">Pending</option>
-              <option value="overdue">Overdue</option>
-            </select>
+            <SelectDropdown
+              value={filterStatus}
+              onChange={e => { setFilterStatus(e.target.value); setPage(1); }}
+              options={[
+                { value: '', label: 'All Status' },
+                { value: 'paid', label: 'Paid' },
+                { value: 'under_review', label: 'Under Review' },
+                { value: 'partial', label: 'Partial' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'overdue', label: 'Overdue' }
+              ]}
+              className="min-w-[130px]"
+            />
 
-            <select className="h-10 w-full sm:w-auto bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all"
-              value={filterMode} onChange={e => { setFilterMode(e.target.value); setPage(1); }}>
-              <option value="">All Modes</option>
-              <option value="cash">Cash</option>
-              <option value="upi">UPI</option>
-              <option value="bank_transfer">Bank Transfer</option>
-              <option value="cheque">Cheque</option>
-              <option value="online">Online</option>
-            </select>
+            <SelectDropdown
+              value={filterMode}
+              onChange={e => { setFilterMode(e.target.value); setPage(1); }}
+              options={[
+                { value: '', label: 'All Modes' },
+                { value: 'cash', label: 'Cash' },
+                { value: 'upi', label: 'UPI' },
+                { value: 'bank_transfer', label: 'Bank Transfer' },
+                { value: 'cheque', label: 'Cheque' },
+                { value: 'online', label: 'Online' }
+              ]}
+              className="min-w-[130px]"
+            />
 
             {(filterStatus || filterMode) && (
               <Button variant="ghost" size="sm" onClick={() => { setFilterStatus(''); setFilterMode(''); setPage(1); }}>
@@ -774,17 +785,18 @@ export default function RentTracker() {
                 <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">
                   SELECT PG <span className="text-[#ff4d6d]">*</span>
                 </label>
-                <select className="w-full h-11 bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all" required value={form._pgId || ''}
+                <SelectDropdown
+                  value={form._pgId || ''}
                   onChange={e => { 
                     const newPg = e.target.value;
                     setForm(f => ({ ...f, _pgId: newPg, bedId: '', userId: '' })); 
                     setBedSearch('');
                     setShowBedDropdown(false);
                     loadBeds(newPg, form.rentMonth); 
-                  }}>
-                  <option value="">-- Select PG --</option>
-                  {pgs.map(pg => <option key={pg._id} value={pg._id}>{pg.name}</option>)}
-                </select>
+                  }}
+                  options={[{ value: '', label: '-- Select PG --' }, ...pgs.map(pg => ({ value: pg._id, label: pg.name }))]}
+                  required
+                />
               </div>
               <div className="relative">
                 <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">
@@ -910,7 +922,8 @@ export default function RentTracker() {
 
             <div>
               <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">PAYMENT STATUS</label>
-              <select className="w-full h-11 bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all" value={form.status}
+              <SelectDropdown
+                value={form.status}
                 onChange={e => {
                   const newStatus = e.target.value;
                   setForm(f => ({
@@ -923,12 +936,14 @@ export default function RentTracker() {
                       referenceNo: '',
                     })
                   }));
-                }}>
-                <option value="paid">✅ Paid (Full)</option>
-                <option value="pending">⏳ Pending</option>
-                <option value="partial">💵 Partial</option>
-                <option value="under_review">🔍 Under Review</option>
-              </select>
+                }}
+                options={[
+                  { value: 'paid', label: 'Paid (Full)' },
+                  { value: 'pending', label: 'Pending' },
+                  { value: 'partial', label: 'Partial' },
+                  { value: 'under_review', label: 'Under Review' }
+                ]}
+              />
             </div>
 
             <Input label="Amount Paid (₹)" type="number" min="0" value={form.amountPaid} required
@@ -940,16 +955,22 @@ export default function RentTracker() {
 
             <div>
               <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">PAYMENT MODE</label>
-              <select className="w-full h-11 bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all" value={form.status === 'pending' ? '' : (form.paymentMode || '')}
+              <SelectDropdown
+                value={form.status === 'pending' ? '' : (form.paymentMode || '')}
                 disabled={form.status === 'pending'}
-                onChange={e => setForm(f => ({ ...f, paymentMode: e.target.value || null }))}>
-                {form.status === 'pending' ? <option value="">— No Payment Mode —</option> : null}
-                <option value="cash">Cash</option>
-                <option value="upi">UPI / Scanner</option>
-                <option value="bank_transfer">Bank Transfer</option>
-                <option value="cheque">Cheque</option>
-                <option value="online">Online</option>
-              </select>
+                onChange={e => setForm(f => ({ ...f, paymentMode: e.target.value || null }))}
+                options={
+                  form.status === 'pending'
+                    ? [{ value: '', label: '-- No Payment Mode --' }]
+                    : [
+                        { value: 'cash', label: 'Cash' },
+                        { value: 'upi', label: 'UPI / Scanner' },
+                        { value: 'bank_transfer', label: 'Bank Transfer' },
+                        { value: 'cheque', label: 'Cheque' },
+                        { value: 'online', label: 'Online' }
+                      ]
+                }
+              />
             </div>
 
             <Input label="Payment Date" type="date" value={form.status === 'pending' ? '' : form.paidDate}
@@ -985,11 +1006,12 @@ export default function RentTracker() {
             <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">
               SELECT PG <span className="text-[#ff4d6d]">*</span>
             </label>
-            <select className="w-full h-11 bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg px-3 text-sm dark:text-[#f0f0f8] text-gray-900 outline-none focus:border-[#6c63ff] transition-all" required value={form._genPgId || ''}
-              onChange={e => setForm(f => ({ ...f, _genPgId: e.target.value }))}>
-              <option value="">-- Select PG --</option>
-              {pgs.map(pg => <option key={pg._id} value={pg._id}>{pg.name}</option>)}
-            </select>
+            <SelectDropdown
+              value={form._genPgId || ''}
+              onChange={e => setForm(f => ({ ...f, _genPgId: e.target.value }))}
+              options={[{ value: '', label: '-- Select PG --' }, ...pgs.map(pg => ({ value: pg._id, label: pg.name }))]}
+              required
+            />
           </div>
           <Input label="For Month" type="month" value={form.rentMonth} required
             onChange={e => setForm(f => ({ ...f, rentMonth: e.target.value }))} />

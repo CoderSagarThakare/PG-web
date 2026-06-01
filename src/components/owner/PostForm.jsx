@@ -93,14 +93,23 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div className="col-span-full">
-          <Input 
-            label="Select PG" 
-            as="select" 
-            {...register('pgId', { required: 'Please select a PG' })}
-            error={errors.pgId?.message}
-            required
-            disabled={isEdit}
-            options={[{ value: '', label: '— Select PG —' }, ...pgs.map(p => ({ value: p._id, label: p.name }))]}
+          <Controller
+            name="pgId"
+            control={control}
+            rules={{ required: 'Please select a PG' }}
+            render={({ field }) => (
+              <Input 
+                label="Select PG" 
+                as="select" 
+                value={field.value}
+                onChange={field.onChange}
+                ref={field.ref}
+                error={errors.pgId?.message}
+                required
+                disabled={isEdit}
+                options={[{ value: '', label: '— Select PG —' }, ...pgs.map(p => ({ value: p._id, label: p.name }))]}
+              />
+            )}
           />
         </div>
         
@@ -228,12 +237,21 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
           <input type="hidden" {...register('pgType')} />
         </div>
         
-        <Input 
-          label="Available From" 
-          type="date" 
-          {...register('availableFrom', { required: 'Date is required' })} 
-          error={errors.availableFrom?.message}
-          required 
+        <Controller
+          name="availableFrom"
+          control={control}
+          rules={{ required: 'Date is required' }}
+          render={({ field }) => (
+            <Input 
+              label="Available From" 
+              type="date" 
+              value={field.value}
+              onChange={field.onChange}
+              ref={field.ref}
+              error={errors.availableFrom?.message}
+              required 
+            />
+          )}
         />
 
         {/* Occupancy selection with inventory info */}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { discoverPGsApi, getFacilitiesApi, getPGByIdApi } from '../../api/pg.api';
 import { Search, MapPin, Building2, Star, Users, Filter, ChevronRight, Info } from 'lucide-react';
-import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, Pagination } from '../../components/common';
+import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, Pagination, SelectDropdown } from '../../components/common';
 
 export default function BrowsePGs() {
   const [page, setPage] = useState(1);
@@ -68,16 +68,27 @@ export default function BrowsePGs() {
         
         <div className="w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
 
-        <select 
-          className="bg-transparent border-none dark:text-[#a0a3b1] text-gray-600 text-[13px] font-semibold px-3 py-2 cursor-pointer outline-none rounded-full hover:bg-[#2d3052]/20 dark:hover:bg-[#2d3052] hover:text-[#f0f0f8]"
+        <SelectDropdown
           value={filters.pgType}
           onChange={e => setFilters(f => ({ ...f, pgType: e.target.value }))}
-        >
-          <option value="">Any Category</option>
-          <option value="male">Male Only</option>
-          <option value="female">Female Only</option>
-          <option value="unisex">Unisex / Co-Living</option>
-        </select>
+          options={[
+            { value: '', label: 'Any Category' },
+            { value: 'male', label: 'Male Only' },
+            { value: 'female', label: 'Female Only' },
+            { value: 'unisex', label: 'Unisex / Co-Living' }
+          ]}
+          styles={{
+            control: (base) => ({
+              ...base,
+              border: 0,
+              backgroundColor: 'transparent',
+              minHeight: 'auto',
+              boxShadow: 'none',
+              '&:hover': { border: 0 }
+            })
+          }}
+          className="min-w-[150px]"
+        />
 
         <Button 
           variant="ghost" 
