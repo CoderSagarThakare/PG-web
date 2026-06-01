@@ -20,10 +20,52 @@ import { cn } from '../../utils/cn';
 import {
   IndianRupee, TrendingUp, Clock, AlertCircle, Phone, Plus,
   Edit2, Trash2, CheckCircle2, Zap, Check, X, ShieldAlert, FileCheck,
-  FileText
+  FileText, Banknote, Smartphone, Landmark, Globe
 } from 'lucide-react';
 
-const MODE_LABELS  = { cash: '💵 Cash', upi: '📱 UPI', bank_transfer: '🏦 Bank', cheque: '📄 Cheque', online: '🌐 Online' };
+const PAYMENT_MODES = {
+  cash: { 
+    label: 'Cash', 
+    icon: Banknote, 
+    color: 'text-[#51cf66] bg-[#51cf66]/8 border-[#51cf66]/25 dark:bg-[#51cf66]/12 dark:border-[#51cf66]/20' 
+  },
+  upi: { 
+    label: 'UPI', 
+    icon: Smartphone, 
+    color: 'text-[#6c63ff] bg-[#6c63ff]/8 border-[#6c63ff]/25 dark:bg-[#6c63ff]/12 dark:border-[#6c63ff]/20' 
+  },
+  bank_transfer: { 
+    label: 'Bank Transfer', 
+    icon: Landmark, 
+    color: 'text-[#00d4aa] bg-[#00d4aa]/8 border-[#00d4aa]/25 dark:bg-[#00d4aa]/12 dark:border-[#00d4aa]/20' 
+  },
+  cheque: { 
+    label: 'Cheque', 
+    icon: FileText, 
+    color: 'text-[#ffa94d] bg-[#ffa94d]/8 border-[#ffa94d]/25 dark:bg-[#ffa94d]/12 dark:border-[#ffa94d]/20' 
+  },
+  online: { 
+    label: 'Online', 
+    icon: Globe, 
+    color: 'text-[#cc5de8] bg-[#cc5de8]/8 border-[#cc5de8]/25 dark:bg-[#cc5de8]/12 dark:border-[#cc5de8]/20' 
+  }
+};
+
+const PaymentModeBadge = ({ mode }) => {
+  const config = PAYMENT_MODES[mode];
+  if (!config) return <span className="text-gray-400 dark:text-[#6b6e82]">—</span>;
+  const Icon = config.icon;
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold border tracking-wider uppercase transition-all duration-200 shadow-sm",
+      config.color
+    )}>
+      <Icon size={12} className="flex-shrink-0 stroke-[2.5]" />
+      <span>{config.label}</span>
+    </span>
+  );
+};
+
 const STATUS_VARIANT = { paid: 'success', pending: 'warning', under_review: 'info', partial: 'info', overdue: 'danger' };
 
 const getDaysInMonth = (yearMonth) => {
@@ -526,7 +568,7 @@ export default function RentTracker() {
                       <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
                         <Badge variant="info">{f(rec.amountPaid)}</Badge>
                       </td>
-                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900">{rec.paymentMode ? MODE_LABELS[rec.paymentMode] : '—'}</td>
+                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900"><PaymentModeBadge mode={rec.paymentMode} /></td>
                       <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-[11px] text-gray-500 dark:text-[#6b6e82] font-mono">{rec.referenceNo || '—'}</td>
                       <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-[11px] text-gray-500 dark:text-[#6b6e82] max-w-[140px] truncate" title={rec.notes}>
                         {rec.notes || '—'}
@@ -670,7 +712,7 @@ export default function RentTracker() {
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900">{rec.paymentMode ? MODE_LABELS[rec.paymentMode] : '—'}</td>
+                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900"><PaymentModeBadge mode={rec.paymentMode} /></td>
                         <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900" title={rec.paidDate ? formatDateTime(rec.paidDate) : '—'}>
                           {rec.paidDate ? (
                             <>
@@ -902,11 +944,11 @@ export default function RentTracker() {
                 disabled={form.status === 'pending'}
                 onChange={e => setForm(f => ({ ...f, paymentMode: e.target.value || null }))}>
                 {form.status === 'pending' ? <option value="">— No Payment Mode —</option> : null}
-                <option value="cash">💵 Cash</option>
-                <option value="upi">📱 UPI / Scanner</option>
-                <option value="bank_transfer">🏦 Bank Transfer</option>
-                <option value="cheque">📄 Cheque</option>
-                <option value="online">🌐 Online</option>
+                <option value="cash">Cash</option>
+                <option value="upi">UPI / Scanner</option>
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="cheque">Cheque</option>
+                <option value="online">Online</option>
               </select>
             </div>
 
@@ -1082,8 +1124,8 @@ export default function RentTracker() {
                 <span className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.9px]">Transaction Info</span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
                   <div>
-                    <span className="text-gray-500 dark:text-[#6b6e82] block text-[10px]">Payment Method</span>
-                    <strong>{breakdownTarget.paymentMode ? MODE_LABELS[breakdownTarget.paymentMode] : '—'}</strong>
+                    <span className="text-gray-500 dark:text-[#6b6e82] block text-[10px] mb-1">Payment Method</span>
+                    <PaymentModeBadge mode={breakdownTarget.paymentMode} />
                   </div>
                   <div>
                     <span className="text-gray-500 dark:text-[#6b6e82] block text-[10px]">Transaction Date</span>
