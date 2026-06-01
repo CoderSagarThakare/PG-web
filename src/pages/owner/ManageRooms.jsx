@@ -371,7 +371,7 @@ function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="max-h-[380px] overflow-y-auto pr-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
           label="Room Number" required
           {...register('roomNumber', { required: 'Room number is required' })}
