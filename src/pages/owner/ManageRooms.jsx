@@ -23,7 +23,7 @@ export default function ManageRooms() {
   });
 
   const { data: pg } = useQuery({
-    queryKey: ['pg', pgId],
+    queryKey: ['pg-info', pgId],
     queryFn: async () => (await getPGByIdApi(pgId)).data?.data?.pg,
     enabled: !!pgId,
   });
