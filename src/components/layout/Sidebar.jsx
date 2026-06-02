@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Logo, ConfirmModal } from '../common';
 import {
   LayoutDashboard, Building2, FileText, MessageSquare,
-  Users, Settings, LogOut, User, Home, Search, Sun, Moon, IndianRupee, X
+  Users, Settings, LogOut, User, Home, Search, Sun, Moon, IndianRupee, X, Receipt
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -15,6 +15,7 @@ const ownerNav = [
   { label: 'Vacancy Posts', icon: <FileText size={18} />, to: '/posts' },
   { label: 'Enquiries', icon: <MessageSquare size={18} />, to: '/enquiries' },
   { label: 'Rent Tracker', icon: <IndianRupee size={18} />, to: '/rent' },
+  { label: 'Staff & Payroll', icon: <Users size={18} />, to: '/staff' },
   { section: 'Account' },
   { label: 'Profile', icon: <User size={18} />, to: '/profile' },
 ];
@@ -26,6 +27,7 @@ const managerNav = [
   { label: 'Posts', icon: <FileText size={18} />, to: '/posts' },
   { label: 'Enquiries', icon: <MessageSquare size={18} />, to: '/enquiries' },
   { label: 'Rent Tracker', icon: <IndianRupee size={18} />, to: '/rent' },
+  { label: 'Staff & Payroll', icon: <Users size={18} />, to: '/staff' },
   { section: 'Account' },
   { label: 'Profile', icon: <User size={18} />, to: '/profile' },
 ];
@@ -39,7 +41,14 @@ const userNav = [
   { label: 'Profile', icon: <User size={18} />, to: '/profile' },
 ];
 
-const navByRole = { owner: ownerNav, manager: managerNav, employee: managerNav, user: userNav };
+const employeeNav = [
+  { section: 'My Work' },
+  { label: 'My Expenses', icon: <Receipt size={18} />, to: '/my-expenses' },
+  { section: 'Account' },
+  { label: 'Profile', icon: <User size={18} />, to: '/profile' },
+];
+
+const navByRole = { owner: ownerNav, manager: managerNav, employee: employeeNav, user: userNav };
 
 export default function Sidebar({ isOpen, onClose, onThemeChange, currentTheme }) {
   const { user, logout } = useAuth();

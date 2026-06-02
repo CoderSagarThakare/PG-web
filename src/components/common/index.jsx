@@ -125,9 +125,10 @@ export const DatePickerComponent = forwardRef(({
       onChange={(date) => {
         let dateStr = '';
         if (date) {
-          const offset = date.getTimezoneOffset();
-          const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-          dateStr = localDate.toISOString().slice(0, 10);
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, '0');
+          const d = String(date.getDate()).padStart(2, '0');
+          dateStr = `${y}-${m}-${d}`;
         }
         onChange && onChange({ target: { value: dateStr, name } });
       }}

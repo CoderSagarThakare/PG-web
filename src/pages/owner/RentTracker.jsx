@@ -393,6 +393,10 @@ export default function RentTracker() {
       submitForm.paidDate = null;
       submitForm.referenceNo = null;
     }
+    // Sanitize empty date string → null to avoid backend CastError
+    if (submitForm.paidDate === '' || submitForm.paidDate === undefined) {
+      submitForm.paidDate = null;
+    }
 
     if (modal === 'edit') {
       updateMut.mutate({ id: editTarget._id, data: submitForm });

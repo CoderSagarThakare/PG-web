@@ -22,9 +22,10 @@ const ManagePGs    = lazy(() => import('./pages/owner/ManagePGs'));
 const PGDetails    = lazy(() => import('./pages/owner/PGDetails'));
 const ManageRooms  = lazy(() => import('./pages/owner/ManageRooms'));
 const ManagePosts  = lazy(() => import('./pages/owner/ManagePosts'));
+const RentTracker  = lazy(() => import('./pages/owner/RentTracker'));
+const StaffTracker = lazy(() => import('./pages/owner/StaffTracker'));
 const BrowsePosts  = lazy(() => import('./pages/user/BrowsePosts'));
 const BrowsePGs    = lazy(() => import('./pages/user/BrowsePGs'));
-const RentTracker  = lazy(() => import('./pages/owner/RentTracker'));
 const MyRent       = lazy(() => import('./pages/user/MyRent'));
 
 // ── Root layout: wraps the whole app with providers + toast ───────────────────
@@ -74,7 +75,7 @@ const router = createBrowserRouter([
               { path: '/profile',    element: <Profile /> },
               { path: '/enquiries',  element: <Enquiries /> },
 
-              // Staff only (owner + manager)
+              // Owner + Manager only routes
               {
                 element: <RoleRoute roles={['owner', 'manager']} />,
                 children: [
@@ -84,6 +85,15 @@ const router = createBrowserRouter([
                   { path: '/pg/:pgId',                element: <PGDetails /> },
                   { path: '/pg/:pgId/inventory',      element: <ManageRooms /> },
                   { path: '/rent',                    element: <RentTracker /> },
+                  { path: '/staff',                   element: <StaffTracker /> },
+                ],
+              },
+
+              // Employee route — /my-expenses shows their personal expense view
+              {
+                element: <RoleRoute roles={['employee']} />,
+                children: [
+                  { path: '/my-expenses', element: <StaffTracker /> },
                 ],
               },
 

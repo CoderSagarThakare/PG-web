@@ -1,4 +1,47 @@
-// Format date to readable string
+import { useState, useEffect } from 'react';
+
+// ── Debounce utility ───────────────────────────────────────────────────────────
+/**
+ * Returns a debounced version of the given function.
+ * The debounced function delays invoking `fn` until after `delay` ms
+ * have elapsed since the last time the debounced function was invoked.
+ *
+ * @param {Function} fn     - The function to debounce
+ * @param {number}   delay  - Delay in milliseconds (default: 400)
+ * @returns {Function}      - Debounced function
+ */
+export const debounce = (fn, delay = 400) => {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+};
+
+/**
+ * React hook that returns a debounced version of `value`.
+ * The returned value only updates after `delay` ms of no changes.
+ *
+ * @param {any}    value  - The value to debounce
+ * @param {number} delay  - Delay in milliseconds (default: 400)
+ * @returns {any}         - Debounced value
+ *
+ * @example
+ *   const debouncedSearch = useDebounce(searchTerm, 400);
+ *   useEffect(() => { fetchResults(debouncedSearch); }, [debouncedSearch]);
+ */
+export const useDebounce = (value, delay = 400) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer); // cleanup on value/delay change
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
+
 export const formatDate = (dateStr) => {
   if (!dateStr) return '—';
   return new Date(dateStr).toLocaleDateString('en-IN', {

@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Building2, MessageSquare, User, Search, IndianRupee } from 'lucide-react';
+import { LayoutDashboard, Building2, MessageSquare, User, Search, IndianRupee, Receipt } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 const ownerManagerItems = [
@@ -19,9 +19,20 @@ const userItems = [
   { label: 'Account', icon: User, to: '/profile' },
 ];
 
+const employeeItems = [
+  { label: 'Expenses', icon: Receipt, to: '/my-expenses' },
+  { label: 'Account', icon: User, to: '/profile' },
+];
+
 export default function BottomNav() {
   const { user } = useAuth();
-  const items = user?.role === 'user' ? userItems : ownerManagerItems;
+  
+  let items = ownerManagerItems;
+  if (user?.role === 'user') {
+    items = userItems;
+  } else if (user?.role === 'employee') {
+    items = employeeItems;
+  }
 
   return (
     <nav className="fixed bottom-0 inset-x-0 h-[62px] bg-white dark:bg-[#1a1d2e] border-t border-gray-200 dark:border-[#2d3052] z-[200] flex md:hidden items-stretch justify-around shadow-[0_-4px_24px_rgba(0,0,0,0.35)] px-1">

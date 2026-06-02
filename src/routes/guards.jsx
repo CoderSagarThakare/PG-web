@@ -11,8 +11,10 @@ export const ProtectedRoute = () => {
 export const GuestRoute = () => {
   const { user } = useAuth();
   if (user) {
-    const target = user.role === 'user' ? '/browse' : '/dashboard';
-    return <Navigate to={target} replace />;
+    // Route each role to their landing page
+    if (user.role === 'user')     return <Navigate to="/browse" replace />;
+    if (user.role === 'employee') return <Navigate to="/my-expenses" replace />;
+    return <Navigate to="/dashboard" replace />;  // owner / manager
   }
   return <Outlet />;
 };
@@ -21,7 +23,12 @@ export const GuestRoute = () => {
 export const RoleRoute = ({ roles }) => {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  const target = user.role === 'user' ? '/browse' : '/dashboard';
-  if (!roles.includes(user.role)) return <Navigate to={target} replace />;
+
+  if (!roles.includes(user.role)) {
+    // Redirect each role to their correct home
+    if (user.role === 'user')     return <Navigate to="/browse" replace />;
+    if (user.role === 'employee') return <Navigate to="/my-expenses" replace />;
+    return <Navigate to="/dashboard" replace />;  // owner / manager
+  }
   return <Outlet />;
 };
