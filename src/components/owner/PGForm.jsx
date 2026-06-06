@@ -254,7 +254,7 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
                       filteredManagers.map(m => (
                         <div
                           key={m._id}
-                          onClick={() => {
+                          onMouseDown={() => {
                             setValue('managerId', m._id, { shouldValidate: true });
                             setManagerSearch(m.role === 'owner' ? `${m.name} (Me)` : m.name);
                             setShowManagerDropdown(false);
