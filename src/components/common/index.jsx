@@ -1,8 +1,9 @@
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
 import { cn } from '../../utils/cn';
 import ReactSelect from 'react-select';
 import ReactDatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
+import { Eye, EyeOff } from 'lucide-react';
 
 const customSelectStyles = (isDark) => ({
   control: (base, state) => ({
@@ -287,6 +288,7 @@ export const Input = forwardRef(({
   label, name, type = 'text', value, onChange,
   placeholder, error, required, disabled, as = 'input', options, rows, ...props
 }, ref) => {
+  const [showPassword, setShowPassword] = useState(false);
   const inputCls = cn(
     'w-full bg-white dark:bg-[#242740] border rounded-lg px-3 py-2.5 text-sm transition-colors duration-200 outline-none',
     'text-gray-900 dark:text-[#f0f0f8] placeholder:text-gray-400 dark:placeholder:text-[#6b6e82]',
@@ -335,6 +337,21 @@ export const Input = forwardRef(({
         />
       ) : as === 'textarea' ? (
         <textarea rows={rows || 4} {...commonProps} />
+      ) : type === 'password' ? (
+        <div className="relative">
+          <input
+            type={showPassword ? 'text' : 'password'}
+            {...commonProps}
+            className={cn(inputCls, 'pr-10')}
+          />
+          <button
+            type="button"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-[#f0f0f8] focus:outline-none flex items-center justify-center"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
       ) : (
         <input type={type} {...commonProps} />
       )}

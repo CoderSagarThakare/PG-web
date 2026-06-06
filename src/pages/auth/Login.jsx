@@ -11,6 +11,7 @@ const STAFF_ROLES = ['owner', 'manager', 'employee'];
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
 
@@ -71,16 +72,43 @@ export default function Login() {
             required
           />
 
-          <Button type="submit" loading={loading} className="w-full" size="lg">
+          <Button type="submit" loading={loading} className="w-full mt-2" size="lg">
             Sign In
           </Button>
         </form>
 
-        <div className="mt-5 p-4 bg-[#242740] dark:bg-[#242740] rounded-lg text-[12px] space-y-1">
-          <p className="text-[#6b6e82] mb-1.5 font-semibold">Test Credentials</p>
-          <p className="text-[#a0a3b1]">Owner: <strong>coder.sagarthakare@gmail.com</strong> (sagar123)</p>
-          <p className="text-[#a0a3b1]">Manager: <strong>manager1@gmail.com</strong> (Sagar@123)</p>
-          <p className="text-[#a0a3b1]">User: <strong>saggythakare01@gmail.com</strong> (Sagar@123)</p>
+        <div className="mt-5 p-4 bg-[#242740] dark:bg-[#242740] rounded-lg text-[12px] space-y-2.5">
+          <p className="text-[#6b6e82] mb-1 font-semibold">Select Test Account to Autofill:</p>
+          <div className="flex flex-col gap-2">
+            {[
+              { id: 'owner', label: 'Owner', email: 'coder.sagarthakare@gmail.com', pass: 'sagar123' },
+              { id: 'manager', label: 'Manager', email: 'manager1@gmail.com', pass: 'Sagar@123' },
+              { id: 'user', label: 'User', email: 'saggythakare01@gmail.com', pass: 'Sagar@123' }
+            ].map(acc => {
+              const isSelected = form.email === acc.email && form.password === acc.pass;
+              return (
+                <label key={acc.id} className="flex items-start gap-2.5 cursor-pointer text-[#a0a3b1] hover:text-white transition-colors select-none">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setForm({ email: acc.email, password: acc.pass });
+                      } else {
+                        setForm({ email: '', password: '' });
+                      }
+                    }}
+                    className="rounded border-gray-300 text-[#6c63ff] focus:ring-[#6c63ff]/40 bg-white dark:bg-[#242740] dark:border-[#2d3052] w-4 h-4 cursor-pointer mt-0.5"
+                  />
+                  <div>
+                    <span className="font-bold text-[#6c63ff] dark:text-[#8e87ff]">{acc.label}: </span>
+                    <span className="font-semibold text-gray-900 dark:text-[#f0f0f8]">{acc.email}</span>
+                    <span className="text-gray-400 dark:text-[#6b6e82]"> ({acc.pass})</span>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
         </div>
 
         <div className="mt-4 text-center text-sm text-[#6b6e82]">
