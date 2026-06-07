@@ -110,7 +110,7 @@ export default function StaffTracker() {
     enabled: isEmployee,
   });
   const myEmployees = myStaffRecord?.employees || [];
-  const assignedPgs = myEmployees.map(emp => emp.pgId).filter(Boolean);
+  const assignedPgs = myEmployees.flatMap(emp => emp.pgIds || []).filter(Boolean);
   const assignedPgOptions = assignedPgs.map(pg => ({ value: pg._id, label: pg.name }));
 
   // Owner/manager: fetch all their PGs for the filter dropdown
