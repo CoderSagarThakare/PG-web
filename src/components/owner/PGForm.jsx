@@ -102,12 +102,14 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
     return displayName.toLowerCase().includes(searchString) || email.toLowerCase().includes(searchString);
   });
 
-  const handleNextStep1 = async () => {
+  const handleNextStep1 = async (e) => {
+    if (e) e.preventDefault();
     const isValid = await trigger(['name', 'description', 'pgType', 'managerId', 'pgStartedDate', 'landline']);
     if (isValid) setStep(2);
   };
 
-  const handleNextStep2 = async () => {
+  const handleNextStep2 = async (e) => {
+    if (e) e.preventDefault();
     const isValid = await trigger([
       'address.landmark', 'address.city', 'address.state', 'address.country', 
       'address.pincode', 'address.locationDescription', 'locationLink'
@@ -148,14 +150,14 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
                       ? "bg-white dark:bg-[#1a1d2e] border-[#6c63ff] text-[#6c63ff] shadow-md shadow-[#6c63ff]/20 font-black" 
                       : "bg-gray-100 dark:bg-[#242740] border-gray-200 dark:border-[#2d3052] text-gray-400 dark:text-[#6b6e82]"
                 }`}
-                onClick={async () => {
+                onClick={async (e) => {
                   // Only allow clicking completed steps or current step
                   if (num < step) {
                     setStep(num);
                   } else if (num === 2 && step === 1) {
-                    await handleNextStep1();
+                    await handleNextStep1(e);
                   } else if (num === 3 && step === 2) {
-                    await handleNextStep2();
+                    await handleNextStep2(e);
                   }
                 }}
               >
@@ -448,11 +450,11 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
         <div className="flex gap-3 flex-col-reverse sm:flex-row">
           <Button variant="ghost" type="button" onClick={() => { setManagerSearch(''); if (onCancel) onCancel(); }} disabled={loading}>Cancel</Button>
           {step < 3 ? (
-            <Button type="button" onClick={step === 1 ? handleNextStep1 : handleNextStep2}>
+            <Button key="next-btn" type="button" onClick={step === 1 ? handleNextStep1 : handleNextStep2}>
               Next Step
             </Button>
           ) : (
-            <Button type="submit" loading={loading}>{buttonText}</Button>
+            <Button key="submit-btn" type="submit" loading={loading}>{buttonText}</Button>
           )}
         </div>
       </div>
