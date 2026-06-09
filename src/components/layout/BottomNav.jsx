@@ -20,6 +20,8 @@ const userItems = [
 ];
 
 const employeeItems = [
+  { label: 'Discover', icon: Search, to: '/browse' },
+  { label: 'Browse', icon: Building2, to: '/browse-pgs' },
   { label: 'Expenses', icon: Receipt, to: '/my-expenses' },
   { label: 'Account', icon: User, to: '/profile' },
 ];

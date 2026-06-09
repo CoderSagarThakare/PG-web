@@ -97,12 +97,19 @@ const router = createBrowserRouter([
                 ],
               },
 
+              // Tenant + Employee
+              {
+                element: <RoleRoute roles={['user', 'employee']} />,
+                children: [
+                  { path: '/browse',        element: <BrowsePosts /> },
+                  { path: '/browse-pgs',    element: <BrowsePGs /> },
+                ],
+              },
+
               // Tenant only
               {
                 element: <RoleRoute roles={['user']} />,
                 children: [
-                  { path: '/browse',        element: <BrowsePosts /> },
-                  { path: '/browse-pgs',    element: <BrowsePGs /> },
                   { path: '/my-enquiries',  element: <Enquiries /> },
                   { path: '/my-rent',       element: <MyRent /> },
                 ],

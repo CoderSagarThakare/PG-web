@@ -42,6 +42,9 @@ const userNav = [
 ];
 
 const employeeNav = [
+  { section: 'Discover' },
+  { label: 'Discover Stays', icon: <Search size={18} />, to: '/browse' },
+  { label: 'Browse PGs', icon: <Building2 size={18} />, to: '/browse-pgs' },
   { section: 'My Work' },
   { label: 'My Expenses', icon: <Receipt size={18} />, to: '/my-expenses' },
   { section: 'Account' },
