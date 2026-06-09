@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { discoverPGsApi, getFacilitiesApi, getPGByIdApi } from '../../api/pg.api';
 import { Search, MapPin, Building2, Star, Users, Filter, ChevronRight, Info } from 'lucide-react';
 import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, Pagination, SelectDropdown } from '../../components/common';
 
 export default function BrowsePGs() {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(12);
   const [filters, setFilters] = useState({ city: '', pgType: '', facilities: [] });
@@ -298,9 +300,9 @@ export default function BrowsePGs() {
               <Info size={20} className="text-[#6c63ff]" />
               <div className="flex-1">
                 <div className="font-extrabold text-[#6c63ff] text-[12px]">Interested in this Property?</div>
-                <div className="text-[11px] dark:text-[#a0a3b1] text-gray-600">Book a specific room in this building via Discover Stays.</div>
+                <div className="text-[11px] dark:text-[#a0a3b1] text-gray-600">Explore and book available rooms in this building via Discover Stays.</div>
               </div>
-              <Button size="sm" onClick={() => window.location.href = '/browse'} className="text-[11px] px-3 py-1.5">Go to Stays</Button>
+              <Button size="sm" onClick={() => navigate('/browse', { state: { pgId: pgDetail._id, pgName: pgDetail.name } })} className="text-[11px] px-3 py-1.5">Go to Stays</Button>
             </div>
           </div>
         )}

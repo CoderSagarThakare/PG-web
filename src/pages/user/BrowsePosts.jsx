@@ -1,21 +1,57 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { searchPostsApi } from '../../api/post.api';
 import { getFacilitiesApi } from '../../api/pg.api';
 import { createEnquiryApi, updateEnquiryApi } from '../../api/enquiry.api';
-import { Search, MapPin, Bed, Filter, Phone, User as UserIcon, CheckCircle2, Building2 } from 'lucide-react';
+import { Search, MapPin, Bed, Filter, Phone, User as UserIcon, CheckCircle2, Building2, X, ArrowLeft } from 'lucide-react';
 import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, Pagination, SelectDropdown } from '../../components/common';
 import { getErrorMessage, formatPrice } from '../../utils/helpers';
 
 export default function BrowsePosts() {
   const qc = useQueryClient();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const initialPgId = location.state?.pgId || '';
+  const initialPgName = location.state?.pgName || '';
+
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(12);
-  const [filters, setFilters] = useState({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '', facilities: [] });
-  const [activeFilters, setActiveFilters] = useState({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '', facilities: [] });
+  const [filters, setFilters] = useState({ 
+    title: '', 
+    city: '', 
+    pgType: '', 
+    occupancyType: '', 
+    minPrice: '', 
+    maxPrice: '', 
+    facilities: [],
+    pgId: initialPgId
+  });
+  const [activeFilters, setActiveFilters] = useState({ 
+    title: '', 
+    city: '', 
+    pgType: '', 
+    occupancyType: '', 
+    minPrice: '', 
+    maxPrice: '', 
+    facilities: [],
+    pgId: initialPgId
+  });
+  const [selectedPgName, setSelectedPgName] = useState(initialPgName);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [viewPost, setViewPost] = useState(null);
+
+  useEffect(() => {
+    if (location.state?.pgId) {
+      const { pgId, pgName } = location.state;
+      setFilters(prev => ({ ...prev, pgId }));
+      setActiveFilters(prev => ({ ...prev, pgId }));
+      setSelectedPgName(pgName || 'Selected PG');
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -105,6 +141,26 @@ export default function BrowsePosts() {
     });
   };
 
+  const handleClearFilters = () => {
+    setFilters({ 
+      title: '', 
+      city: '', 
+      pgType: '', 
+      occupancyType: '', 
+      minPrice: '', 
+      maxPrice: '', 
+      facilities: [],
+      pgId: ''
+    });
+    setSelectedPgName('');
+  };
+
+  const handleClearPgFilter = () => {
+    setFilters(prev => ({ ...prev, pgId: '' }));
+    setActiveFilters(prev => ({ ...prev, pgId: '' }));
+    setSelectedPgName('');
+  };
+
   const posts = data?.posts || [];
 
   const handleEnquire = (postId) => {
@@ -121,12 +177,23 @@ export default function BrowsePosts() {
   return (
     <div className="fade-in">
       <div className="flex items-center justify-between mb-7 flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900">Find Your Next Home</h1>
-          <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-1">Browse available PG rooms based on your preferences</p>
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate(-1)} 
+            className="rounded-full p-2 h-9 w-9 shrink-0 flex items-center justify-center border border-gray-200 dark:border-[#2d3052] dark:hover:bg-[#242740] hover:bg-gray-100"
+            title="Go Back"
+          >
+            <ArrowLeft size={16} className="dark:text-[#a0a3b1] text-gray-600" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900 leading-none">Find Your Next Home</h1>
+            <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-1.5">Browse available PG rooms based on your preferences</p>
+          </div>
         </div>
-        {Object.values(filters).some(v => v !== '') && (
-          <Button variant="ghost" size="sm" onClick={() => setFilters({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '' })}>
+        {(Object.values(filters).some(v => v !== '' && (!Array.isArray(v) || v.length > 0)) || selectedPgName) && (
+          <Button variant="ghost" size="sm" onClick={handleClearFilters}>
             Clear Filters
           </Button>
         )}
@@ -209,6 +276,21 @@ export default function BrowsePosts() {
           <Filter size={14} className="mr-1.5" /> Filters
         </Button>
       </div>
+
+      {selectedPgName && (
+        <div className="flex items-center gap-2 mb-6 bg-[#6c63ff]/10 border border-[#6c63ff]/20 rounded-full px-4 py-1.5 w-fit">
+          <span className="text-[12px] dark:text-[#a0a3b1] text-gray-600 font-medium">
+            Showing stays for: <strong className="dark:text-[#f0f0f8] text-[#6c63ff] font-bold">{selectedPgName}</strong>
+          </span>
+          <button 
+            onClick={handleClearPgFilter}
+            className="ml-1 dark:text-[#6c63ff] text-[#6c63ff] hover:text-red-500 transition-colors duration-150"
+            title="Clear PG filter"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {isLoading ? <Spinner center /> : posts.length === 0 ? (
         <EmptyState icon={<Search size={64} />} title="No PGs found" 
@@ -332,7 +414,7 @@ export default function BrowsePosts() {
           </div>
 
           <div className="flex gap-3 mt-3">
-            <Button variant="ghost" className="flex-1" onClick={() => { setFilters({ title: '', city: '', pgType: '', occupancyType: '', minPrice: '', maxPrice: '', facilities: [] }); setShowAdvancedFilters(false); }}>
+            <Button variant="ghost" className="flex-1" onClick={() => { handleClearFilters(); setShowAdvancedFilters(false); }}>
               Reset All
             </Button>
             <Button variant="primary" className="flex-1" onClick={() => setShowAdvancedFilters(false)}>
