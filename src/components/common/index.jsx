@@ -26,6 +26,10 @@ const customSelectStyles = (isDark) => ({
     borderRadius: '8px',
     zIndex: 9999,
   }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 9999,
+  }),
   option: (base, state) => ({
     ...base,
     backgroundColor: state.isSelected 
@@ -102,6 +106,7 @@ export const SelectDropdown = forwardRef(({
       styles={mergedStyles}
       className={className}
       name={name}
+      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
       {...props}
     />
   );
@@ -286,7 +291,7 @@ export const Card = ({ children, className = '', hover = false, onClick, style =
 // ── Input ──────────────────────────────────────────────────────────────────────
 export const Input = forwardRef(({
   label, name, type = 'text', value, onChange,
-  placeholder, error, required, disabled, as = 'input', options, rows, ...props
+  placeholder, error, required, disabled, as = 'input', options, rows, className, ...props
 }, ref) => {
   const [showPassword, setShowPassword] = useState(false);
   const inputCls = cn(
@@ -296,7 +301,8 @@ export const Input = forwardRef(({
     error
       ? 'border-[#ff4d6d]'
       : 'border-gray-200 dark:border-[#2d3052] hover:border-[#6c63ff]/50',
-    disabled && 'opacity-50 cursor-not-allowed'
+    disabled && 'opacity-50 cursor-not-allowed',
+    className
   );
 
   const commonProps = {

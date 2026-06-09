@@ -5,7 +5,7 @@ import {
   Users, Receipt, Wallet, Plus, CheckCircle2, XCircle, Clock,
   Banknote, Smartphone, Building2,
   UserPlus, TrendingUp, Edit3, Trash2, IndianRupee,
-  FileText, Image, X
+  FileText, Image, X, Eye, Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
@@ -16,7 +16,7 @@ import { getMyPGsApi } from '../../api/pg.api';
 import {
   getEmployeesApi, addEmployeeApi, updateEmployeeApi, removeEmployeeApi,
   getExpensesApi, createExpenseApi, processExpenseApi, markExpensePaidApi, deleteExpenseApi,
-  getPayrollsApi, generatePayrollApi, markPayrollPaidApi, searchStaffUsersApi
+  getPayrollsApi, generatePayrollApi, markPayrollPaidApi, searchStaffUsersApi, updatePayrollApi
 } from '../../api/staff.api';
 import { cn } from '../../utils/cn';
 
@@ -30,13 +30,285 @@ const CURRENT_MONTH = (() => {
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`;
 })();
 
-// Generate past 12 months for selector
-const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => {
+// Generate past 36 months for selector
+const MONTH_OPTIONS = Array.from({ length: 36 }, (_, i) => {
   const d = new Date();
   d.setMonth(d.getMonth() - i);
   const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   return { value: val, label: d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) };
 });
+
+const handlePaySlipAction = (payOrGroup, action = 'download') => {
+  const isGroup = payOrGroup.isGroup;
+  const records = isGroup ? payOrGroup.records : [payOrGroup];
+  const firstRec = records[0];
+  const empName = firstRec.employeeId?.userId?.name || 'Employee';
+  const pgNamesStr = isGroup ? payOrGroup.records.map(r => r.pgId?.name).join(', ') : (firstRec.pgId?.name || 'PG');
+  const monthStr = firstRec.month || '';
+  const formattedMonth = firstRec.month ? new Date(firstRec.month + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : '';
+  const title = `PaySlip_${monthStr}_${empName.replace(/\s+/g, '_')}_${isGroup ? 'Combined' : pgNamesStr.replace(/\s+/g, '_')}`;
+
+  let printWindow = null;
+  if (action === 'view') {
+    printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Pop-up blocked! Please allow pop-ups for this site.');
+      return;
+    }
+  }
+
+  const totalSalary = records.reduce((s, r) => s + (r.salaryAmount || 0), 0);
+  const totalExpenses = records.reduce((s, r) => s + (r.reimbursedExpenses || 0), 0);
+  const totalNet = records.reduce((s, r) => s + (r.totalAmount || 0), 0);
+
+  const htmlContent = `
+    <html>
+      <head>
+        <title>${title}</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+          body {
+            font-family: 'Inter', sans-serif;
+            color: #1f2937;
+            padding: 40px;
+            margin: 0;
+            background-color: #ffffff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+          }
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #6c63ff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+          }
+          .logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: #6c63ff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .invoice-title {
+            font-size: 20px;
+            font-weight: 700;
+            text-align: right;
+            color: #111827;
+          }
+          .invoice-meta {
+            text-align: right;
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 5px;
+          }
+          .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+          }
+          .details-box h3 {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #9ca3af;
+            margin: 0 0 8px 0;
+            letter-spacing: 0.5px;
+          }
+          .details-box p {
+            margin: 4px 0;
+            font-size: 14px;
+            color: #374151;
+          }
+          .details-box .name {
+            font-weight: 700;
+            font-size: 16px;
+            color: #111827;
+          }
+          .table-container {
+            margin-bottom: 30px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+          }
+          th {
+            background-color: #f9fafb;
+            color: #4b5563;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          td {
+            padding: 16px;
+            font-size: 14px;
+            border-bottom: 1px solid #f3f4f6;
+            color: #4b5563;
+          }
+          .font-bold {
+            font-weight: 700;
+          }
+          .text-right {
+            text-align: right;
+          }
+          .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+          }
+          .totals-table {
+            width: 300px;
+          }
+          .totals-table td {
+            padding: 8px 0;
+            border: none;
+          }
+          .total-row td {
+            border-top: 1px solid #e5e7eb;
+            border-bottom: 2px double #6c63ff;
+            padding-top: 12px;
+            font-weight: 700;
+            font-size: 16px;
+            color: #6c63ff;
+          }
+          .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #9ca3af;
+            border-top: 1px solid #f3f4f6;
+            padding-top: 20px;
+          }
+          @media print {
+            body {
+              padding: 0;
+            }
+            .container {
+              border: none;
+              box-shadow: none;
+              padding: 0;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div>
+              <div class="logo">StaySync</div>
+              <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">Smart PG Management Solutions</div>
+            </div>
+            <div>
+              <div class="invoice-title">PAY SLIP</div>
+              <div class="invoice-meta">Month: ${formattedMonth}</div>
+              <div class="invoice-meta">Generated: ${new Date().toLocaleDateString('en-IN')}</div>
+            </div>
+          </div>
+
+          <div class="details-grid">
+            <div class="details-box">
+              <h3>Employee Details</h3>
+              <p class="name">${empName}</p>
+              <p>Role: <span style="text-transform: capitalize;">${firstRec.employeeId?.userId?.role || 'Staff'}</span></p>
+              <p>Email: ${firstRec.employeeId?.userId?.email || '—'}</p>
+              <p>Mobile: ${firstRec.employeeId?.userId?.mobNo1 || '—'}</p>
+            </div>
+            <div class="details-box">
+              <h3>Payment Summary</h3>
+              <p><strong>PGs Included:</strong> ${pgNamesStr}</p>
+              <p><strong>Status:</strong> <span style="color: #10b981; font-weight: 600;">PAID</span></p>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Description / PG Allocation</th>
+                  <th class="text-right">Salary Amount</th>
+                  <th class="text-right">Reimbursed Expenses</th>
+                  <th class="text-right">Total Payout</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${records.map(r => `
+                <tr>
+                  <td>
+                    <div class="font-bold" style="color: #111827;">${r.pgId?.name || 'PG Share'}</div>
+                    <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">
+                      Status: PAID ${r.paidDate ? `on ${new Date(r.paidDate).toLocaleDateString('en-IN')} via ${r.paymentMode?.toUpperCase() || ''}` : ''}
+                    </div>
+                  </td>
+                  <td class="text-right font-bold">₹${Number(r.salaryAmount || 0).toLocaleString('en-IN')}</td>
+                  <td class="text-right font-bold" style="color: ${r.reimbursedExpenses > 0 ? '#10b981' : '#4b5563'};">₹${Number(r.reimbursedExpenses || 0).toLocaleString('en-IN')}</td>
+                  <td class="text-right font-bold">₹${Number(r.totalAmount || 0).toLocaleString('en-IN')}</td>
+                </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="totals-section">
+            <table class="totals-table">
+              <tr>
+                <td>Subtotal Salary</td>
+                <td class="text-right">₹${Number(totalSalary).toLocaleString('en-IN')}</td>
+              </tr>
+              <tr>
+                <td>Subtotal Expenses</td>
+                <td class="text-right">₹${Number(totalExpenses).toLocaleString('en-IN')}</td>
+              </tr>
+              <tr class="total-row">
+                <td>Net Combined Payout</td>
+                <td class="text-right">₹${Number(totalNet).toLocaleString('en-IN')}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="footer">
+            <p>This is a computer-generated document and does not require a physical signature.</p>
+            <p>© ${new Date().getFullYear()} StaySync. All rights reserved.</p>
+          </div>
+        </div>
+        ${action === 'view' ? '' : `
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+        `}
+      </body>
+    </html>
+  `;
+
+  if (action === 'view') {
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  } else {
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${title}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+};
 
 // ── Status/Mode Badges ─────────────────────────────────────────────────────────
 const statusVariants = {
@@ -89,7 +361,8 @@ export default function StaffTracker() {
   const isEmployee = user?.role === 'employee';
   const qc = useQueryClient();
 
-  // Employees only see the Expenses tab
+  // Employees see Expenses and Salary Payouts, but not Staff List
+  const tabs = TABS.filter(tab => !isEmployee || tab.id !== 'staff');
   const [activeTab, setActiveTab] = useState(isEmployee ? 'expenses' : 'staff');
   const [filterPgId, setFilterPgId] = useState('');
   const [filterMonth, setFilterMonth] = useState(CURRENT_MONTH);
@@ -101,6 +374,7 @@ export default function StaffTracker() {
   const [processExpenseModal, setProcessExpenseModal] = useState(null);
   const [payrollModal, setPayrollModal] = useState(null);
   const [markPaidModal, setMarkPaidModal] = useState(null);
+  const [editPayrollModal, setEditPayrollModal] = useState(null);
 
   // ── Queries ──────────────────────────────────────────────────────────────────
   // Employees don't own PGs — fetch their own staff record to get the assigned PG
@@ -125,15 +399,16 @@ export default function StaffTracker() {
   const { data: empData, isLoading: empLoading } = useQuery({
     queryKey: ['employees', filterPgId],
     queryFn: async () => (await getEmployeesApi({ pgId: filterPgId || undefined, limit: 100 })).data?.data,
-    enabled: activeTab === 'staff',
+    enabled: !isEmployee,
   });
   const employees = empData?.employees || [];
 
   const { data: expData, isLoading: expLoading } = useQuery({
-    queryKey: ['expenses', filterPgId],
+    queryKey: ['expenses', filterPgId, filterMonth],
     queryFn: async () => (
       await getExpensesApi({
         pgId: filterPgId || undefined,
+        month: filterMonth || undefined,
         limit: 100,
       })
     ).data?.data,
@@ -203,13 +478,26 @@ export default function StaffTracker() {
 
   const genPayrollMut = useMutation({
     mutationFn: generatePayrollApi,
-    onSuccess: () => { toast.success('Payroll generated!'); invalidate(); setPayrollModal(null); },
+    onSuccess: (data, variables) => {
+      toast.success('Payroll generated!');
+      if (variables?.month) {
+        setFilterMonth(variables.month);
+      }
+      invalidate();
+      setPayrollModal(null);
+    },
     onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const markPayPaidMut = useMutation({
     mutationFn: ({ id, data }) => markPayrollPaidApi(id, data),
     onSuccess: () => { toast.success('Payroll marked as paid!'); invalidate(); setMarkPaidModal(null); },
+    onError: (e) => toast.error(getErrorMessage(e)),
+  });
+
+  const updatePayrollMut = useMutation({
+    mutationFn: ({ id, data }) => updatePayrollApi(id, data),
+    onSuccess: () => { toast.success('Payroll record updated!'); invalidate(); setEditPayrollModal(null); },
     onError: (e) => toast.error(getErrorMessage(e)),
   });
 
@@ -254,20 +542,22 @@ export default function StaffTracker() {
       </div>
 
       {/* ── Filters ── */}
-      {((!isEmployee && pgOptions.length > 0) || (isEmployee && assignedPgOptions.length > 1)) && (
+      {((!isEmployee && pgOptions.length > 0) || (isEmployee && assignedPgOptions.length > 1) || activeTab === 'payroll' || activeTab === 'expenses') && (
         <div className="flex flex-wrap gap-3 mb-6">
-          <div className="w-52">
-            <SelectDropdown
-              value={filterPgId}
-              onChange={e => setFilterPgId(e.target.value)}
-              options={[
-                { value: '', label: isEmployee ? 'All My PGs' : 'All PGs' },
-                ...(isEmployee ? assignedPgOptions : pgOptions),
-              ]}
-              placeholder="Filter by PG"
-            />
-          </div>
-          {activeTab === 'payroll' && !isEmployee && (
+          {((!isEmployee && pgOptions.length > 0) || (isEmployee && assignedPgOptions.length > 1)) && (
+            <div className="w-52">
+              <SelectDropdown
+                value={filterPgId}
+                onChange={e => setFilterPgId(e.target.value)}
+                options={[
+                  { value: '', label: isEmployee ? 'All My PGs' : 'All PGs' },
+                  ...(isEmployee ? assignedPgOptions : pgOptions),
+                ]}
+                placeholder="Filter by PG"
+              />
+            </div>
+          )}
+          {(activeTab === 'payroll' || activeTab === 'expenses') && (
             <div className="w-52">
               <SelectDropdown
                 value={filterMonth}
@@ -287,25 +577,23 @@ export default function StaffTracker() {
         {!isEmployee && <StatCard icon={<Wallet size={20} />} label="Payroll Due" value={pendingPay} sub={`${f(totalPayAmt)} total`} colorClass="text-[#ff4d6d]" />}
       </div>
 
-      {/* ── Tabs: employees only see Expenses ── */}
-      {!isEmployee && (
-        <div className="flex gap-1 mb-6 p-1 bg-gray-100 dark:bg-[#242740] rounded-xl w-fit">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
-                activeTab === tab.id
-                  ? 'bg-white dark:bg-[#1a1d2e] text-[#6c63ff] shadow-sm'
-                  : 'text-gray-500 dark:text-[#a0a3b1] hover:text-gray-700 dark:hover:text-[#f0f0f8]'
-              )}
-            >
-              {tab.icon} {tab.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* ── Tabs: employees see filtered tabs ── */}
+      <div className="flex gap-1 mb-6 p-1 bg-gray-100 dark:bg-[#242740] rounded-xl w-fit">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
+              activeTab === tab.id
+                ? 'bg-white dark:bg-[#1a1d2e] text-[#6c63ff] shadow-sm'
+                : 'text-gray-500 dark:text-[#a0a3b1] hover:text-gray-700 dark:hover:text-[#f0f0f8]'
+            )}
+          >
+            {tab.icon} {tab.label}
+          </button>
+        ))}
+      </div>
 
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* TAB: STAFF LIST                                               */}
@@ -320,61 +608,99 @@ export default function StaffTracker() {
               action={<Button onClick={() => setAddStaffModal(true)}><UserPlus size={16} /> Add First Staff Member</Button>}
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-[fadeIn_0.3s_ease]">
               {employees.map(emp => (
-                <Card key={emp._id} className="flex flex-col gap-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={emp.userId?.picture || 'https://i.imgur.com/CR1iy7U.png'}
-                        alt={emp.userId?.name}
-                        className="w-10 h-10 rounded-full object-cover border-2 border-[#6c63ff]/20"
-                      />
-                      <div>
-                        <div className="font-bold text-sm dark:text-[#f0f0f8] text-gray-900">{emp.userId?.name}</div>
-                        <Badge variant={emp.userId?.role === 'manager' ? 'manager' : 'default'} className="text-[10px]">
-                          {emp.userId?.role}
-                        </Badge>
+                <Card key={emp._id} className="flex flex-col min-h-[380px] justify-between">
+                  <div className="flex flex-col gap-3.5 flex-1">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <img
+                          src={emp.userId?.picture || 'https://i.imgur.com/CR1iy7U.png'}
+                          alt={emp.userId?.name}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-[#6c63ff]/20 flex-shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <div className="font-bold text-sm dark:text-[#f0f0f8] text-gray-900 truncate" title={emp.userId?.name}>
+                            {emp.userId?.name}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <Badge variant={emp.userId?.role === 'manager' ? 'manager' : 'default'} className="text-[9px] px-1.5 py-0">
+                              {emp.userId?.role}
+                            </Badge>
+                          </div>
+                          <div className="text-[10px] text-gray-400 dark:text-[#6b6e82] mt-1 flex flex-col gap-0.5">
+                            <span className="font-semibold">{emp.userId?.mobNo1 || '—'}</span>
+                            <span className="truncate max-w-[140px]" title={emp.userId?.email}>{emp.userId?.email}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <Badge variant={statusVariants[emp.status]?.variant || 'default'} className="flex-shrink-0">
+                        {statusVariants[emp.status]?.label || emp.status}
+                      </Badge>
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="p-2.5 bg-gray-50 dark:bg-[#242740] rounded-xl">
+                        <div className="text-gray-400 dark:text-[#6b6e82] text-[10px] font-bold uppercase tracking-wider">Monthly Salary</div>
+                        <div className="font-black text-[#6c63ff] text-sm mt-0.5">{f(emp.monthlySalary)}</div>
+                      </div>
+                      <div className="p-2.5 bg-gray-50 dark:bg-[#242740] rounded-xl">
+                        <div className="text-gray-400 dark:text-[#6b6e82] text-[10px] font-bold uppercase tracking-wider">Joined</div>
+                        <div className="font-semibold dark:text-[#f0f0f8] text-gray-700 mt-0.5">{formatDate(emp.joinedDate)}</div>
                       </div>
                     </div>
-                    <Badge variant={statusVariants[emp.status]?.variant || 'default'}>
-                      {statusVariants[emp.status]?.label || emp.status}
-                    </Badge>
+
+                    {/* Assigned PGs Section */}
+                    <div className="text-xs dark:text-[#6b6e82] text-gray-500 flex flex-col gap-1.5 mt-1 border-t dark:border-[#2d3052]/40 border-gray-100 pt-3 flex-1">
+                      <div className="font-bold text-[10px] uppercase text-gray-400 dark:text-[#6b6e82] tracking-wider mb-1">
+                        Assigned PGs & Salaries ({emp.pgIds?.length || 0})
+                      </div>
+                      
+                      <div className="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1 custom-scrollbar">
+                        {emp.pgIds?.map(pg => {
+                          const pgId = pg._id || pg;
+                          const pgSalary = emp.pgSalaries?.[pgId] !== undefined
+                            ? emp.pgSalaries[pgId]
+                            : (emp.pgIds.length > 0 ? Math.round(emp.monthlySalary / emp.pgIds.length) : 0);
+                          return (
+                            <div 
+                              key={pgId} 
+                              className="flex justify-between items-center gap-3 bg-gray-50/50 dark:bg-[#242740]/40 p-2 rounded-xl border border-gray-100/30 dark:border-[#2d3052]/20 hover:border-[#6c63ff]/30 dark:hover:border-[#6c63ff]/20 transition-colors"
+                              title={pg.name}
+                            >
+                              <span className="truncate font-semibold text-gray-700 dark:text-[#e0e0f0] flex-1">
+                                {pg.name}
+                              </span>
+                              <span className="font-black text-[#6c63ff] text-xs flex-shrink-0">
+                                {f(pgSalary)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="p-2 bg-gray-50 dark:bg-[#242740] rounded-lg">
-                      <div className="text-gray-400 dark:text-[#6b6e82]">Monthly Salary</div>
-                      <div className="font-black text-[#6c63ff] text-sm">{f(emp.monthlySalary)}</div>
+                  {/* Actions (pushed to bottom) */}
+                  {(user?.role === 'owner' || (user?.role === 'manager' && emp.userId?.role === 'employee')) && (
+                    <div className="flex gap-2 pt-3 border-t dark:border-[#2d3052] border-gray-200 mt-auto">
+                      <Button size="sm" variant="ghost" className="flex-1" onClick={() => setEditStaffModal(emp)}>
+                        <Edit3 size={13} /> Edit
+                      </Button>
+                      <Button
+                        size="sm" variant="danger"
+                        onClick={() => {
+                          if (window.confirm(`Remove ${emp.userId?.name} from staff?`)) {
+                            removeEmpMut.mutate(emp._id);
+                          }
+                        }}
+                      >
+                        <Trash2 size={13} />
+                      </Button>
                     </div>
-                    <div className="p-2 bg-gray-50 dark:bg-[#242740] rounded-lg">
-                      <div className="text-gray-400 dark:text-[#6b6e82]">Joined</div>
-                      <div className="font-semibold dark:text-[#f0f0f8] text-gray-700">{formatDate(emp.joinedDate)}</div>
-                    </div>
-                  </div>
-
-                  <div className="text-[11px] dark:text-[#6b6e82] text-gray-500">
-                    <div className="font-semibold mb-0.5 line-clamp-1" title={emp.pgIds?.map(p => p.name).join(', ')}>
-                      {emp.pgIds?.map(p => p.name).join(', ') || 'No PGs assigned'}
-                    </div>
-                    <div>{emp.userId?.mobNo1 || emp.userId?.email}</div>
-                  </div>
-
-                  <div className="flex gap-2 pt-2 border-t dark:border-[#2d3052] border-gray-200">
-                    <Button size="sm" variant="ghost" className="flex-1" onClick={() => setEditStaffModal(emp)}>
-                      <Edit3 size={13} /> Edit
-                    </Button>
-                    <Button
-                      size="sm" variant="danger"
-                      onClick={() => {
-                        if (window.confirm(`Remove ${emp.userId?.name} from staff?`)) {
-                          removeEmpMut.mutate(emp._id);
-                        }
-                      }}
-                    >
-                      <Trash2 size={13} />
-                    </Button>
-                  </div>
+                  )}
                 </Card>
               ))}
             </div>
@@ -467,83 +793,291 @@ export default function StaffTracker() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* TAB: PAYROLL                                                  */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      {activeTab === 'payroll' && (
-        <div className="flex flex-col gap-3">
-          {payLoading ? <Spinner center /> : payrolls.length === 0 ? (
-            <EmptyState
-              icon={<Wallet size={48} />}
-              title="No payroll records for this month"
-              description="Generate payroll for each staff member to track salary payments"
-              action={
-                <Button onClick={() => setPayrollModal({ employeeId: '', month: filterMonth })}>
-                  <Plus size={16} /> Generate Payroll
-                </Button>
-              }
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {payrolls.map(pay => {
-                const emp = pay.employeeId;
-                const u = emp?.userId;
-                return (
-                  <Card key={pay._id} className="flex flex-col gap-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={u?.picture || 'https://i.imgur.com/CR1iy7U.png'}
-                          alt={u?.name}
-                          className="w-9 h-9 rounded-full object-cover border-2 border-[#6c63ff]/20"
-                        />
-                        <div>
-                          <div className="font-bold text-sm dark:text-[#f0f0f8] text-gray-900">{u?.name}</div>
-                          <div className="text-[10px] dark:text-[#6b6e82] text-gray-500 capitalize">{u?.role} · {pay.pgId?.name}</div>
+      {/* TAB: PAYROLL                                                  */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'payroll' && (() => {
+        const displayPayrolls = !filterPgId ? (() => {
+          const groups = {};
+          payrolls.forEach(pay => {
+            const empId = pay.employeeId?._id || pay.employeeId;
+            if (!empId) return;
+            if (!groups[empId]) {
+              groups[empId] = {
+                isGroup: true,
+                employeeId: pay.employeeId,
+                records: [],
+                totalSalary: 0,
+                totalExpenses: 0,
+                totalAmount: 0,
+              };
+            }
+            groups[empId].records.push(pay);
+            groups[empId].totalSalary += pay.salaryAmount || 0;
+            groups[empId].totalExpenses += pay.reimbursedExpenses || 0;
+            groups[empId].totalAmount += pay.totalAmount || 0;
+          });
+          return Object.values(groups);
+        })() : payrolls;
+
+        return (
+          <div className="flex flex-col gap-3">
+            {payLoading ? <Spinner center /> : payrolls.length === 0 ? (
+              <EmptyState
+                icon={<Wallet size={48} />}
+                title={isEmployee ? "No pay slips available" : "No payroll records for this month"}
+                description={isEmployee ? "Your salary payouts will appear here once generated." : "Generate payroll for each staff member to track salary payments"}
+                action={
+                  !isEmployee && (
+                    <Button onClick={() => setPayrollModal({ employeeId: '', month: filterMonth })}>
+                      <Plus size={16} /> Generate Payroll
+                    </Button>
+                  )
+                }
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {displayPayrolls.map(pay => {
+                  if (pay.isGroup) {
+                    const emp = pay.employeeId;
+                    const u = emp?.userId;
+                    const allPaid = pay.records.every(r => r.status === 'paid');
+                    const allPending = pay.records.every(r => r.status === 'pending');
+                    return (
+                      <Card key={pay.employeeId?._id || pay.employeeId} className="flex flex-col gap-4">
+                        {/* Header */}
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={u?.picture || 'https://i.imgur.com/CR1iy7U.png'}
+                              alt={u?.name}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-[#6c63ff]/20"
+                            />
+                            <div>
+                              <div className="font-bold text-sm dark:text-[#f0f0f8] text-gray-900">{u?.name}</div>
+                              <div className="text-[10px] dark:text-[#6b6e82] text-gray-500 capitalize">{u?.role} · {pay.records.length} PGs Assigned</div>
+                            </div>
+                          </div>
+                          <Badge variant={allPaid ? 'success' : allPending ? 'warning' : 'warning'}>
+                            {allPaid ? 'All Paid' : allPending ? 'Pending Payout' : 'Partially Paid'}
+                          </Badge>
                         </div>
-                      </div>
-                      <Badge variant={pay.status === 'paid' ? 'success' : 'warning'}>
-                        {pay.status === 'paid' ? 'Paid' : 'Pending'}
-                      </Badge>
-                    </div>
 
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div className="p-2 bg-gray-50 dark:bg-[#242740] rounded-lg text-center">
-                        <div className="text-gray-400 dark:text-[#6b6e82]">Salary</div>
-                        <div className="font-black text-[#6c63ff]">{f(pay.salaryAmount)}</div>
-                      </div>
-                      <div className="p-2 bg-gray-50 dark:bg-[#242740] rounded-lg text-center">
-                        <div className="text-gray-400 dark:text-[#6b6e82]">Expenses</div>
-                        <div className="font-black text-[#00d4aa]">{f(pay.reimbursedExpenses)}</div>
-                      </div>
-                      <div className="p-2 bg-[#6c63ff]/10 dark:bg-[#6c63ff]/15 rounded-lg text-center border border-[#6c63ff]/20">
-                        <div className="text-[#6c63ff]">Total</div>
-                        <div className="font-black text-[#6c63ff]">{f(pay.totalAmount)}</div>
-                      </div>
-                    </div>
+                        {/* PG Breakdown List */}
+                        <div className="flex flex-col gap-2 bg-gray-50 dark:bg-[#242740] rounded-xl p-3 border border-gray-100 dark:border-[#2d3052]/40">
+                          <div className="text-[10px] font-bold text-gray-400 dark:text-[#6b6e82] uppercase tracking-wider mb-1">PG Breakdown</div>
+                          {pay.records.map(rec => (
+                            <div key={rec._id} className="flex items-center justify-between py-1.5 border-b border-gray-200/40 dark:border-[#2d3052]/30 last:border-0 flex-wrap gap-2">
+                              <div className="min-w-[150px]">
+                                <div className="text-xs font-semibold dark:text-[#e0e0f0] text-gray-800">{rec.pgId?.name}</div>
+                                <div className="text-[10px] text-gray-400 dark:text-[#6b6e82]">
+                                  Salary: {f(rec.salaryAmount)} · Expenses: {f(rec.reimbursedExpenses)}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={rec.status === 'paid' ? 'success' : 'warning'} className="text-[9px] px-1.5 py-0.5">
+                                  {rec.status === 'paid' ? 'Paid' : 'Pending'}
+                                </Badge>
+                                {rec.status === 'pending' && (
+                                  <div className="flex gap-1.5 items-center">
+                                    {!isEmployee && (rec.employeeId?.userId?.role !== 'manager' || user?.role === 'owner') ? (
+                                      <>
+                                        <Button
+                                          variant="success"
+                                          size="xs"
+                                          className="py-1 px-2.5 text-[10px]"
+                                          onClick={() => setMarkPaidModal(rec)}
+                                        >
+                                          Pay
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="xs"
+                                          className="py-1 px-2 text-[10px] flex items-center gap-1 border border-gray-200 dark:border-[#2d3052]"
+                                          title="Edit Payroll"
+                                          onClick={() => setEditPayrollModal(rec)}
+                                        >
+                                          <Edit3 size={11} /> Edit
+                                        </Button>
+                                      </>
+                                    ) : (
+                                      <span className="text-[10px] text-yellow-500 font-semibold">
+                                        {isEmployee ? 'Awaiting Payout' : 'Owner Action Required'}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                {rec.status === 'paid' && (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="xs"
+                                      className="p-1"
+                                      title="View Pay Slip"
+                                      onClick={() => handlePaySlipAction(rec, 'view')}
+                                    >
+                                      <Eye size={12} className="text-[#6c63ff]" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="xs"
+                                      className="p-1"
+                                      title="Download Pay Slip"
+                                      onClick={() => handlePaySlipAction(rec, 'download')}
+                                    >
+                                      <Download size={12} className="text-[#6c63ff]" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
 
-                    {pay.status === 'paid' && (
-                      <div className="text-[11px] dark:text-[#6b6e82] text-gray-500 flex items-center gap-2">
-                        <CheckCircle2 size={12} className="text-[#51cf66]" />
-                        Paid on {formatDate(pay.paidDate)}
-                        {pay.paymentMode && <span>· <PaymentModeSVG mode={pay.paymentMode} /></span>}
-                        {pay.referenceNo && <span>· #{pay.referenceNo}</span>}
-                      </div>
-                    )}
+                        {/* Totals Summary */}
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="p-2 bg-gray-50 dark:bg-[#242740] rounded-lg text-center">
+                            <div className="text-gray-400 dark:text-[#6b6e82]">Salary</div>
+                            <div className="font-black text-[#6c63ff]">{f(pay.totalSalary)}</div>
+                          </div>
+                          <div className="p-2 bg-gray-50 dark:bg-[#242740] rounded-lg text-center">
+                            <div className="text-gray-400 dark:text-[#6b6e82]">Expenses</div>
+                            <div className="font-black text-[#00d4aa]">{f(pay.totalExpenses)}</div>
+                          </div>
+                          <div className="p-2 bg-[#6c63ff]/10 dark:bg-[#6c63ff]/15 rounded-lg text-center border border-[#6c63ff]/20">
+                            <div className="text-[#6c63ff]">Total</div>
+                            <div className="font-black text-[#6c63ff]">{f(pay.totalAmount)}</div>
+                          </div>
+                        </div>
 
-                    {pay.status === 'pending' && (
-                      <Button
-                        variant="success"
-                        className="w-full"
-                        onClick={() => setMarkPaidModal(pay)}
-                      >
-                        <CheckCircle2 size={15} /> Mark as Paid
-                      </Button>
-                    )}
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+                        {/* Combined Action Button */}
+                        {allPaid && (
+                          <div className="flex gap-2 mt-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="flex-1 flex items-center justify-center gap-1.5 border border-dashed border-gray-200 dark:border-[#2d3052] hover:bg-gray-50 dark:hover:bg-[#242740] text-xs"
+                              title="View Combined Pay Slip"
+                              onClick={() => handlePaySlipAction(pay, 'view')}
+                            >
+                              <Eye size={14} /> View Combined Pay Slip
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="flex-1 flex items-center justify-center gap-1.5 border border-dashed border-gray-200 dark:border-[#2d3052] hover:bg-gray-50 dark:hover:bg-[#242740] text-xs"
+                              title="Download Combined Pay Slip"
+                              onClick={() => handlePaySlipAction(pay, 'download')}
+                            >
+                              <Download size={14} /> Download Combined Pay Slip
+                            </Button>
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  } else {
+                    const emp = pay.employeeId;
+                    const u = emp?.userId;
+                    return (
+                      <Card key={pay._id} className="flex flex-col gap-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={u?.picture || 'https://i.imgur.com/CR1iy7U.png'}
+                              alt={u?.name}
+                              className="w-9 h-9 rounded-full object-cover border-2 border-[#6c63ff]/20"
+                            />
+                            <div>
+                              <div className="font-bold text-sm dark:text-[#f0f0f8] text-gray-900">{u?.name}</div>
+                              <div className="text-[10px] dark:text-[#6b6e82] text-gray-500 capitalize">{u?.role} · {pay.pgId?.name}</div>
+                            </div>
+                          </div>
+                          <Badge variant={pay.status === 'paid' ? 'success' : 'warning'}>
+                            {pay.status === 'paid' ? 'Paid' : 'Pending'}
+                          </Badge>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="p-2 bg-gray-50 dark:bg-[#242740] rounded-lg text-center">
+                            <div className="text-gray-400 dark:text-[#6b6e82]">Salary</div>
+                            <div className="font-black text-[#6c63ff]">{f(pay.salaryAmount)}</div>
+                          </div>
+                          <div className="p-2 bg-gray-50 dark:bg-[#242740] rounded-lg text-center">
+                            <div className="text-gray-400 dark:text-[#6b6e82]">Expenses</div>
+                            <div className="font-black text-[#00d4aa]">{f(pay.reimbursedExpenses)}</div>
+                          </div>
+                          <div className="p-2 bg-[#6c63ff]/10 dark:bg-[#6c63ff]/15 rounded-lg text-center border border-[#6c63ff]/20">
+                            <div className="text-[#6c63ff]">Total</div>
+                            <div className="font-black text-[#6c63ff]">{f(pay.totalAmount)}</div>
+                          </div>
+                        </div>
+
+                        {pay.status === 'paid' && (
+                          <>
+                            <div className="text-[11px] dark:text-[#6b6e82] text-gray-500 flex items-center gap-2">
+                              <CheckCircle2 size={12} className="text-[#51cf66]" />
+                              Paid on {formatDate(pay.paidDate)}
+                              {pay.paymentMode && <span>· <PaymentModeSVG mode={pay.paymentMode} /></span>}
+                              {pay.referenceNo && <span>· #{pay.referenceNo}</span>}
+                            </div>
+                            <div className="flex gap-2 mt-1 w-full">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="flex-1 flex items-center justify-center gap-1.5 border border-dashed border-gray-200 dark:border-[#2d3052] hover:bg-gray-50 dark:hover:bg-[#242740] text-xs"
+                                title="View Pay Slip"
+                                onClick={() => handlePaySlipAction(pay, 'view')}
+                              >
+                                <Eye size={14} /> View Pay Slip
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="flex-1 flex items-center justify-center gap-1.5 border border-dashed border-gray-200 dark:border-[#2d3052] hover:bg-gray-50 dark:hover:bg-[#242740] text-xs"
+                                title="Download Pay Slip"
+                                onClick={() => handlePaySlipAction(pay, 'download')}
+                              >
+                                <Download size={14} /> Download Pay Slip
+                              </Button>
+                            </div>
+                          </>
+                        )}
+
+                        {pay.status === 'pending' && (
+                          <div className="flex gap-2 w-full">
+                            {!isEmployee && (pay.employeeId?.userId?.role !== 'manager' || user?.role === 'owner') ? (
+                              <>
+                                <Button
+                                  variant="success"
+                                  className="flex-1 flex items-center justify-center gap-1.5"
+                                  onClick={() => setMarkPaidModal(pay)}
+                                >
+                                  <CheckCircle2 size={15} /> Mark Paid
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  className="flex-1 flex items-center justify-center gap-1.5 border border-gray-200 dark:border-[#2d3052]"
+                                  title="Edit Payroll"
+                                  onClick={() => setEditPayrollModal(pay)}
+                                >
+                                  <Edit3 size={14} /> Edit
+                                </Button>
+                              </>
+                            ) : (
+                              <div className="w-full text-center py-2 px-3 bg-yellow-50 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-500 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5">
+                                <Clock size={14} /> {isEmployee ? 'Awaiting Payout' : 'Owner Action Required'}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  }
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* MODALS                                                         */}
@@ -598,6 +1132,7 @@ export default function StaffTracker() {
         <GeneratePayrollModal
           isOpen={payrollModal !== null}
           employees={employees}
+          pgOptions={pgOptions}
           defaultMonth={filterMonth}
           onClose={() => setPayrollModal(null)}
           onSubmit={(data) => genPayrollMut.mutate(data)}
@@ -615,33 +1150,74 @@ export default function StaffTracker() {
           loading={markPayPaidMut.isPending}
         />
       )}
+
+      {/* Edit Payroll Modal */}
+      {editPayrollModal && (
+        <EditPayrollModal
+          isOpen={!!editPayrollModal}
+          payroll={editPayrollModal}
+          onClose={() => setEditPayrollModal(null)}
+          onSubmit={(data) => updatePayrollMut.mutate({ id: editPayrollModal._id, data })}
+          loading={updatePayrollMut.isPending}
+        />
+      )}
     </div>
   );
 }
 
 // ── Modal: Add Staff ────────────────────────────────────────────────────────────
 function AddStaffModal({ isOpen, onClose, pgOptions, onSubmit, loading }) {
-  const [form, setForm] = useState({ pgIds: [], monthlySalary: '', joinedDate: '', notes: '' });
+  const [form, setForm] = useState({ pgIds: [], joinedDate: '', notes: '' });
+  const [pgSalaries, setPgSalaries] = useState({});
   const [userSearch, setUserSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
 
+  // Reset form to clean values when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setForm({ pgIds: [], joinedDate: '', notes: '' });
+      setPgSalaries({});
+      setUserSearch('');
+      setSelectedUser(null);
+      setShowDropdown(false);
+    }
+  }, [isOpen]);
+
   // Debounce the raw input — API fires only after 400ms of no typing
   const debouncedSearch = useDebounce(userSearch, 400);
+
+  const { user: currentUser } = useAuth();
 
   const { data: usersData, isFetching: isSearching } = useQuery({
     queryKey: ['staff-users', debouncedSearch],
     queryFn: async () => (await searchStaffUsersApi({ search: debouncedSearch, limit: 10 })).data?.data,
     enabled: debouncedSearch.trim().length >= 2,
   });
-  const userList = usersData?.users || [];
+  const rawUserList = usersData?.users || [];
+  const userList = rawUserList.filter(u => {
+    if (currentUser?.role === 'manager' && u.role === 'manager') return false;
+    return true;
+  });
+
 
   const handleSubmit = () => {
     if (!selectedUser) return toast.error('Please select a user');
     if (!form.pgIds || form.pgIds.length === 0) return toast.error('Please select at least one PG');
     if (!form.joinedDate) return toast.error('Please set joining date');
-    if (!form.monthlySalary || Number(form.monthlySalary) <= 0) return toast.error('Please enter monthly salary');
-    onSubmit({ userId: selectedUser._id, ...form, monthlySalary: Number(form.monthlySalary) });
+    
+    const totalSalary = Object.values(pgSalaries).reduce((s, v) => s + (Number(v) || 0), 0);
+    if (totalSalary <= 0) return toast.error('Total monthly salary must be greater than 0');
+    if (Object.values(pgSalaries).some(v => v === '' || Number(v) < 0)) {
+      return toast.error('Please enter a valid salary for each assigned PG');
+    }
+
+    onSubmit({
+      userId: selectedUser._id,
+      ...form,
+      monthlySalary: totalSalary,
+      pgSalaries,
+    });
   };
 
   return (
@@ -734,12 +1310,17 @@ function AddStaffModal({ isOpen, onClose, pgOptions, onSubmit, loading }) {
                   onChange={e => {
                     const checked = e.target.checked;
                     setForm(f => {
-                      const pgIds = f.pgIds || [];
-                      if (checked) {
-                        return { ...f, pgIds: [...pgIds, pg.value] };
-                      } else {
-                        return { ...f, pgIds: pgIds.filter(id => id !== pg.value) };
-                      }
+                      const pgIds = checked ? [...f.pgIds, pg.value] : f.pgIds.filter(id => id !== pg.value);
+                      setPgSalaries(prev => {
+                        const updated = { ...prev };
+                        if (checked) {
+                          updated[pg.value] = prev[pg.value] !== undefined ? prev[pg.value] : '';
+                        } else {
+                          delete updated[pg.value];
+                        }
+                        return updated;
+                      });
+                      return { ...f, pgIds };
                     });
                   }}
                   className="rounded border-gray-300 dark:border-[#2d3052] text-[#6c63ff] focus:ring-[#6c63ff] bg-white dark:bg-[#1a1d2e]"
@@ -750,15 +1331,46 @@ function AddStaffModal({ isOpen, onClose, pgOptions, onSubmit, loading }) {
           </div>
         </div>
 
-        <Input
-          label="Monthly Salary (₹)"
-          type="number"
-          min="0"
-          value={form.monthlySalary}
-          onChange={e => setForm(f => ({ ...f, monthlySalary: e.target.value }))}
-          placeholder="e.g. 15000"
-          required
-        />
+        {form.pgIds.length > 0 && (
+          <div className="p-3 bg-gray-50 dark:bg-[#242740] rounded-xl border border-gray-100 dark:border-[#2d3052]/40 flex flex-col gap-3">
+            <div className="text-xs font-bold text-gray-400 dark:text-[#6b6e82] uppercase tracking-wide">
+              Salary per PG
+            </div>
+            <div className="flex flex-col gap-2">
+              {form.pgIds.map(pgId => {
+                const pg = pgOptions.find(p => p.value === pgId);
+                const name = pg?.label || 'PG';
+                return (
+                  <div key={pgId} className="flex items-center justify-between gap-4">
+                    <span className="text-xs font-semibold dark:text-[#a0a3b1] text-gray-700 truncate max-w-[180px]" title={name}>
+                      {name}
+                    </span>
+                    <div className="w-28 flex-shrink-0">
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="Amount"
+                        value={pgSalaries[pgId] !== undefined ? pgSalaries[pgId] : ''}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setPgSalaries(prev => ({
+                            ...prev,
+                            [pgId]: val === '' ? '' : Number(val),
+                          }));
+                        }}
+                        className="py-1 px-2 text-xs"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="text-[11px] text-[#6c63ff] font-semibold pt-1 border-t border-gray-200/50 dark:border-[#2d3052]/30 flex justify-between">
+              <span>Total Monthly Salary:</span>
+              <span>{f(Object.values(pgSalaries).reduce((s, v) => s + (Number(v) || 0), 0))}</span>
+            </div>
+          </div>
+        )}
 
         <Input
           label="Joining Date"
@@ -789,35 +1401,48 @@ function AddStaffModal({ isOpen, onClose, pgOptions, onSubmit, loading }) {
 // ── Modal: Edit Staff ────────────────────────────────────────────────────────────
 function EditStaffModal({ isOpen, employee, pgOptions, onClose, onSubmit, loading }) {
   const [form, setForm] = useState({
-    monthlySalary: employee.monthlySalary || '',
     status: employee.status || 'active',
     notes: employee.notes || '',
     joinedDate: employee.joinedDate ? employee.joinedDate.slice(0, 10) : '',
     pgIds: employee.pgIds?.map(p => p._id || p) || [],
   });
 
+  const [pgSalaries, setPgSalaries] = useState(() => {
+    const initial = {};
+    const ids = employee.pgIds?.map(p => p._id || p) || [];
+    ids.forEach(pgId => {
+      if (employee.pgSalaries && employee.pgSalaries[pgId] !== undefined) {
+        initial[pgId] = employee.pgSalaries[pgId];
+      } else {
+        // Fallback to average salary per PG
+        initial[pgId] = ids.length > 0 ? Math.round((employee.monthlySalary || 0) / ids.length) : '';
+      }
+    });
+    return initial;
+  });
+
   const handleSubmit = () => {
     if (!form.pgIds || form.pgIds.length === 0) return toast.error('Please select at least one PG');
+    
+    const totalSalary = Object.values(pgSalaries).reduce((s, v) => s + (Number(v) || 0), 0);
+    if (totalSalary <= 0) return toast.error('Total monthly salary must be greater than 0');
+    if (Object.values(pgSalaries).some(v => v === '' || Number(v) < 0)) {
+      return toast.error('Please enter a valid salary for each assigned PG');
+    }
+
     onSubmit({
-      monthlySalary: Number(form.monthlySalary),
+      monthlySalary: totalSalary,
       status: form.status,
       notes: form.notes,
       joinedDate: form.joinedDate || undefined,
       pgIds: form.pgIds,
+      pgSalaries,
     });
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Edit — ${employee.userId?.name}`}>
       <div className="flex flex-col gap-4 mt-1">
-        <Input
-          label="Monthly Salary (₹)"
-          type="number"
-          min="0"
-          value={form.monthlySalary}
-          onChange={e => setForm(f => ({ ...f, monthlySalary: e.target.value }))}
-          required
-        />
         <div>
           <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1] block mb-1.5">Status</label>
           <SelectDropdown
@@ -840,12 +1465,17 @@ function EditStaffModal({ isOpen, employee, pgOptions, onClose, onSubmit, loadin
                   onChange={e => {
                     const checked = e.target.checked;
                     setForm(f => {
-                      const pgIds = f.pgIds || [];
-                      if (checked) {
-                        return { ...f, pgIds: [...pgIds, pg.value] };
-                      } else {
-                        return { ...f, pgIds: pgIds.filter(id => id !== pg.value) };
-                      }
+                      const pgIds = checked ? [...f.pgIds, pg.value] : f.pgIds.filter(id => id !== pg.value);
+                      setPgSalaries(prev => {
+                        const updated = { ...prev };
+                        if (checked) {
+                          updated[pg.value] = prev[pg.value] !== undefined ? prev[pg.value] : '';
+                        } else {
+                          delete updated[pg.value];
+                        }
+                        return updated;
+                      });
+                      return { ...f, pgIds };
                     });
                   }}
                   className="rounded border-gray-300 dark:border-[#2d3052] text-[#6c63ff] focus:ring-[#6c63ff] bg-white dark:bg-[#1a1d2e]"
@@ -855,6 +1485,47 @@ function EditStaffModal({ isOpen, employee, pgOptions, onClose, onSubmit, loadin
             ))}
           </div>
         </div>
+
+        {form.pgIds.length > 0 && (
+          <div className="p-3 bg-gray-50 dark:bg-[#242740] rounded-xl border border-gray-100 dark:border-[#2d3052]/40 flex flex-col gap-3">
+            <div className="text-xs font-bold text-gray-400 dark:text-[#6b6e82] uppercase tracking-wide">
+              Salary per PG
+            </div>
+            <div className="flex flex-col gap-2">
+              {form.pgIds.map(pgId => {
+                const pg = pgOptions.find(p => p.value === pgId);
+                const name = pg?.label || 'PG';
+                return (
+                  <div key={pgId} className="flex items-center justify-between gap-4">
+                    <span className="text-xs font-semibold dark:text-[#a0a3b1] text-gray-700 truncate max-w-[180px]" title={name}>
+                      {name}
+                    </span>
+                    <div className="w-28 flex-shrink-0">
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="Amount"
+                        value={pgSalaries[pgId] !== undefined ? pgSalaries[pgId] : ''}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setPgSalaries(prev => ({
+                            ...prev,
+                            [pgId]: val === '' ? '' : Number(val),
+                          }));
+                        }}
+                        className="py-1 px-2 text-xs"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="text-[11px] text-[#6c63ff] font-semibold pt-1 border-t border-gray-200/50 dark:border-[#2d3052]/30 flex justify-between">
+              <span>Total Monthly Salary:</span>
+              <span>{f(Object.values(pgSalaries).reduce((s, v) => s + (Number(v) || 0), 0))}</span>
+            </div>
+          </div>
+        )}
 
         <Input
           label="Joining Date"
@@ -876,8 +1547,7 @@ function EditStaffModal({ isOpen, employee, pgOptions, onClose, onSubmit, loadin
         </div>
       </div>
     </Modal>
-  );
-}
+  );}
 
 // ── Modal: Add Expense ──────────────────────────────────────────────────────────
 function AddExpenseModal({ isOpen, onClose, pgOptions, employees, currentUser, defaultPgId, onSubmit, loading }) {
@@ -1131,19 +1801,71 @@ function ProcessExpenseModal({ isOpen, expense, onClose, onSubmit, loading }) {
 }
 
 // ── Modal: Generate Payroll ─────────────────────────────────────────────────────
-function GeneratePayrollModal({ isOpen, employees, defaultMonth, onClose, onSubmit, loading }) {
+function GeneratePayrollModal({ isOpen, employees, pgOptions, defaultMonth, onClose, onSubmit, loading }) {
+  const [selectedPgId, setSelectedPgId] = useState('');
   const [employeeId, setEmployeeId] = useState('');
   const [month, setMonth] = useState(defaultMonth);
+  const [customSalaries, setCustomSalaries] = useState({});
 
-  const empOptions = employees
+  // Filter employees based on selected PG
+  const filteredEmployees = selectedPgId
+    ? employees.filter(e => e.pgIds?.some(p => String(p._id || p) === String(selectedPgId)))
+    : employees;
+
+  const empOptions = filteredEmployees
     .filter(e => e.status === 'active')
     .map(e => ({ value: e._id, label: `${e.userId?.name} (${e.userId?.role}) — ${f(e.monthlySalary)}/mo` }));
+
+  const selectedEmp = employees.find(e => e._id === employeeId);
+  const assignedPgs = selectedEmp?.pgIds || [];
+
+  // Reset custom salaries when employee selection changes
+  useEffect(() => {
+    if (selectedEmp) {
+      const pgs = selectedEmp.pgIds || [];
+      const pgCount = pgs.length;
+      const splitVal = pgCount > 0 ? Math.round(selectedEmp.monthlySalary / pgCount) : 0;
+      const initial = {};
+      pgs.forEach(pg => {
+        const id = pg._id || pg;
+        initial[id] = splitVal;
+      });
+      setCustomSalaries(initial);
+    } else {
+      setCustomSalaries({});
+    }
+  }, [employeeId, selectedEmp]);
+
+  const handleSalaryChange = (pgId, val) => {
+    setCustomSalaries(prev => ({
+      ...prev,
+      [pgId]: val === '' ? '' : Number(val),
+    }));
+  };
+
+  const handlePgChange = (e) => {
+    setSelectedPgId(e.target.value);
+    setEmployeeId('');
+  };
+
+  const totalAllocated = Object.values(customSalaries).reduce((sum, val) => sum + (Number(val) || 0), 0);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Generate Payroll Record">
       <div className="flex flex-col gap-4 mt-1">
         <div className="p-3 bg-[#6c63ff]/10 text-[#6c63ff] border border-[#6c63ff]/20 rounded-lg text-xs font-semibold">
           This creates a payroll entry for the selected month. Approved "Add to Salary" expenses for that month are automatically included.
+        </div>
+
+        <div>
+          <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1] block mb-1.5">
+            Filter by PG (optional)
+          </label>
+          <SelectDropdown
+            value={selectedPgId}
+            onChange={handlePgChange}
+            options={[{ value: '', label: 'All PGs / No filter' }, ...pgOptions]}
+          />
         </div>
 
         <div>
@@ -1156,6 +1878,40 @@ function GeneratePayrollModal({ isOpen, employees, defaultMonth, onClose, onSubm
             options={[{ value: '', label: 'Choose staff...' }, ...empOptions]}
           />
         </div>
+
+        {selectedEmp && assignedPgs.length > 1 && (
+          <div className="p-3.5 bg-gray-50 dark:bg-[#242740] rounded-xl border border-gray-100 dark:border-[#2d3052]/40 flex flex-col gap-3">
+            <div className="text-xs font-bold text-gray-400 dark:text-[#6b6e82] uppercase tracking-wide">
+              Salary Allocation per PG
+            </div>
+            <div className="text-[11px] text-[#6c63ff] font-semibold">
+              Expected Total: {f(selectedEmp.monthlySalary)} · Allocated: {f(totalAllocated)}
+            </div>
+            <div className="flex flex-col gap-2">
+              {assignedPgs.map(pg => {
+                const id = pg._id || pg;
+                const name = pg.name || 'PG';
+                return (
+                  <div key={id} className="flex items-center justify-between gap-4">
+                    <span className="text-xs font-semibold dark:text-[#a0a3b1] text-gray-700 truncate max-w-[180px]" title={name}>
+                      {name}
+                    </span>
+                    <div className="w-28 flex-shrink-0">
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="Amount"
+                        value={customSalaries[id] !== undefined ? customSalaries[id] : ''}
+                        onChange={e => handleSalaryChange(id, e.target.value)}
+                        className="py-1 px-2 text-xs"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div>
           <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1] block mb-1.5">
@@ -1175,7 +1931,10 @@ function GeneratePayrollModal({ isOpen, employees, defaultMonth, onClose, onSubm
             loading={loading}
             onClick={() => {
               if (!employeeId) return toast.error('Select a staff member');
-              onSubmit({ employeeId, month });
+              if (Object.values(customSalaries).some(v => Number(v) < 0)) {
+                return toast.error('Salary allocation cannot be negative');
+              }
+              onSubmit({ employeeId, month, customSalaries });
             }}
           >
             Generate
@@ -1255,6 +2014,74 @@ function MarkPaidModal({ isOpen, payroll, onClose, onSubmit, loading }) {
           <Button variant="ghost" className="flex-1" onClick={onClose}>Cancel</Button>
           <Button className="flex-1" variant="success" loading={loading} onClick={() => onSubmit(form)}>
             <CheckCircle2 size={15} /> Confirm Payment
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ── Modal: Edit Payroll ──────────────────────────────────────────────────────────
+function EditPayrollModal({ isOpen, payroll, onClose, onSubmit, loading }) {
+  const [salaryAmount, setSalaryAmount] = useState(payroll.salaryAmount || 0);
+  const [reimbursedExpenses, setReimbursedExpenses] = useState(payroll.reimbursedExpenses || 0);
+
+  useEffect(() => {
+    if (payroll) {
+      setSalaryAmount(payroll.salaryAmount || 0);
+      setReimbursedExpenses(payroll.reimbursedExpenses || 0);
+    }
+  }, [payroll]);
+
+  const emp = payroll.employeeId;
+  const u = emp?.userId;
+
+  const total = Number(salaryAmount || 0) + Number(reimbursedExpenses || 0);
+
+  const handleSubmit = () => {
+    if (salaryAmount === '' || Number(salaryAmount) < 0) return toast.error('Salary amount cannot be negative');
+    if (reimbursedExpenses === '' || Number(reimbursedExpenses) < 0) return toast.error('Reimbursed expenses cannot be negative');
+    onSubmit({
+      salaryAmount: Number(salaryAmount),
+      reimbursedExpenses: Number(reimbursedExpenses),
+    });
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit Salary Payout">
+      <div className="flex flex-col gap-4 mt-1">
+        <div className="p-3 bg-gray-50 dark:bg-[#242740] rounded-xl border border-gray-100 dark:border-[#2d3052]/40">
+          <div className="text-sm font-bold dark:text-[#f0f0f8] text-gray-900">{u?.name}</div>
+          <div className="text-xs text-gray-500 dark:text-[#6b6e82] mt-0.5 capitalize">{u?.role} · {payroll.pgId?.name}</div>
+        </div>
+
+        <Input
+          label="Salary Amount (₹)"
+          type="number"
+          min="0"
+          value={salaryAmount}
+          onChange={e => setSalaryAmount(e.target.value === '' ? '' : Number(e.target.value))}
+          required
+        />
+
+        <Input
+          label="Reimbursed Expenses (₹)"
+          type="number"
+          min="0"
+          value={reimbursedExpenses}
+          onChange={e => setReimbursedExpenses(e.target.value === '' ? '' : Number(e.target.value))}
+          required
+        />
+
+        <div className="p-3 bg-[#6c63ff]/10 border border-[#6c63ff]/20 rounded-lg text-xs font-semibold flex justify-between">
+          <span>Recalculated Total:</span>
+          <span className="font-bold text-[#6c63ff]">{f(total)}</span>
+        </div>
+
+        <div className="flex gap-3 pt-2 border-t dark:border-[#2d3052] border-gray-200">
+          <Button variant="ghost" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button className="flex-1" loading={loading} onClick={handleSubmit}>
+            Save Changes
           </Button>
         </div>
       </div>

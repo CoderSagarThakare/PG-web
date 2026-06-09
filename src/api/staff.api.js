@@ -18,3 +18,5 @@ export const deleteExpenseApi       = (id)            => api.delete(`/expenses/$
 export const getPayrollsApi         = (params)        => api.get('/staff-payments', { params });
 export const generatePayrollApi     = (data)          => api.post('/staff-payments/generate', data);
 export const markPayrollPaidApi     = (id, data)      => api.patch(`/staff-payments/${id}/pay`, data);
+export const updatePayrollApi       = (id, data)      => api.patch(`/staff-payments/${id}`, data);
+
