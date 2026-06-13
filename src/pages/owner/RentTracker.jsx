@@ -437,31 +437,36 @@ export default function RentTracker() {
         </div>
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary Metrics Bar */}
       {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          {[
-            { 
-              icon: <IndianRupee size={18} />, 
-              label: 'Collected', 
-              value: f(summary.totalCollected), 
-              sub: `${summary.totalDue > 0 ? Math.round((summary.totalCollected / summary.totalDue) * 100) : 0}% of ${f(summary.totalDue)}`, 
-              colorClass: 'text-[#51cf66]'
-            },
-            { icon: <TrendingUp size={18} />, label: 'Collection Rate', value: `${summary.paid || 0} / ${summary.tenantCount || 0}`, sub: `${summary.collectionRate}% tenants paid`, colorClass: 'text-[#6c63ff]' },
-            { icon: <Clock size={18} />, label: 'Pending', value: (summary.pending || 0) + (summary.partial || 0) + (summary.under_review || 0), sub: 'payments due', colorClass: 'text-[#ffa94d]' },
-            { icon: <AlertCircle size={18} />, label: 'Overdue', value: summary.overdue || 0, sub: 'past due date', colorClass: 'text-[#ff4d6d]' },
-          ].map((s, i) => (
-            <Card key={i} className="p-4 md:p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <div className={s.colorClass}>{s.icon}</div>
-                <span className="text-[10px] font-bold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.9px]">{s.label}</span>
+        <Card className="p-3.5 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-0 md:divide-x divide-gray-200 dark:divide-[#2d3052]">
+            {[
+              { 
+                icon: <IndianRupee size={15} />, 
+                label: 'Collected', 
+                value: f(summary.totalCollected), 
+                sub: `${summary.totalDue > 0 ? Math.round((summary.totalCollected / summary.totalDue) * 100) : 0}% of ${f(summary.totalDue)}`, 
+                colorClass: 'text-[#51cf66]',
+                bgClass: 'bg-[#51cf66]/10'
+              },
+              { icon: <TrendingUp size={15} />, label: 'Collection Rate', value: `${summary.paid || 0} / ${summary.tenantCount || 0}`, sub: `${summary.collectionRate}% tenants paid`, colorClass: 'text-[#6c63ff]', bgClass: 'bg-[#6c63ff]/10' },
+              { icon: <Clock size={15} />, label: 'Pending', value: (summary.pending || 0) + (summary.partial || 0) + (summary.under_review || 0), sub: 'payments due', colorClass: 'text-[#ffa94d]', bgClass: 'bg-[#ffa94d]/10' },
+              { icon: <AlertCircle size={15} />, label: 'Overdue', value: summary.overdue || 0, sub: 'past due date', colorClass: 'text-[#ff4d6d]', bgClass: 'bg-[#ff4d6d]/10' },
+            ].map((s, i) => (
+              <div key={i} className="flex items-center gap-3 px-3 md:px-6">
+                <div className={cn('p-2 rounded-lg flex items-center justify-center', s.bgClass, s.colorClass)}>
+                  {s.icon}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[9px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.9px] leading-none mb-1">{s.label}</div>
+                  <div className={cn('text-lg font-black leading-none', s.colorClass)}>{s.value}</div>
+                  <div className="text-[10px] dark:text-[#6b6e82] text-gray-500 leading-none mt-1 truncate" title={s.sub}>{s.sub}</div>
+                </div>
               </div>
-              <div className={`text-2xl font-black ${s.colorClass}`}>{s.value}</div>
-              <div className="text-xs dark:text-[#6b6e82] text-gray-500 mt-1">{s.sub}</div>
-            </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        </Card>
       )}
 
       {/* Dynamic Tab Selector */}
