@@ -200,3 +200,32 @@ html[data-theme="light"] .react-datepicker__navigation-icon::before {
 .react-datepicker-popper {
   z-index: 99999 !important;
 }
+
+/* Dropdown select styling inside React Datepicker custom header */
+.react-datepicker__header select {
+  background-color: #1a1d2e !important;
+  color: #f0f0f8 !important;
+  border: 1px solid #2d3052 !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  outline: none !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-position: right 0.45rem center !important;
+  background-size: 0.75rem 0.75rem !important;
+  padding-left: 0.5rem !important;
+  padding-right: 1.35rem !important;
+  height: 28px !important;
+  line-height: normal !important;
+  transition: all 0.15s ease !important;
+}
+html[data-theme="light"] .react-datepicker__header select {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+

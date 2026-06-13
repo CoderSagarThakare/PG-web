@@ -3,7 +3,7 @@ import { cn } from '../../utils/cn';
 import ReactSelect from 'react-select';
 import ReactDatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const customSelectStyles = (isDark) => ({
   control: (base, state) => ({
@@ -137,6 +137,69 @@ export const DatePickerComponent = forwardRef(({
           dateStr = `${y}-${m}-${d}`;
         }
         onChange && onChange({ target: { value: dateStr, name } });
+      }}
+      renderCustomHeader={({
+        date,
+        changeYear,
+        changeMonth,
+        decreaseMonth,
+        increaseMonth,
+        prevMonthButtonDisabled,
+        nextMonthButtonDisabled,
+      }) => {
+        const years = Array.from({ length: 31 }, (_, i) => new Date().getFullYear() - 15 + i);
+        const months = [
+          "January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"
+        ];
+
+        return (
+          <div className="flex items-center justify-between px-2 py-1.5 bg-transparent gap-2 select-none">
+            <button
+              type="button"
+              onClick={decreaseMonth}
+              disabled={prevMonthButtonDisabled}
+              className="p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-[#2d3052] text-gray-500 dark:text-[#a0a3b1] disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center border-none"
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            <div className="flex items-center gap-1.5">
+              <select
+                value={months[date.getMonth()]}
+                onChange={({ target: { value } }) => changeMonth(months.indexOf(value))}
+                className="bg-white dark:bg-[#1a1d2e] text-gray-900 dark:text-[#f0f0f8] border border-gray-200 dark:border-[#2d3052] rounded-lg px-2 py-1 text-xs font-extrabold outline-none cursor-pointer hover:border-[#6c63ff] transition-colors focus:ring-1 focus:ring-[#6c63ff] h-8 max-w-[105px]"
+              >
+                {months.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={date.getFullYear()}
+                onChange={({ target: { value } }) => changeYear(Number(value))}
+                className="bg-white dark:bg-[#1a1d2e] text-gray-900 dark:text-[#f0f0f8] border border-gray-200 dark:border-[#2d3052] rounded-lg px-2 py-1 text-xs font-extrabold outline-none cursor-pointer hover:border-[#6c63ff] transition-colors focus:ring-1 focus:ring-[#6c63ff] h-8 max-w-[75px]"
+              >
+                {years.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={increaseMonth}
+              disabled={nextMonthButtonDisabled}
+              className="p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-[#2d3052] text-gray-500 dark:text-[#a0a3b1] disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center border-none"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        );
       }}
       placeholderText={placeholder}
       disabled={disabled}
