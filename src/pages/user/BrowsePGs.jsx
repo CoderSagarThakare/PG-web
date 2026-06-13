@@ -4,13 +4,38 @@ import { useNavigate } from 'react-router-dom';
 import { discoverPGsApi, getFacilitiesApi, getPGByIdApi } from '../../api/pg.api';
 import { Search, MapPin, Building2, Star, Users, Filter, ChevronRight, Info } from 'lucide-react';
 import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, Pagination, SelectDropdown } from '../../components/common';
+import { useAuth } from '../../context/AuthContext';
 
 export default function BrowsePGs() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const STORAGE_KEY = `staysync_pgs_filters_${user?._id || 'guest'}`;
+
+  const getInitialFilters = () => {
+    const defaults = {
+      city: '', 
+      pgType: '', 
+      facilities: [],
+      minRating: '',
+      onlyWithVacancy: false
+    };
+
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        return { ...defaults, ...JSON.parse(stored) };
+      }
+    } catch (e) {
+      console.error("Failed to parse stored PG filters", e);
+    }
+    return defaults;
+  };
+
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(12);
-  const [filters, setFilters] = useState({ city: '', pgType: '', facilities: [] });
-  const [activeFilters, setActiveFilters] = useState({ city: '', pgType: '', facilities: [] });
+  const [filters, setFilters] = useState(getInitialFilters);
+  const [activeFilters, setActiveFilters] = useState(getInitialFilters);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedPGId, setSelectedPGId] = useState(null);
 
@@ -21,6 +46,30 @@ export default function BrowsePGs() {
     }, 500);
     return () => clearTimeout(handler);
   }, [filters]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+  }, [filters, STORAGE_KEY]);
+
+  const hasActiveFilters = () => {
+    return (
+      filters.city !== '' ||
+      filters.pgType !== '' ||
+      filters.facilities?.length > 0 ||
+      filters.minRating !== '' ||
+      filters.onlyWithVacancy === true
+    );
+  };
+
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (filters.city) count++;
+    if (filters.pgType) count++;
+    if (filters.facilities && filters.facilities.length > 0) count += filters.facilities.length;
+    if (filters.minRating) count++;
+    if (filters.onlyWithVacancy) count++;
+    return count;
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ['discover-pgs', activeFilters, page, limit],
@@ -48,13 +97,27 @@ export default function BrowsePGs() {
     });
   };
 
+  const handleClearFilters = () => {
+    setFilters({ city: '', pgType: '', facilities: [], minRating: '', onlyWithVacancy: false });
+  };
+
   return (
     <div className="fade-in">
-      <div className="flex items-start justify-between mb-4 flex-wrap gap-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900">Explore Properties</h1>
           <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-1">Find the best PG buildings in your favorite cities</p>
         </div>
+        {hasActiveFilters() && (
+          <Button 
+            variant="danger" 
+            size="sm" 
+            className="rounded-full font-bold px-4 h-9" 
+            onClick={handleClearFilters}
+          >
+            Clear Filters
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-full px-2 py-1 gap-2.5 mb-6 flex-wrap">
@@ -93,17 +156,31 @@ export default function BrowsePGs() {
         />
 
         <Button 
-          variant="ghost" 
+          variant={getActiveFiltersCount() > 0 ? "accent" : "ghost"} 
           onClick={() => setShowAdvancedFilters(true)}
-          className="rounded-full h-8 px-4 text-[12px] mr-1"
+          className="rounded-full h-8 px-4 text-[12px] mr-1 font-bold transition-all duration-200"
         >
-          <Filter size={14} className="mr-1.5" /> More Filters
+          <Filter size={14} className="mr-1.5" /> 
+          {getActiveFiltersCount() > 0 ? `Filters (${getActiveFiltersCount()})` : 'More Filters'}
         </Button>
       </div>
 
       {isLoading ? <Spinner center /> : pgs.length === 0 ? (
-        <EmptyState icon={<Building2 size={64} />} title="No properties found" 
-          description="We couldn't find any PGs in this location. Try a different city." />
+        <EmptyState 
+          icon={<Building2 size={64} />} 
+          title="No properties found" 
+          description="We couldn't find any PGs in this location. Try adjusting your filters." 
+          action={hasActiveFilters() ? (
+            <Button 
+              variant="danger" 
+              size="sm" 
+              className="font-bold px-5" 
+              onClick={handleClearFilters}
+            >
+              Reset Filters
+            </Button>
+          ) : null}
+        />
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -155,26 +232,84 @@ export default function BrowsePGs() {
         </>
       )}
 
-      {/* Filters Modal */}
-      <Modal isOpen={showAdvancedFilters} onClose={() => setShowAdvancedFilters(false)} title="Property Amenities">
-        <div className="flex flex-col gap-5">
-          <div className="grid grid-cols-2 gap-3">
-            {facilitiesList?.map(fac => (
-              <label
-                key={fac._id}
-                className={`flex items-center gap-2.5 cursor-pointer p-2 rounded-lg transition-all duration-200 ${filters.facilities.includes(fac._id) ? 'bg-[#6c63ff]/15' : 'bg-transparent'}`}
-              >
-                <input 
-                  type="checkbox" 
-                  checked={filters.facilities.includes(fac._id)}
-                  onChange={() => handleFacilityToggle(fac._id)}
-                  className="accent-[#6c63ff]"
-                />
-                <span className="text-[13px] dark:text-[#a0a3b1] text-gray-600">{fac.name}</span>
-              </label>
-            ))}
+      {/* Advanced Filters Modal */}
+      <Modal 
+        isOpen={showAdvancedFilters} 
+        onClose={() => setShowAdvancedFilters(false)} 
+        title="Advanced Filters"
+      >
+        <div className="flex flex-col gap-6 pb-3">
+          <div className="detail-section">
+            <div className="detail-section-title">Property Rating</div>
+            <div className="flex gap-2">
+              {[
+                { value: '', label: 'Any' },
+                { value: '3', label: '3★ & above' },
+                { value: '4', label: '4★ & above' }
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFilters(f => ({ ...f, minRating: opt.value }))}
+                  className={`flex-1 py-1.5 rounded-lg border text-[13px] font-bold transition-all duration-200 ${
+                    filters.minRating === opt.value
+                      ? 'border-[#6c63ff] bg-[#6c63ff]/15 text-[#6c63ff]'
+                      : 'border-gray-200 dark:border-[#2d3052] dark:text-[#a0a3b1] text-gray-600 hover:bg-gray-50 dark:hover:bg-[#242740]'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <Button variant="primary" onClick={() => setShowAdvancedFilters(false)}>Apply Amenities</Button>
+
+          <div className="detail-section">
+            <div className="detail-section-title">Availability</div>
+            <label className="flex items-center gap-2.5 cursor-pointer p-2 rounded-lg transition-all duration-200 hover:bg-[#6c63ff]/5">
+              <input
+                type="checkbox"
+                checked={filters.onlyWithVacancy}
+                onChange={e => setFilters(f => ({ ...f, onlyWithVacancy: e.target.checked }))}
+                className="w-4 h-4 accent-[#6c63ff]"
+              />
+              <span className={`text-[13px] ${filters.onlyWithVacancy ? 'text-[#6c63ff] font-bold' : 'dark:text-[#a0a3b1] text-gray-600 font-medium'}`}>
+                Only show properties with vacant beds (beds left &gt; 0)
+              </span>
+            </label>
+          </div>
+
+          <div className="detail-section">
+            <div className="detail-section-title">Amenities &amp; Facilities</div>
+            <div className="grid grid-cols-2 gap-3">
+              {facilitiesList?.map(fac => (
+                <label
+                  key={fac._id}
+                  className={`flex items-center gap-2.5 cursor-pointer p-2 rounded-lg transition-all duration-200 ${filters.facilities.includes(fac._id) ? 'bg-[#6c63ff]/15' : 'bg-transparent'}`}
+                >
+                  <input 
+                    type="checkbox" 
+                    checked={filters.facilities.includes(fac._id)}
+                    onChange={() => handleFacilityToggle(fac._id)}
+                    className="w-4 h-4 accent-[#6c63ff]"
+                  />
+                  <span className={`text-[13px] ${filters.facilities.includes(fac._id) ? 'text-[#6c63ff] font-bold' : 'dark:text-[#a0a3b1] text-gray-600 font-medium'}`}>{fac.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-3">
+            <Button 
+              variant="danger" 
+              className="flex-1" 
+              onClick={() => { handleClearFilters(); setShowAdvancedFilters(false); }}
+            >
+              Reset All
+            </Button>
+            <Button variant="primary" className="flex-1" onClick={() => setShowAdvancedFilters(false)}>
+              Apply Filters
+            </Button>
+          </div>
         </div>
       </Modal>
 

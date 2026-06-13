@@ -60,6 +60,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    if (user?._id) {
+      localStorage.removeItem(`staysync_posts_filters_${user._id}`);
+      localStorage.removeItem(`staysync_pgs_filters_${user._id}`);
+    }
     setUser(null);
     setToken(null);
     localStorage.removeItem('user');

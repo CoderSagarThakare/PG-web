@@ -8,38 +8,64 @@ import { createEnquiryApi, updateEnquiryApi } from '../../api/enquiry.api';
 import { Search, MapPin, Bed, Filter, Phone, User as UserIcon, CheckCircle2, Building2, X, ArrowLeft } from 'lucide-react';
 import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, Pagination, SelectDropdown } from '../../components/common';
 import { getErrorMessage, formatPrice } from '../../utils/helpers';
+import { useAuth } from '../../context/AuthContext';
 
 export default function BrowsePosts() {
   const qc = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const STORAGE_KEY = `staysync_posts_filters_${user?._id || 'guest'}`;
 
   const initialPgId = location.state?.pgId || '';
   const initialPgName = location.state?.pgName || '';
 
+  const getInitialFilters = () => {
+    const defaults = {
+      title: '', 
+      city: '', 
+      pgType: '', 
+      occupancyType: '', 
+      minPrice: '', 
+      maxPrice: '', 
+      facilities: [],
+      minRating: '',
+      onlyWithVacancy: false,
+      pgId: initialPgId
+    };
+
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const pgId = initialPgId || parsed.pgId || '';
+        return { ...defaults, ...parsed, pgId };
+      }
+    } catch (e) {
+      console.error("Failed to parse stored filters", e);
+    }
+    return defaults;
+  };
+
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(12);
-  const [filters, setFilters] = useState({ 
-    title: '', 
-    city: '', 
-    pgType: '', 
-    occupancyType: '', 
-    minPrice: '', 
-    maxPrice: '', 
-    facilities: [],
-    pgId: initialPgId
+  const [filters, setFilters] = useState(getInitialFilters);
+  const [activeFilters, setActiveFilters] = useState(getInitialFilters);
+  const [selectedPgName, setSelectedPgName] = useState(() => {
+    if (initialPgName) return initialPgName;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const pgId = initialPgId || parsed.pgId || '';
+        if (pgId && pgId === parsed.pgId) {
+          return parsed.selectedPgName || 'Selected PG';
+        }
+      }
+    } catch {}
+    return '';
   });
-  const [activeFilters, setActiveFilters] = useState({ 
-    title: '', 
-    city: '', 
-    pgType: '', 
-    occupancyType: '', 
-    minPrice: '', 
-    maxPrice: '', 
-    facilities: [],
-    pgId: initialPgId
-  });
-  const [selectedPgName, setSelectedPgName] = useState(initialPgName);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [viewPost, setViewPost] = useState(null);
 
@@ -60,6 +86,41 @@ export default function BrowsePosts() {
     }, 500);
     return () => clearTimeout(handler);
   }, [filters]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...filters, selectedPgName }));
+  }, [filters, selectedPgName, STORAGE_KEY]);
+
+  const hasActiveFilters = () => {
+    return (
+      filters.title !== '' ||
+      filters.city !== '' ||
+      filters.pgType !== '' ||
+      filters.occupancyType !== '' ||
+      filters.minPrice !== '' ||
+      filters.maxPrice !== '' ||
+      filters.facilities?.length > 0 ||
+      filters.minRating !== '' ||
+      filters.onlyWithVacancy === true ||
+      filters.pgId !== '' ||
+      selectedPgName !== ''
+    );
+  };
+
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (filters.title) count++;
+    if (filters.city) count++;
+    if (filters.pgType) count++;
+    if (filters.occupancyType) count++;
+    if (filters.minPrice) count++;
+    if (filters.maxPrice) count++;
+    if (filters.facilities && filters.facilities.length > 0) count += filters.facilities.length;
+    if (filters.minRating) count++;
+    if (filters.onlyWithVacancy) count++;
+    if (filters.pgId) count++;
+    return count;
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ['browse-posts', activeFilters, page, limit],
@@ -150,6 +211,8 @@ export default function BrowsePosts() {
       minPrice: '', 
       maxPrice: '', 
       facilities: [],
+      minRating: '',
+      onlyWithVacancy: false,
       pgId: ''
     });
     setSelectedPgName('');
@@ -192,8 +255,13 @@ export default function BrowsePosts() {
             <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-1.5">Browse available PG rooms based on your preferences</p>
           </div>
         </div>
-        {(Object.values(filters).some(v => v !== '' && (!Array.isArray(v) || v.length > 0)) || selectedPgName) && (
-          <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+        {hasActiveFilters() && (
+          <Button 
+            variant="danger" 
+            size="sm" 
+            className="rounded-full font-bold px-4 h-9" 
+            onClick={handleClearFilters}
+          >
             Clear Filters
           </Button>
         )}
@@ -269,11 +337,12 @@ export default function BrowsePosts() {
         />
 
         <Button 
-          variant="primary" 
+          variant={getActiveFiltersCount() > 0 ? "accent" : "primary"} 
           onClick={() => setShowAdvancedFilters(true)}
-          className="rounded-full h-8 px-4 text-[12px] mr-1"
+          className="rounded-full h-8 px-4 text-[12px] mr-1 font-bold transition-all duration-200"
         >
-          <Filter size={14} className="mr-1.5" /> Filters
+          <Filter size={14} className="mr-1.5" /> 
+          {getActiveFiltersCount() > 0 ? `Filters (${getActiveFiltersCount()})` : 'Filters'}
         </Button>
       </div>
 
@@ -293,8 +362,21 @@ export default function BrowsePosts() {
       )}
 
       {isLoading ? <Spinner center /> : posts.length === 0 ? (
-        <EmptyState icon={<Search size={64} />} title="No PGs found" 
-          description="Try adjusting your filters to find more results." />
+        <EmptyState 
+          icon={<Search size={64} />} 
+          title="No PGs found" 
+          description="Try adjusting your filters to find more results." 
+          action={hasActiveFilters() ? (
+            <Button 
+              variant="danger" 
+              size="sm" 
+              className="font-bold px-5" 
+              onClick={handleClearFilters}
+            >
+              Reset Filters
+            </Button>
+          ) : null}
+        />
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -394,6 +476,45 @@ export default function BrowsePosts() {
           </div>
 
           <div className="detail-section">
+            <div className="detail-section-title">Property Rating</div>
+            <div className="flex gap-2">
+              {[
+                { value: '', label: 'Any' },
+                { value: '3', label: '3★ & above' },
+                { value: '4', label: '4★ & above' }
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFilters(f => ({ ...f, minRating: opt.value }))}
+                  className={`flex-1 py-1.5 rounded-lg border text-[13px] font-bold transition-all duration-200 ${
+                    filters.minRating === opt.value
+                      ? 'border-[#6c63ff] bg-[#6c63ff]/15 text-[#6c63ff]'
+                      : 'border-gray-200 dark:border-[#2d3052] dark:text-[#a0a3b1] text-gray-600 hover:bg-gray-50 dark:hover:bg-[#242740]'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="detail-section">
+            <div className="detail-section-title">Availability</div>
+            <label className="flex items-center gap-2.5 cursor-pointer p-2 rounded-lg transition-all duration-200 hover:bg-[#6c63ff]/5">
+              <input
+                type="checkbox"
+                checked={filters.onlyWithVacancy}
+                onChange={e => setFilters(f => ({ ...f, onlyWithVacancy: e.target.checked }))}
+                className="w-4 h-4 accent-[#6c63ff]"
+              />
+              <span className={`text-[14px] ${filters.onlyWithVacancy ? 'text-[#6c63ff] font-bold' : 'dark:text-[#a0a3b1] text-gray-600 font-medium'}`}>
+                Only show stays with active vacancies (beds left &gt; 0)
+              </span>
+            </label>
+          </div>
+
+          <div className="detail-section">
             <div className="detail-section-title">Amenities &amp; Facilities</div>
             <div className="grid grid-cols-2 gap-3">
               {facilitiesList?.map(fac => (
@@ -414,7 +535,11 @@ export default function BrowsePosts() {
           </div>
 
           <div className="flex gap-3 mt-3">
-            <Button variant="ghost" className="flex-1" onClick={() => { handleClearFilters(); setShowAdvancedFilters(false); }}>
+            <Button 
+              variant="danger" 
+              className="flex-1" 
+              onClick={() => { handleClearFilters(); setShowAdvancedFilters(false); }}
+            >
               Reset All
             </Button>
             <Button variant="primary" className="flex-1" onClick={() => setShowAdvancedFilters(false)}>
