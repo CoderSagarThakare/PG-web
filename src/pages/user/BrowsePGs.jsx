@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { discoverPGsApi, getFacilitiesApi, getPGByIdApi } from '../../api/pg.api';
-import { Search, MapPin, Building2, Star, Users, Filter, ChevronRight, Info } from 'lucide-react';
+import { Search, MapPin, Building2, Star, Users, Filter, ChevronRight, Info, Check, X } from 'lucide-react';
 import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, Pagination, SelectDropdown } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
 
@@ -87,6 +87,11 @@ export default function BrowsePGs() {
     enabled: !!selectedPGId,
   });
 
+  const [amenitySearch, setAmenitySearch] = useState('');
+  const filteredFacilities = facilitiesList?.filter(fac =>
+    fac.name.toLowerCase().includes(amenitySearch.toLowerCase())
+  ) || [];
+
   const pgs = data?.pgs || [];
 
   const handleFacilityToggle = (id) => {
@@ -153,6 +158,31 @@ export default function BrowsePGs() {
             })
           }}
           className="min-w-[150px]"
+        />
+
+        <div className="w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
+
+        <SelectDropdown
+          value={filters.minRating}
+          onChange={e => setFilters(f => ({ ...f, minRating: e.target.value }))}
+          options={[
+            { value: '', label: 'Any Rating' },
+            { value: '4.5', label: '4.5+ ★' },
+            { value: '4.0', label: '4.0+ ★' },
+            { value: '3.5', label: '3.5+ ★' },
+            { value: '3.0', label: '3.0+ ★' }
+          ]}
+          styles={{
+            control: (base) => ({
+              ...base,
+              border: 0,
+              backgroundColor: 'transparent',
+              minHeight: 'auto',
+              boxShadow: 'none',
+              '&:hover': { border: 0 }
+            })
+          }}
+          className="min-w-[130px]"
         />
 
         <Button 
@@ -239,29 +269,7 @@ export default function BrowsePGs() {
         title="Advanced Filters"
       >
         <div className="flex flex-col gap-6 pb-3">
-          <div className="detail-section">
-            <div className="detail-section-title">Property Rating</div>
-            <div className="flex gap-2">
-              {[
-                { value: '', label: 'Any' },
-                { value: '3', label: '3★ & above' },
-                { value: '4', label: '4★ & above' }
-              ].map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setFilters(f => ({ ...f, minRating: opt.value }))}
-                  className={`flex-1 py-1.5 rounded-lg border text-[13px] font-bold transition-all duration-200 ${
-                    filters.minRating === opt.value
-                      ? 'border-[#6c63ff] bg-[#6c63ff]/15 text-[#6c63ff]'
-                      : 'border-gray-200 dark:border-[#2d3052] dark:text-[#a0a3b1] text-gray-600 hover:bg-gray-50 dark:hover:bg-[#242740]'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
+
 
           <div className="detail-section">
             <div className="detail-section-title">Availability</div>
@@ -279,22 +287,100 @@ export default function BrowsePGs() {
           </div>
 
           <div className="detail-section">
-            <div className="detail-section-title">Amenities &amp; Facilities</div>
-            <div className="grid grid-cols-2 gap-3">
-              {facilitiesList?.map(fac => (
-                <label
-                  key={fac._id}
-                  className={`flex items-center gap-2.5 cursor-pointer p-2 rounded-lg transition-all duration-200 ${filters.facilities.includes(fac._id) ? 'bg-[#6c63ff]/15' : 'bg-transparent'}`}
+            <div className="detail-section-title flex items-center justify-between mb-2.5">
+              <span className="font-semibold text-gray-700 dark:text-[#a0a3b1] text-[13px]">Amenities &amp; Facilities</span>
+              {filters.facilities?.length > 0 && (
+                <span className="text-[10px] font-extrabold text-[#6c63ff] bg-[#6c63ff]/15 px-2.5 py-0.5 rounded-full uppercase">
+                  {filters.facilities.length} Selected
+                </span>
+              )}
+            </div>
+
+            {/* Search Input for Amenities */}
+            <div className="relative mb-3">
+              <input
+                type="text"
+                className="w-full bg-white dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg pl-8 pr-7 py-2 text-xs text-gray-900 dark:text-[#f0f0f8] placeholder:text-gray-400 dark:placeholder:text-[#6b6e82] focus:border-[#6c63ff] outline-none"
+                placeholder="Search amenities..."
+                value={amenitySearch}
+                onChange={e => setAmenitySearch(e.target.value)}
+              />
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-[#6b6e82]" />
+              {amenitySearch && (
+                <button
+                  onClick={() => setAmenitySearch('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-xs"
                 >
-                  <input 
-                    type="checkbox" 
-                    checked={filters.facilities.includes(fac._id)}
-                    onChange={() => handleFacilityToggle(fac._id)}
-                    className="w-4 h-4 accent-[#6c63ff]"
-                  />
-                  <span className={`text-[13px] ${filters.facilities.includes(fac._id) ? 'text-[#6c63ff] font-bold' : 'dark:text-[#a0a3b1] text-gray-600 font-medium'}`}>{fac.name}</span>
-                </label>
-              ))}
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Scrollable Badges List */}
+            <div className="max-h-[220px] overflow-y-auto pr-1 flex flex-col gap-3.5 border border-gray-200 dark:border-[#2d3052] rounded-xl p-3 bg-gray-50/30 dark:bg-[#242740]/10">
+              {/* Selected Section */}
+              {filters.facilities?.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <div className="text-[10px] font-bold tracking-wider text-[#6c63ff] dark:text-[#8c85ff] uppercase flex items-center justify-between">
+                    <span>Selected ({filters.facilities.length})</span>
+                    <button 
+                      type="button"
+                      onClick={() => setFilters(prev => ({ ...prev, facilities: [] }))}
+                      className="text-[9px] hover:underline normal-case font-medium text-red-500 hover:text-red-600"
+                    >
+                      Deselect All
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {facilitiesList?.filter(fac => filters.facilities.includes(fac._id)).map(fac => (
+                      <button
+                        key={fac._id}
+                        type="button"
+                        onClick={() => handleFacilityToggle(fac._id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all duration-150 bg-[#6c63ff] text-white hover:bg-red-500 dark:bg-[#6c63ff] dark:hover:bg-red-500 shadow-sm shadow-[#6c63ff]/20 fade-in"
+                        title="Click to remove"
+                      >
+                        <Check size={12} className="stroke-[3] shrink-0" />
+                        <span className="truncate max-w-[120px]">{fac.name}</span>
+                        <X size={12} className="ml-0.5 shrink-0 opacity-80 hover:opacity-100" />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="h-px bg-gray-200 dark:bg-[#2d3052] mt-1" />
+                </div>
+              )}
+
+              {/* Available Section */}
+              <div className="flex flex-col gap-2">
+                {filters.facilities?.length > 0 && (
+                  <div className="text-[10px] font-bold tracking-wider text-gray-400 dark:text-[#6b6e82] uppercase">
+                    Available Amenities
+                  </div>
+                )}
+                {filteredFacilities.length === 0 ? (
+                  <div className="text-[12px] text-gray-400 dark:text-[#6b6e82] py-4 text-center">
+                    No matching amenities found
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {filteredFacilities.filter(fac => !filters.facilities.includes(fac._id)).map(fac => (
+                      <button
+                        key={fac._id}
+                        type="button"
+                        onClick={() => handleFacilityToggle(fac._id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all duration-150 bg-gray-100 hover:bg-gray-200 dark:bg-[#242740] dark:hover:bg-[#2d3052] text-gray-700 dark:text-[#a0a3b1] border border-gray-200 dark:border-[#2d3052] hover:border-gray-300 dark:hover:border-[#3d406a]"
+                      >
+                        <span className="truncate max-w-[150px]">{fac.name}</span>
+                      </button>
+                    ))}
+                    {filteredFacilities.filter(fac => !filters.facilities.includes(fac._id)).length === 0 && (
+                      <div className="text-[11px] text-gray-400 dark:text-[#6b6e82] py-2 text-center w-full italic">
+                        All matching amenities selected
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
