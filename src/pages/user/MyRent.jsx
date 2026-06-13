@@ -74,7 +74,8 @@ export default function MyRent() {
 
   const openSubmitModal = (rent) => {
     setSelectedRent(rent);
-    setAmountPaid((rent.amount + (rent.penaltyAmount || 0)).toString());
+    const penalty = rent.status === 'overdue' ? (rent.penaltyAmount || rent.pgId?.lateFee || 0) : (rent.penaltyAmount || 0);
+    setAmountPaid((rent.amount + penalty).toString());
   };
 
   const handleSubmitProof = () => {
@@ -127,12 +128,19 @@ export default function MyRent() {
             
             <div className="text-right">
               <div className="text-[11px] font-bold dark:text-[#6b6e82] text-gray-500 uppercase mb-1">Total Amount Due</div>
-              <div className="text-[32px] font-black dark:text-[#f0f0f8] text-gray-900">{f(activeRent.amount + (activeRent.penaltyAmount || 0))}</div>
-              {activeRent.penaltyAmount > 0 && (
-                <div className="text-[12px] text-[#ff4d6d] font-bold mt-0.5">
-                  Base: {f(activeRent.amount)} + Late Fee: {f(activeRent.penaltyAmount)}
-                </div>
-              )}
+              {(() => {
+                const penalty = activeRent.status === 'overdue' ? (activeRent.penaltyAmount || activeRent.pgId?.lateFee || 0) : (activeRent.penaltyAmount || 0);
+                return (
+                  <>
+                    <div className="text-[32px] font-black dark:text-[#f0f0f8] text-gray-900">{f(activeRent.amount + penalty)}</div>
+                    {penalty > 0 && (
+                      <div className="text-[12px] text-[#ff4d6d] font-bold mt-0.5">
+                        Base: {f(activeRent.amount)} + Late Fee: {f(penalty)}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
               {activeRent.status === 'partial' && (
                 <div className="text-[12px] text-[#ffa94d] font-bold mt-0.5">
                   Already paid: {f(activeRent.amountPaid)}
@@ -211,16 +219,23 @@ export default function MyRent() {
                   </td>
                   <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30 text-[12px] font-semibold">{getActiveDays(rec)}</td>
                   <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30 text-[14px] font-bold">
-                    <div>{f(rec.amount + (rec.penaltyAmount || 0))}</div>
-                    {rec.penaltyAmount > 0 ? (
-                      <div className="text-[10px] text-[#ff4d6d] font-medium mt-0.5">
-                        Base: {f(rec.amount)} + Late Fee: {f(rec.penaltyAmount)}
-                      </div>
-                    ) : rec.bedId?.price && rec.amount < rec.bedId.price ? (
-                      <div className="text-[10px] dark:text-[#6b6e82] text-gray-500 font-medium mt-0.5">
-                        Base: {f(rec.bedId.price)} (Prorated)
-                      </div>
-                    ) : null}
+                    {(() => {
+                      const penalty = rec.status === 'overdue' ? (rec.penaltyAmount || rec.pgId?.lateFee || 0) : (rec.penaltyAmount || 0);
+                      return (
+                        <>
+                          <div>{f(rec.amount + penalty)}</div>
+                          {penalty > 0 ? (
+                            <div className="text-[10px] text-[#ff4d6d] font-semibold mt-0.5" title={`Base: ${f(rec.amount)} + Late Fee: ${f(penalty)}`}>
+                              (+{f(penalty)})
+                            </div>
+                          ) : rec.bedId?.price && rec.amount < rec.bedId.price ? (
+                            <div className="text-[10px] text-gray-400 dark:text-[#6b6e82] font-semibold mt-0.5" title={`Base Monthly: ${f(rec.bedId.price)} (Prorated)`}>
+                              (Prorated)
+                            </div>
+                          ) : null}
+                        </>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3.5 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">
                     <Badge variant={rec.status === 'paid' ? 'success' : rec.status === 'partial' ? 'info' : 'default'}>
@@ -229,11 +244,14 @@ export default function MyRent() {
                   </td>
                   <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">
                     <Badge variant={STATUS_VARIANT[rec.status]}>{rec.status}</Badge>
-                    {rec.penaltyAmount > 0 && rec.status === 'paid' && (
-                      <div className="text-[10px] text-[#ff4d6d] font-semibold mt-0.5">
-                        (Late Fee Applied)
-                      </div>
-                    )}
+                    {(() => {
+                      const penalty = rec.status === 'overdue' ? (rec.penaltyAmount || rec.pgId?.lateFee || 0) : (rec.penaltyAmount || 0);
+                      return penalty > 0 && rec.status === 'paid' ? (
+                        <div className="text-[10px] text-[#ff4d6d] font-semibold mt-0.5">
+                          (Late Fee Applied)
+                        </div>
+                      ) : null;
+                    })()}
                   </td>
                   <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">{rec.paymentMode ? MODE_EMOJIS[rec.paymentMode] : '—'}</td>
                   <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">{rec.paidDate ? formatDate(rec.paidDate) : '—'}</td>
@@ -289,14 +307,21 @@ export default function MyRent() {
               </div>
               <div>
                 <span className="dark:text-[#6b6e82] text-gray-500">Due Amount:</span>
-                <strong className="block text-[#6c63ff] text-[14px]">
-                  {f(selectedRent.amount + (selectedRent.penaltyAmount || 0))}
-                </strong>
-                {selectedRent.penaltyAmount > 0 && (
-                  <span className="text-[10px] text-[#ff4d6d] font-semibold">
-                    (Incl. {f(selectedRent.penaltyAmount)} Late Fee)
-                  </span>
-                )}
+                {(() => {
+                  const penalty = selectedRent.status === 'overdue' ? (selectedRent.penaltyAmount || selectedRent.pgId?.lateFee || 0) : (selectedRent.penaltyAmount || 0);
+                  return (
+                    <>
+                      <strong className="block text-[#6c63ff] text-[14px]">
+                        {f(selectedRent.amount + penalty)}
+                      </strong>
+                      {penalty > 0 && (
+                        <span className="text-[10px] text-[#ff4d6d] font-semibold">
+                          (Incl. {f(penalty)} Late Fee)
+                        </span>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
 

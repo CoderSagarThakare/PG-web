@@ -130,7 +130,7 @@ const getMonthName = (yearMonth) => {
 const emptyForm = {
   bedId: '', userId: '', amount: '', amountPaid: '',
   paymentMode: 'cash', paidDate: '', referenceNo: '', notes: '', rentMonth: currentMonth(),
-  status: 'paid', activeDays: '', joiningDate: ''
+  status: 'paid', activeDays: '', joiningDate: '', penaltyAmount: 0
 };
 
 const getActiveDays = (rec) => {
@@ -351,6 +351,10 @@ export default function RentTracker() {
   const openEdit = (rec) => {
     setEditTarget(rec);
     const defaultCheckInDate = `${rec.rentMonth}-01`;
+    const defaultPenalty = rec.status === 'overdue'
+      ? (rec.penaltyAmount || rec.pgId?.lateFee || 0)
+      : (rec.penaltyAmount || 0);
+
     setForm({
       amount: rec.amount, amountPaid: rec.amountPaid,
       paymentMode: rec.paymentMode || 'cash',
@@ -361,7 +365,8 @@ export default function RentTracker() {
       bedId: rec.bedId?._id, userId: rec.userId?._id,
       status: rec.status || 'paid',
       activeDays: rec.activeDays !== undefined && rec.activeDays !== null ? rec.activeDays : getDaysInMonth(rec.rentMonth),
-      joiningDate: defaultCheckInDate
+      joiningDate: defaultCheckInDate,
+      penaltyAmount: defaultPenalty
     });
     setModal('edit');
   };
@@ -560,12 +565,12 @@ export default function RentTracker() {
                       <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-[13px] font-bold dark:text-[#f0f0f8] text-gray-900">
                         <div>{f(rec.amount + (rec.penaltyAmount || 0))}</div>
                         {rec.penaltyAmount > 0 ? (
-                          <div className="text-[10px] text-[#ff4d6d] font-medium mt-0.5">
-                            Base: {f(rec.amount)} + Late Fee: {f(rec.penaltyAmount)}
+                          <div className="text-[10px] text-[#ff4d6d] font-semibold mt-0.5" title={`Base: ${f(rec.amount)} + Late Fee: ${f(rec.penaltyAmount)}`}>
+                            (+{f(rec.penaltyAmount)})
                           </div>
                         ) : rec.bedId?.price && rec.amount < rec.bedId.price ? (
-                          <div className="text-[10px] text-gray-500 dark:text-[#6b6e82] font-medium mt-0.5">
-                            Base: {f(rec.bedId.price)} (Prorated)
+                          <div className="text-[10px] text-gray-500 dark:text-[#6b6e82] font-semibold mt-0.5" title={`Base Monthly: ${f(rec.bedId.price)} (Prorated)`}>
+                            (Prorated)
                           </div>
                         ) : null}
                       </td>
@@ -703,16 +708,23 @@ export default function RentTracker() {
                         <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs font-bold dark:text-[#f0f0f8] text-gray-900">{rec.rentMonth}</td>
                         <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900">{getActiveDays(rec)}</td>
                         <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-[13px] font-bold dark:text-[#f0f0f8] text-gray-900">
-                          <div>{f(rec.amount + (rec.penaltyAmount || 0))}</div>
-                          {rec.penaltyAmount > 0 ? (
-                            <div className="text-[10px] text-[#ff4d6d] font-medium mt-0.5">
-                              Base: {f(rec.amount)} + Late Fee: {f(rec.penaltyAmount)}
-                            </div>
-                          ) : rec.bedId?.price && rec.amount < rec.bedId.price ? (
-                            <div className="text-[10px] text-gray-500 dark:text-[#6b6e82] font-medium mt-0.5">
-                              Base: {f(rec.bedId.price)} (Prorated)
-                            </div>
-                          ) : null}
+                          {(() => {
+                            const penalty = rec.status === 'overdue' ? (rec.penaltyAmount || rec.pgId?.lateFee || 0) : (rec.penaltyAmount || 0);
+                            return (
+                              <>
+                                <div>{f(rec.amount + penalty)}</div>
+                                {penalty > 0 ? (
+                                  <div className="text-[10px] text-[#ff4d6d] font-semibold mt-0.5" title={`Base: ${f(rec.amount)} + Late Fee: ${f(penalty)}`}>
+                                    (+{f(penalty)})
+                                  </div>
+                                ) : rec.bedId?.price && rec.amount < rec.bedId.price ? (
+                                  <div className="text-[10px] text-gray-400 dark:text-[#6b6e82] font-semibold mt-0.5" title={`Base Monthly: ${f(rec.bedId.price)} (Prorated)`}>
+                                    (Prorated)
+                                  </div>
+                                ) : null}
+                              </>
+                            );
+                          })()}
                         </td>
                         <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
                           <Badge variant={rec.status === 'paid' ? 'success' : rec.status === 'partial' ? 'info' : 'default'}>
@@ -721,11 +733,14 @@ export default function RentTracker() {
                         </td>
                         <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
                           <Badge variant={STATUS_VARIANT[rec.status] || 'default'}>{rec.status}</Badge>
-                          {rec.penaltyAmount > 0 && rec.status === 'paid' && (
-                            <div className="text-[10px] text-[#ff4d6d] font-semibold mt-0.5">
-                              (Late Fee Applied)
-                            </div>
-                          )}
+                          {(() => {
+                            const penalty = rec.status === 'overdue' ? (rec.penaltyAmount || rec.pgId?.lateFee || 0) : (rec.penaltyAmount || 0);
+                            return penalty > 0 && rec.status === 'paid' ? (
+                              <div className="text-[10px] text-[#ff4d6d] font-semibold mt-0.5">
+                                (Late Fee Applied)
+                              </div>
+                            ) : null;
+                          })()}
                         </td>
                         <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900"><PaymentModeBadge mode={rec.paymentMode} /></td>
                         <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900" title={rec.paidDate ? formatDateTime(rec.paidDate) : '—'}>
@@ -898,7 +913,7 @@ export default function RentTracker() {
                 }
                 
                 setForm(f => {
-                  const newAmountPaid = f.status === 'paid' ? calculatedAmount : (f.status === 'pending' ? 0 : f.amountPaid);
+                  const newAmountPaid = f.status === 'paid' ? (calculatedAmount + Number(f.penaltyAmount || 0)) : (f.status === 'pending' ? 0 : f.amountPaid);
                   return {
                     ...f,
                     joiningDate: dateStr,
@@ -915,7 +930,7 @@ export default function RentTracker() {
                 const val = e.target.value;
                 const calculatedAmount = val === '' ? '' : Number(val);
                 setForm(f => {
-                  const newAmountPaid = f.status === 'paid' ? calculatedAmount : (f.status === 'pending' ? 0 : f.amountPaid);
+                  const newAmountPaid = f.status === 'paid' ? (calculatedAmount + Number(f.penaltyAmount || 0)) : (f.status === 'pending' ? 0 : f.amountPaid);
                   return {
                     ...f,
                     amount: calculatedAmount,
@@ -923,6 +938,25 @@ export default function RentTracker() {
                   };
                 });
               }} />
+
+            <Input 
+              label="Penalty Amount (₹)" 
+              type="number" 
+              min="0" 
+              value={form.penaltyAmount}
+              onChange={e => {
+                const val = e.target.value;
+                const penalty = val === '' ? '' : Number(val);
+                setForm(f => {
+                  const newAmountPaid = f.status === 'paid' ? (Number(f.amount || 0) + Number(penalty || 0)) : (f.status === 'pending' ? 0 : f.amountPaid);
+                  return {
+                    ...f,
+                    penaltyAmount: penalty,
+                    amountPaid: newAmountPaid
+                  };
+                });
+              }} 
+            />
 
             <div>
               <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">PAYMENT STATUS</label>
@@ -933,7 +967,7 @@ export default function RentTracker() {
                   setForm(f => ({
                     ...f,
                     status: newStatus,
-                    amountPaid: newStatus === 'paid' ? f.amount : (newStatus === 'pending' ? 0 : f.amountPaid),
+                    amountPaid: newStatus === 'paid' ? (Number(f.amount || 0) + Number(f.penaltyAmount || 0)) : (newStatus === 'pending' ? 0 : f.amountPaid),
                     ...(newStatus === 'pending' && {
                       paymentMode: null,
                       paidDate: '',
