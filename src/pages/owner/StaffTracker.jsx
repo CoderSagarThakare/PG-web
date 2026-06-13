@@ -412,14 +412,12 @@ export default function StaffTracker() {
         limit: 100,
       })
     ).data?.data,
-    enabled: activeTab === 'expenses',
   });
   const expenses = expData?.expenses || [];
 
   const { data: payData, isLoading: payLoading } = useQuery({
     queryKey: ['payrolls', filterPgId, filterMonth],
     queryFn: async () => (await getPayrollsApi({ pgId: filterPgId || undefined, month: filterMonth, limit: 100 })).data?.data,
-    enabled: activeTab === 'payroll',
   });
   const payrolls = payData?.payments || [];
 

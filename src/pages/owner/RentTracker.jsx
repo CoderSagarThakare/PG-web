@@ -521,48 +521,48 @@ export default function RentTracker() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-[#242740] border-b border-gray-200 dark:border-[#2d3052]">
-                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left w-10">
+                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left w-10">
                       <input
                         type="checkbox"
                         checked={selectedIds.length === approvals.length}
                         onChange={e => handleSelectAll(e.target.checked)}
                       />
                     </th>
-                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Student Details</th>
-                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Bed / PG</th>
-                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Month</th>
-                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Days</th>
-                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Amount Due</th>
-                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Paid Amount</th>
-                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Mode</th>
-                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Txn Ref ID</th>
-                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left">Tenant Notes</th>
-                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-right">Actions</th>
+                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Student Details</th>
+                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Bed / PG</th>
+                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Month</th>
+                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Days</th>
+                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Amount Due</th>
+                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Paid Amount</th>
+                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Mode</th>
+                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Txn Ref ID</th>
+                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left w-full">Tenant Notes</th>
+                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {approvals.map(rec => (
                     <tr key={rec._id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-[#242740]/50 last:[&>td]:border-0">
-                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
+                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 w-10">
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(rec._id)}
                           onChange={e => handleSelectRow(rec._id, e.target.checked)}
                         />
                       </td>
-                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
+                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 whitespace-nowrap">
                         <div className="font-bold text-[13px] dark:text-[#f0f0f8] text-gray-900">{rec.userId?.name || '—'}</div>
                         <div className="text-[11px] dark:text-[#6b6e82] text-gray-500 flex items-center gap-1 mt-0.5">
                           {rec.userId?.mobNo1 && <><Phone size={10} />{rec.userId.mobNo1}</>}
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900">
+                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900 whitespace-nowrap">
                         <div className="font-semibold">Bed {rec.bedId?.bedNumber}</div>
                         <div className="text-gray-500 dark:text-[#6b6e82]">{rec.pgId?.name}</div>
                       </td>
-                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs font-bold dark:text-[#f0f0f8] text-gray-900">{rec.rentMonth}</td>
-                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900">{getActiveDays(rec)}</td>
-                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-[13px] font-bold dark:text-[#f0f0f8] text-gray-900">
+                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs font-bold dark:text-[#f0f0f8] text-gray-900 whitespace-nowrap">{rec.rentMonth}</td>
+                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900 whitespace-nowrap">{getActiveDays(rec)}</td>
+                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 text-[13px] font-bold dark:text-[#f0f0f8] text-gray-900 whitespace-nowrap">
                         <div>{f(rec.amount + (rec.penaltyAmount || 0))}</div>
                         {rec.penaltyAmount > 0 ? (
                           <div className="text-[10px] text-[#ff4d6d] font-semibold mt-0.5" title={`Base: ${f(rec.amount)} + Late Fee: ${f(rec.penaltyAmount)}`}>
@@ -574,15 +574,15 @@ export default function RentTracker() {
                           </div>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
+                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 whitespace-nowrap">
                         <Badge variant="info">{f(rec.amountPaid)}</Badge>
                       </td>
-                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900"><PaymentModeBadge mode={rec.paymentMode} /></td>
-                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-[11px] text-gray-500 dark:text-[#6b6e82] font-mono">{rec.referenceNo || '—'}</td>
-                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-[11px] text-gray-500 dark:text-[#6b6e82] max-w-[140px] truncate" title={rec.notes}>
+                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900 whitespace-nowrap"><PaymentModeBadge mode={rec.paymentMode} /></td>
+                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 text-[11px] text-gray-500 dark:text-[#6b6e82] font-mono whitespace-nowrap">{rec.referenceNo || '—'}</td>
+                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 text-[11px] text-gray-500 dark:text-[#6b6e82] w-full max-w-[200px] truncate" title={rec.notes}>
                         {rec.notes || '—'}
                       </td>
-                      <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
+                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 whitespace-nowrap">
                         <div className="flex gap-1.5 justify-end items-center">
                           <button onClick={() => setBreakdownTarget(rec)}
                             className="p-1.5 bg-gray-50 dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg cursor-pointer text-[#6c63ff] hover:bg-gray-100 dark:hover:bg-[#2d3052] flex items-center justify-center h-8 w-8 transition-colors"
