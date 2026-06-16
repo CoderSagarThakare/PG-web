@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Input, Button, ImageUploader } from '../common';
+import { Input, Button, ImageUploader, Badge } from '../common';
 import FacilitiesPicker from '../common/FacilitiesPicker';
 import { getPGImageUploadUrlApi, deletePGImageFileApi } from '../../api/pg.api';
 
@@ -13,7 +13,8 @@ const pgTypeOptions = [
 
 export default function PGForm({ initialData, onSubmit, loading, managers = [], facilitiesList = [], buttonText = 'Submit', onCancel }) {
   const [step, setStep] = useState(1);
-  const { register, handleSubmit, control, reset, setValue, trigger, formState: { errors } } = useForm({
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const { register, handleSubmit, control, reset, setValue, trigger, watch, formState: { errors } } = useForm({
     defaultValues: {
       name: '',
       address: { landmark: '', city: '', state: '', country: 'India', pincode: '', locationDescription: '' },
@@ -28,9 +29,15 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
       landline: '',
       locationLink: '',
       pgStartedDate: '',
-      images: []
+      images: [],
+      location: {
+        type: 'Point',
+        coordinates: [] // no default coordinates
+      }
     }
   });
+
+  const coordinates = watch('location.coordinates');
 
   const [managerSearch, setManagerSearch] = useState('');
   const [showManagerDropdown, setShowManagerDropdown] = useState(false);
@@ -67,10 +74,35 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
         landline: initialData.landline || '',
         locationLink: initialData.locationLink || '',
         pgStartedDate: initialData.pgStartedDate ? new Date(initialData.pgStartedDate).toISOString().slice(0, 10) : '',
-        images: initialData.images || []
+        images: initialData.images || [],
+        location: initialData.location || { type: 'Point', coordinates: [] }
       });
     }
   }, [initialData, reset, managers]);
+
+  const handleGetLiveLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setLoadingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setValue('location.coordinates.0', Number(longitude.toFixed(6)), { shouldValidate: true });
+        setValue('location.coordinates.1', Number(latitude.toFixed(6)), { shouldValidate: true });
+        setLoadingLocation(false);
+      },
+      (error) => {
+        console.error("Error capturing location:", error);
+        setLoadingLocation(false);
+        alert(`Failed to capture location: ${error.message}. Please verify browser permissions.`);
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  };
 
   const handleFormSubmit = (data) => {
     const cleaned = { ...data };
@@ -87,6 +119,22 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
       if (cleaned.address.pincode) {
         cleaned.address.pincode = Number(cleaned.address.pincode);
       }
+    }
+
+    if (cleaned.location && 
+        cleaned.location.coordinates && 
+        cleaned.location.coordinates[0] !== undefined && 
+        cleaned.location.coordinates[0] !== null && 
+        cleaned.location.coordinates[0] !== '' &&
+        cleaned.location.coordinates[1] !== undefined &&
+        cleaned.location.coordinates[1] !== null &&
+        cleaned.location.coordinates[1] !== '') {
+      cleaned.location.coordinates = [
+        Number(cleaned.location.coordinates[0]),
+        Number(cleaned.location.coordinates[1])
+      ];
+    } else {
+      delete cleaned.location;
     }
 
     if (cleaned.dueDayOfMonth) cleaned.dueDayOfMonth = Number(cleaned.dueDayOfMonth);
@@ -347,6 +395,70 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
                 {...register('address.locationDescription')} 
                 error={errors.address?.locationDescription?.message} 
               />
+            </div>
+
+            {/* Coordinates Section */}
+            <div className="col-span-full border-t dark:border-[#2d3052] border-gray-200 pt-4 mt-2">
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                <div>
+                  <h4 className="text-[13px] font-bold dark:text-[#f0f0f8] text-gray-900">Geospatial Coordinates</h4>
+                  <p className="text-[11px] dark:text-[#6b6e82] text-gray-500">Live coordinates are used to calculate distances for nearby users</p>
+                </div>
+                <Button 
+                  variant="primary" 
+                  size="sm" 
+                  onClick={handleGetLiveLocation}
+                  type="button"
+                  loading={loadingLocation}
+                  className="rounded-full h-8 text-[11px] px-4 font-bold"
+                >
+                  📍 Capture Current Location
+                </Button>
+              </div>
+
+              {/* Hidden inputs to capture React Hook Form state */}
+              <input 
+                type="hidden" 
+                {...register('location.coordinates.0', { 
+                  required: 'Longitude is required',
+                  valueAsNumber: true 
+                })} 
+              />
+              <input 
+                type="hidden" 
+                {...register('location.coordinates.1', { 
+                  required: 'Latitude is required',
+                  valueAsNumber: true 
+                })} 
+              />
+
+              {/* Location Status Card */}
+              <div className="p-4 bg-gray-50 dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-xl flex items-center justify-between gap-4 transition-all duration-300">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${coordinates?.[0] && coordinates?.[1] ? 'bg-[#00d4aa]/15 text-[#00d4aa]' : 'bg-gray-100 dark:bg-[#1a1d2e] text-gray-400 dark:text-[#6b6e82]'}`}>
+                    <span className="text-base">📍</span>
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-gray-900 dark:text-[#f0f0f8]">
+                      {coordinates?.[0] && coordinates?.[1] ? 'Location Coordinates Locked' : 'Location Not Set'}
+                    </div>
+                    <div className="text-[11px] text-gray-500 dark:text-[#6b6e82] mt-0.5 font-mono">
+                      {coordinates?.[0] && coordinates?.[1] 
+                        ? `${coordinates[1].toFixed(6)}° N, ${coordinates[0].toFixed(6)}° E` 
+                        : 'No coordinates captured. Click "Capture Current Location" to fetch.'}
+                    </div>
+                  </div>
+                </div>
+                {coordinates?.[0] && coordinates?.[1] && (
+                  <Badge variant="success" className="h-5 text-[9px] px-2 font-bold uppercase tracking-wider">Active</Badge>
+                )}
+              </div>
+
+              {(errors.location?.coordinates?.[0] || errors.location?.coordinates?.[1]) && (
+                <span className="text-xs text-[#ff4d6d] font-medium mt-2 block">
+                  {errors.location?.coordinates?.[0]?.message || errors.location?.coordinates?.[1]?.message || 'Coordinates are required'}
+                </span>
+              )}
             </div>
           </div>
         )}

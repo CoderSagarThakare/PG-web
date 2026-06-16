@@ -304,6 +304,7 @@ const btnVariants = {
   success: 'bg-[#51cf66]/12 text-[#51cf66] border border-[#51cf66]/30 hover:bg-[#51cf66] hover:text-white hover:-translate-y-px',
   ghost:   'bg-transparent text-gray-600 dark:text-[#a0a3b1] border border-gray-200 dark:border-[#2d3052] hover:bg-gray-100 dark:hover:bg-[#2d3052] hover:text-gray-900 dark:hover:text-[#f0f0f8]',
   outline: 'bg-transparent text-gray-900 dark:text-[#f0f0f8] border border-gray-300 dark:border-[#6b6e82] hover:bg-[#6c63ff]/10 hover:border-[#6c63ff] hover:text-[#6c63ff]',
+  custom:  '',
 };
 
 const btnSizes = {

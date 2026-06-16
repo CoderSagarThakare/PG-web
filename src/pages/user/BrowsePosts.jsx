@@ -68,6 +68,162 @@ export default function BrowsePosts() {
   });
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [viewPost, setViewPost] = useState(null);
+  const [userLocation, setUserLocation] = useState({ latitude: '', longitude: '' });
+  const [locationReady, setLocationReady] = useState(false);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+
+  const handleDismissPrompt = () => {
+    setShowLocationPrompt(false);
+  };
+
+  const executeGetLocation = () => {
+    if (navigator.geolocation) {
+      setLoadingLocation(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const loc = {
+            latitude: latitude.toFixed(6),
+            longitude: longitude.toFixed(6)
+          };
+          setUserLocation(loc);
+          localStorage.setItem('staysync_user_location', JSON.stringify(loc));
+          localStorage.setItem('staysync_near_me_active', 'true');
+          setLocationReady(true);
+          setLoadingLocation(false);
+          toast.success("Location locked successfully!");
+        },
+        (error) => {
+          console.error("Browser Geolocation error:", error.code, error.message);
+          setLoadingLocation(false);
+          setUserLocation({ latitude: '', longitude: '' });
+          setLocationReady(true);
+          if (error.code === 1) { // PERMISSION_DENIED
+            toast.error(
+              "Location access is blocked. Please click the lock/settings icon in your browser's address bar next to the URL, set Location to 'Allow', and refresh the page."
+            );
+          } else if (error.code === 3) { // TIMEOUT
+            toast.error("Location request timed out. Please try again.");
+          } else {
+            toast.error("Location unavailable: " + error.message);
+          }
+        },
+        { enableHighAccuracy: false, timeout: 10000 }
+      );
+    } else {
+      toast.error("Geolocation is not supported by your browser.");
+    }
+  };
+
+  const handleAcceptPrompt = () => {
+    setShowLocationPrompt(false);
+    executeGetLocation();
+  };
+
+  const handleRequestLocation = async (e) => {
+    if (e) e.preventDefault();
+    
+    // Check if browser permission is already granted
+    let permissionGranted = false;
+    try {
+      if (navigator.permissions && navigator.permissions.query) {
+        const status = await navigator.permissions.query({ name: 'geolocation' });
+        if (status.state === 'granted') {
+          permissionGranted = true;
+        }
+      }
+    } catch (err) {
+      console.warn("Permissions API check failed", err);
+    }
+
+    if (permissionGranted) {
+      executeGetLocation();
+    } else {
+      setShowLocationPrompt(true);
+    }
+  };
+
+  const handleClearLocation = (e) => {
+    if (e) e.preventDefault();
+    setUserLocation({ latitude: '', longitude: '' });
+    localStorage.removeItem('staysync_user_location');
+    localStorage.removeItem('staysync_near_me_active');
+    toast.success("Location filter cleared.");
+  };
+
+  useEffect(() => {
+    const isNearMeActive = localStorage.getItem('staysync_near_me_active') === 'true';
+    if (!isNearMeActive) {
+      setUserLocation({ latitude: '', longitude: '' });
+      setLocationReady(true);
+      return;
+    }
+
+    const cachedLocation = localStorage.getItem('staysync_user_location');
+    let cachedParsed = null;
+
+    if (cachedLocation) {
+      try {
+        const parsed = JSON.parse(cachedLocation);
+        if (parsed.latitude && parsed.longitude) {
+          cachedParsed = parsed;
+        }
+      } catch (e) {
+        console.error("Failed to parse cached location", e);
+      }
+    }
+
+    // If we have cached coords AND permission is granted, fetch fresh GPS first
+    const tryFreshLocation = async () => {
+      let permissionGranted = false;
+      try {
+        if (navigator.permissions && navigator.permissions.query) {
+          const status = await navigator.permissions.query({ name: 'geolocation' });
+          permissionGranted = status.state === 'granted';
+        }
+      } catch (err) {
+        console.warn("Permissions API check failed", err);
+      }
+
+      if (permissionGranted && navigator.geolocation) {
+        // Fetch fresh coordinates before firing any API query
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            const fresh = {
+              latitude: latitude.toFixed(6),
+              longitude: longitude.toFixed(6)
+            };
+            setUserLocation(fresh);
+            localStorage.setItem('staysync_user_location', JSON.stringify(fresh));
+            localStorage.setItem('staysync_near_me_active', 'true');
+            setLocationReady(true);
+          },
+          () => {
+            // Fresh fetch failed — fall back to cached if available
+            if (cachedParsed) {
+              setUserLocation(cachedParsed);
+            } else {
+              setUserLocation({ latitude: '', longitude: '' });
+            }
+            setLocationReady(true);
+          },
+          { enableHighAccuracy: false, timeout: 10000 }
+        );
+      } else if (cachedParsed) {
+        // Permission not granted but we have old cache — use it
+        setUserLocation(cachedParsed);
+        setLocationReady(true);
+      } else {
+        // No permission, no cache — load without location
+        setUserLocation({ latitude: '', longitude: '' });
+        setLocationReady(true);
+      }
+    };
+
+    tryFreshLocation();
+  }, []);
 
   useEffect(() => {
     if (location.state?.pgId) {
@@ -123,8 +279,15 @@ export default function BrowsePosts() {
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: ['browse-posts', activeFilters, page, limit],
-    queryFn: async () => (await searchPostsApi({ ...activeFilters, page, limit })).data?.data,
+    queryKey: ['browse-posts', activeFilters, page, limit, userLocation],
+    queryFn: async () => (await searchPostsApi({ 
+      ...activeFilters, 
+      page, 
+      limit,
+      latitude: userLocation.latitude,
+      longitude: userLocation.longitude
+    })).data?.data,
+    enabled: locationReady,
   });
 
   const enquiryMut = useMutation({
@@ -139,7 +302,7 @@ export default function BrowsePosts() {
       };
 
       // Update the main list cache — key must match exactly what useQuery uses
-      qc.setQueryData(['browse-posts', activeFilters, page, limit], (oldData) => {
+      qc.setQueryData(['browse-posts', activeFilters, page, limit, userLocation], (oldData) => {
         if (!oldData) return oldData;
         const newPosts = oldData.posts.map(p => {
           if (p._id === variables.postId) {
@@ -162,7 +325,7 @@ export default function BrowsePosts() {
     mutationFn: ({ id, data }) => updateEnquiryApi(id, data),
     onSuccess: (res, variables) => {
       // Update the main list cache — key must match exactly what useQuery uses
-      qc.setQueryData(['browse-posts', activeFilters, page, limit], (oldData) => {
+      qc.setQueryData(['browse-posts', activeFilters, page, limit, userLocation], (oldData) => {
         if (!oldData) return oldData;
         const newPosts = oldData.posts.map(p => {
           if (p.enquiryData?.enquiryId === variables.id) {
@@ -272,108 +435,155 @@ export default function BrowsePosts() {
         )}
       </div>
 
-      <div className="flex items-center bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-full px-2 py-1 gap-2.5 mb-6 flex-wrap">
-        <div className="flex items-center flex-1 pl-3">
+      <div className="flex flex-col lg:flex-row lg:items-center bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-2xl lg:rounded-full p-3 lg:py-1.5 lg:px-2 gap-3 lg:gap-2.5 mb-6">
+        <div className="flex items-center w-full lg:flex-1 pl-1 lg:pl-3 gap-2">
           <Search size={16} className="dark:text-[#6b6e82] text-gray-400 shrink-0" />
           <input
-            className="bg-transparent border-none outline-none ml-2 text-[13px] dark:text-[#f0f0f8] text-gray-900 placeholder:text-gray-400 dark:placeholder:text-[#6b6e82] w-full"
+            className="bg-transparent border-none outline-none ml-1 text-[13px] dark:text-[#f0f0f8] text-gray-900 placeholder:text-gray-400 dark:placeholder:text-[#6b6e82] w-full"
             placeholder="Search by area, PG name..."
             value={filters.title}
             onChange={e => setFilters(f => ({ ...f, title: e.target.value }))}
           />
+          {/* Geolocation Trigger / Badge */}
+          {userLocation.latitude && userLocation.longitude ? (
+            <div className="flex items-center gap-1 bg-green-500/10 dark:bg-green-500/20 text-green-500 text-[10px] font-black px-2.5 py-1 rounded-full shrink-0 border border-green-500/20">
+              <MapPin size={11} className="stroke-[3]" />
+              <span>NEARBY</span>
+              <button 
+                onClick={handleClearLocation} 
+                className="hover:text-red-500 ml-0.5 transition-colors"
+                title="Clear location sorting"
+              >
+                <X size={10} className="stroke-[3]" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleRequestLocation}
+              disabled={loadingLocation}
+              className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full border transition-all duration-200 shrink-0 ${
+                loadingLocation 
+                  ? 'bg-gray-100 dark:bg-[#242740] text-gray-400 dark:text-[#6b6e82] border-transparent' 
+                  : 'bg-[#6c63ff]/10 dark:bg-[#6c63ff]/20 text-[#6c63ff] border-[#6c63ff]/20 hover:bg-[#6c63ff]/20 dark:hover:bg-[#6c63ff]/30'
+              }`}
+              title="Find stays near your current location"
+            >
+              {loadingLocation ? (
+                <span className="w-3.5 h-3.5 border-2 border-[#6c63ff] border-t-transparent rounded-full animate-spin shrink-0" />
+              ) : (
+                <MapPin size={11} className="shrink-0" />
+              )}
+              <span>Near Me</span>
+            </button>
+          )}
         </div>
         
-        <div className="w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
-        
-        <input
-          className="bg-transparent border-none outline-none text-[13px] dark:text-[#f0f0f8] text-gray-900 placeholder:text-gray-400 dark:placeholder:text-[#6b6e82] w-[120px]"
-          placeholder="City..."
-          value={filters.city}
-          onChange={e => setFilters(f => ({ ...f, city: e.target.value }))}
-        />
+        <div className="hidden lg:block w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
+        <div className="block lg:hidden h-px w-full bg-gray-100 dark:bg-[#2d3052]/30" />
 
-        <div className="w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
+        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+          {/* City Input */}
+          <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-[#242740] lg:bg-transparent border border-gray-200 dark:border-[#2d3052] lg:border-none rounded-lg lg:rounded-none px-2.5 py-1.5 lg:p-0 flex-1 min-w-[110px] lg:w-[120px]">
+            <MapPin size={13} className="text-gray-400 dark:text-[#6b6e82] block lg:hidden shrink-0" />
+            <input
+              className="bg-transparent border-none outline-none text-[13px] dark:text-[#f0f0f8] text-gray-900 placeholder:text-gray-400 dark:placeholder:text-[#6b6e82] w-full"
+              placeholder="City..."
+              value={filters.city}
+              onChange={e => setFilters(f => ({ ...f, city: e.target.value }))}
+            />
+          </div>
 
-        <SelectDropdown
-          value={filters.pgType}
-          onChange={e => setFilters(f => ({ ...f, pgType: e.target.value }))}
-          options={[
-            { value: '', label: 'Any Type' },
-            { value: 'male', label: 'Male' },
-            { value: 'female', label: 'Female' },
-            { value: 'unisex', label: 'Unisex' },
-            { value: 'coLiving', label: 'Co-Living' }
-          ]}
-          styles={{
-            control: (base) => ({
-              ...base,
-              border: 0,
-              backgroundColor: 'transparent',
-              minHeight: 'auto',
-              boxShadow: 'none',
-              '&:hover': { border: 0 }
-            })
-          }}
-          className="min-w-[130px]"
-        />
+          <div className="hidden lg:block w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
 
-        <div className="w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
+          {/* Type Dropdown */}
+          <div className="flex-1 min-w-[120px] lg:min-w-[130px]">
+            <SelectDropdown
+              value={filters.pgType}
+              onChange={e => setFilters(f => ({ ...f, pgType: e.target.value }))}
+              options={[
+                { value: '', label: 'Any Type' },
+                { value: 'male', label: 'Male' },
+                { value: 'female', label: 'Female' },
+                { value: 'unisex', label: 'Unisex' },
+                { value: 'coLiving', label: 'Co-Living' }
+              ]}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  border: 0,
+                  backgroundColor: 'transparent',
+                  minHeight: 'auto',
+                  boxShadow: 'none',
+                  '&:hover': { border: 0 }
+                })
+              }}
+            />
+          </div>
 
-        <SelectDropdown
-          value={filters.occupancyType}
-          onChange={e => setFilters(f => ({ ...f, occupancyType: e.target.value }))}
-          options={[
-            { value: '', label: 'Sharing' },
-            { value: 'single', label: 'Single' },
-            { value: 'double', label: 'Double' },
-            { value: 'triple', label: 'Triple' }
-          ]}
-          styles={{
-            control: (base) => ({
-              ...base,
-              border: 0,
-              backgroundColor: 'transparent',
-              minHeight: 'auto',
-              boxShadow: 'none',
-              '&:hover': { border: 0 }
-            })
-          }}
-          className="min-w-[120px]"
-        />
+          <div className="hidden lg:block w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
 
-        <div className="w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
+          {/* Occupancy Dropdown */}
+          <div className="flex-1 min-w-[110px] lg:min-w-[120px]">
+            <SelectDropdown
+              value={filters.occupancyType}
+              onChange={e => setFilters(f => ({ ...f, occupancyType: e.target.value }))}
+              options={[
+                { value: '', label: 'Sharing' },
+                { value: 'single', label: 'Single' },
+                { value: 'double', label: 'Double' },
+                { value: 'triple', label: 'Triple' }
+              ]}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  border: 0,
+                  backgroundColor: 'transparent',
+                  minHeight: 'auto',
+                  boxShadow: 'none',
+                  '&:hover': { border: 0 }
+                })
+              }}
+            />
+          </div>
 
-        <SelectDropdown
-          value={filters.minRating}
-          onChange={e => setFilters(f => ({ ...f, minRating: e.target.value }))}
-          options={[
-            { value: '', label: 'Any Rating' },
-            { value: '4.5', label: '4.5+ ★' },
-            { value: '4.0', label: '4.0+ ★' },
-            { value: '3.5', label: '3.5+ ★' },
-            { value: '3.0', label: '3.0+ ★' }
-          ]}
-          styles={{
-            control: (base) => ({
-              ...base,
-              border: 0,
-              backgroundColor: 'transparent',
-              minHeight: 'auto',
-              boxShadow: 'none',
-              '&:hover': { border: 0 }
-            })
-          }}
-          className="min-w-[120px]"
-        />
+          <div className="hidden lg:block w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
 
-        <Button 
-          variant={getActiveFiltersCount() > 0 ? "accent" : "primary"} 
-          onClick={() => setShowAdvancedFilters(true)}
-          className="rounded-full h-8 px-4 text-[12px] mr-1 font-bold transition-all duration-200"
-        >
-          <Filter size={14} className="mr-1.5" /> 
-          {getActiveFiltersCount() > 0 ? `Filters (${getActiveFiltersCount()})` : 'Filters'}
-        </Button>
+          {/* Rating Dropdown */}
+          <div className="flex-1 min-w-[110px] lg:min-w-[120px]">
+            <SelectDropdown
+              value={filters.minRating}
+              onChange={e => setFilters(f => ({ ...f, minRating: e.target.value }))}
+              options={[
+                { value: '', label: 'Any Rating' },
+                { value: '4.5', label: '4.5+ ★' },
+                { value: '4.0', label: '4.0+ ★' },
+                { value: '3.5', label: '3.5+ ★' },
+                { value: '3.0', label: '3.0+ ★' }
+              ]}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  border: 0,
+                  backgroundColor: 'transparent',
+                  minHeight: 'auto',
+                  boxShadow: 'none',
+                  '&:hover': { border: 0 }
+                })
+              }}
+            />
+          </div>
+
+          <div className="hidden lg:block w-px h-5 bg-gray-200 dark:bg-[#2d3052]" />
+
+          <Button 
+            variant={getActiveFiltersCount() > 0 ? "accent" : "primary"} 
+            onClick={() => setShowAdvancedFilters(true)}
+            className="rounded-full h-8 px-4 text-[12px] lg:mr-1 font-bold transition-all duration-200 flex-1 lg:flex-none justify-center"
+          >
+            <Filter size={14} className="mr-1.5" /> 
+            {getActiveFiltersCount() > 0 ? `Filters (${getActiveFiltersCount()})` : 'Filters'}
+          </Button>
+        </div>
       </div>
 
       {selectedPgName && (
@@ -391,7 +601,7 @@ export default function BrowsePosts() {
         </div>
       )}
 
-      {isLoading ? <Spinner center /> : posts.length === 0 ? (
+      {!locationReady || isLoading ? <Spinner center /> : posts.length === 0 ? (
         <EmptyState 
           icon={<Search size={64} />} 
           title="No PGs found" 
@@ -418,7 +628,7 @@ export default function BrowsePosts() {
                   ) : (
                     <Building2 size={40} className="opacity-10" />
                   )}
-                  <div className="absolute top-2.5 right-2.5 bg-[#6c63ff] text-white px-2.5 py-1 rounded-md font-black text-[13px]">{formatPrice(post.minPrice)} - {formatPrice(post.maxPrice)}</div>
+                  <div className="absolute top-2.5 right-2.5 bg-black/60 backdrop-blur-md text-white border border-white/10 px-2 py-0.5 rounded-md font-bold text-[11px]">{formatPrice(post.minPrice)} - {formatPrice(post.maxPrice)}</div>
                   <div className="absolute bottom-2.5 left-2.5">
                     <Badge variant={post.pgType === 'male' ? 'info' : post.pgType === 'female' ? 'danger' : 'accent'}>
                       {post.pgType}
@@ -429,8 +639,26 @@ export default function BrowsePosts() {
                 <div className="p-3.5 flex flex-col flex-1">
                   <div className="text-[10px] font-bold text-[#00d4aa] uppercase mb-0.5">{post.pgId?.name}</div>
                   <h3 className="text-[15px] font-bold dark:text-[#f0f0f8] text-gray-900 mb-1 leading-snug truncate">{post.title}</h3>
-                  <div className="flex items-center gap-1 text-[11px] dark:text-[#6b6e82] text-gray-500 mb-3">
-                    <MapPin size={12} className="text-[#6c63ff]" /> {post.pgId?.address?.city}
+                  <div className="flex items-center justify-between gap-2 text-[11px] dark:text-[#6b6e82] text-gray-500 mb-3">
+                    <div className="flex items-center gap-1 truncate">
+                      <MapPin size={12} className="text-[#6c63ff] shrink-0" />
+                      <span className="truncate">{post.pgId?.address?.city}</span>
+                    </div>
+                    {post.distanceKm !== undefined && post.pgId?.location?.coordinates && (
+                      <a
+                        href={userLocation.latitude && userLocation.longitude
+                          ? `https://www.google.com/maps/dir/?api=1&origin=${userLocation.latitude},${userLocation.longitude}&destination=${post.pgId.location.coordinates[1]},${post.pgId.location.coordinates[0]}`
+                          : `https://www.google.com/maps/dir/?api=1&destination=${post.pgId.location.coordinates[1]},${post.pgId.location.coordinates[0]}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[10px] font-bold text-[#6c63ff] dark:text-[#8c85ff] bg-[#6c63ff]/10 hover:bg-[#6c63ff]/20 transition-colors px-1.5 py-0.5 rounded-md shrink-0 cursor-pointer flex items-center gap-0.5"
+                        title="Open Google Maps"
+                      >
+                        📍 {Number(post.distanceKm).toFixed(2)} km
+                      </a>
+                    )}
                   </div>
 
                   <div className="flex gap-1.5 mb-3 flex-wrap">
@@ -454,16 +682,26 @@ export default function BrowsePosts() {
                     {!post.enquiryData ? (
                       <Button 
                         size="sm"
-                        className="w-full font-bold"
+                        variant="custom"
+                        className="w-full h-8 text-[11px] font-black uppercase tracking-wider rounded-lg shadow-sm bg-[#6c63ff]/10 hover:bg-[#6c63ff]/20 text-[#6c63ff] border border-[#6c63ff]/25 hover:border-[#6c63ff]/50 transition-all active:scale-[0.98] flex items-center justify-center"
                         onClick={(e) => { e.stopPropagation(); handleEnquire(post._id); }}
                         loading={enquiryMut.isPending && enquiryMut.variables?.postId === post._id}
                       >
                         Show Interest
                       </Button>
+                    ) : post.enquiryData.status === 'contacted' ? (
+                      <a 
+                        href={`tel:${post.enquiryData.owner?.mobNo1 || post.enquiryData.manager?.mobNo1}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full h-8 flex items-center justify-center gap-1.5 bg-[#51cf66]/10 hover:bg-[#51cf66]/20 text-[#51cf66] border border-[#51cf66]/25 hover:border-[#51cf66]/50 transition-all rounded-lg font-black text-[11px] shadow-sm cursor-pointer uppercase tracking-wider"
+                        title="Call Property Owner/Manager"
+                      >
+                        <Phone size={12} className="stroke-[2.5]" /> Call: {post.enquiryData.owner?.mobNo1 || post.enquiryData.manager?.mobNo1}
+                      </a>
                     ) : (
-                      <div className="bg-[#242740] dark:bg-[#242740] rounded-lg px-2 py-2 flex items-center justify-center gap-1.5 text-[#51cf66] border border-[#51cf66]/30">
-                        <CheckCircle2 size={14} />
-                        <span className="text-[10px] font-extrabold">REQUESTED</span>
+                      <div className="bg-[#51cf66]/5 dark:bg-[#51cf66]/5 rounded-lg h-8 flex items-center justify-center gap-1.5 text-[#51cf66] border border-[#51cf66]/20">
+                        <CheckCircle2 size={13} />
+                        <span className="text-[10px] font-black tracking-wider uppercase">REQUESTED</span>
                       </div>
                     )}
                   </div>
@@ -641,88 +879,134 @@ export default function BrowsePosts() {
         size="lg"
       >
         {viewPost && (
-          <div className="fade-in">
-            <div className="flex gap-6 mb-6 flex-col sm:flex-row">
-              <div className="flex-1">
-                <div className="relative h-[200px] dark:bg-[#242740] bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden border border-gray-200 dark:border-[#2d3052]">
-                  {viewPost.images && viewPost.images.length > 0 ? (
-                    <img src={viewPost.images[0]} alt={viewPost.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <Building2 size={64} className="opacity-10" />
-                  )}
-                  <div className="absolute bottom-3 left-3 flex gap-2 flex-wrap">
-                    <Badge variant="primary">{viewPost.pgType}</Badge>
-                    {viewPost.occupancyTypes?.map(type => (
-                      <Badge key={type} variant="accent" className="capitalize">{type}</Badge>
-                    ))}
-                  </div>
+          <div className="fade-in text-[13px] flex flex-col gap-5">
+            {/* Hero Banner Section */}
+            <div className="flex gap-5 flex-col sm:flex-row bg-gray-50/50 dark:bg-[#242740]/10 border border-gray-100 dark:border-[#2d3052] p-4 rounded-2xl">
+              <div className="flex-1 h-[150px] dark:bg-[#242740] bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden border border-gray-200/50 dark:border-[#2d3052]/50 relative group">
+                {viewPost.images && viewPost.images.length > 0 ? (
+                  <img src={viewPost.images[0]} alt={viewPost.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                ) : (
+                  <Building2 size={48} className="opacity-15 text-[#6c63ff]" />
+                )}
+                <div className="absolute bottom-3 left-3 flex gap-1.5 flex-wrap">
+                  <Badge variant={viewPost.pgType === 'male' ? 'info' : viewPost.pgType === 'female' ? 'danger' : 'accent'} className="text-[9px] py-0.5 font-bold uppercase tracking-wider">
+                    {viewPost.pgType}
+                  </Badge>
+                  {viewPost.occupancyTypes?.map(type => (
+                    <Badge key={type} variant="ghost" className="text-[9px] py-0.5 capitalize font-bold">{type} Share</Badge>
+                  ))}
                 </div>
               </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-extrabold dark:text-[#f0f0f8] text-gray-900 mb-2">{viewPost.title}</h2>
-                <div className="flex items-center gap-2 dark:text-[#6b6e82] text-gray-500 mb-4">
-                  <MapPin size={16} /> {viewPost.pgId?.name}, {viewPost.pgId?.address?.city}
+              <div className="flex-[1.5] flex flex-col justify-between py-0.5">
+                <div>
+                  <div className="text-[10px] font-black text-[#00d4aa] dark:text-[#00e5b7] uppercase tracking-wider mb-1">{viewPost.pgId?.name}</div>
+                  <h2 className="text-[22px] font-black dark:text-[#f0f0f8] text-gray-900 mb-1 leading-tight">{viewPost.title}</h2>
+                  <p className="flex items-center gap-1 dark:text-[#6b6e82] text-gray-500 text-[12px] font-medium">
+                    <MapPin size={13} className="text-[#6c63ff]" /> {viewPost.pgId?.address?.city}, {viewPost.pgId?.address?.state}
+                  </p>
                 </div>
                 
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="text-2xl font-black text-[#6c63ff]">{formatPrice(viewPost.minPrice)} - {formatPrice(viewPost.maxPrice)}</div>
-                  <div className="text-[14px] dark:text-[#6b6e82] text-gray-500">/ month</div>
+                <div className="flex justify-between items-center gap-3 mt-4 flex-wrap sm:flex-nowrap">
+                  <div className="flex flex-col gap-1">
+                    <div className="text-[9px] dark:text-[#6b6e82] text-gray-400 font-bold uppercase tracking-wider">MONTHLY RENT</div>
+                    <div className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#6c63ff]/10 text-[#6c63ff] border border-[#6c63ff]/20 rounded-xl font-extrabold text-[11px] uppercase tracking-wider shrink-0">
+                      <span>{formatPrice(viewPost.minPrice)} - {formatPrice(viewPost.maxPrice)}</span>
+                      <span className="text-[9px] opacity-80 font-bold">/mo</span>
+                    </div>
+                  </div>
+                  
+                  {viewPost.pgType === 'unisex' ? (
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#ffa94d]/10 text-[#ffa94d] border border-[#ffa94d]/20 rounded-xl font-extrabold text-[11px] uppercase tracking-wider">
+                        <Bed size={13} /> {viewPost.vacancyCount} Beds Left
+                      </div>
+                      <div className="text-[9.5px] dark:text-[#a0a3b1] text-gray-500 font-bold">
+                        (♂ {viewPost.maleVacancyCount ?? 0} M · ♀ {viewPost.femaleVacancyCount ?? 0} F)
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#ffa94d]/10 text-[#ffa94d] border border-[#ffa94d]/20 rounded-xl font-extrabold text-[11px] uppercase tracking-wider shrink-0">
+                      <Bed size={13} /> {viewPost.vacancyCount} Beds Left
+                    </div>
+                  )}
                 </div>
+              </div>
+            </div>
 
-                {viewPost.pgType === 'unisex' ? (
-                  <div className="flex flex-col gap-1.5">
-                    <div className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#ffa94d]/10 text-[#ffa94d] rounded-lg font-extrabold text-sm self-start">
-                      <Bed size={18} /> {viewPost.vacancyCount} Beds Remaining
-                    </div>
-                    <div className="text-[12px] dark:text-[#a0a3b1] text-gray-600 font-bold px-1">
-                      (♂ {viewPost.maleVacancyCount ?? 0} Male · ♀ {viewPost.femaleVacancyCount ?? 0} Female)
+            {/* Description */}
+            {viewPost.description && (
+              <div className="dark:bg-[#242740]/20 bg-gray-50/50 p-4 rounded-2xl border border-gray-100 dark:border-[#2d3052]">
+                <div className="text-[11px] font-bold tracking-wider dark:text-[#f0f0f8] text-gray-700 uppercase mb-2.5">📝 About this Property</div>
+                <div className="text-[12.5px] dark:text-[#a0a3b1] text-gray-600 leading-[1.6] dark:bg-[#1a1d2e] bg-white p-3.5 rounded-xl border-l-[3.5px] border-[#6c63ff] font-medium shadow-sm">
+                  {viewPost.description}
+                </div>
+              </div>
+            )}
+
+            {/* Location details & Property details grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Left card: Location details */}
+              <div className="dark:bg-[#242740]/20 bg-gray-50/50 p-4 rounded-2xl border border-gray-100 dark:border-[#2d3052] flex flex-col justify-between hover:border-[#6c63ff]/20 transition-all duration-200">
+                <div>
+                  <div className="text-[11px] font-bold tracking-wider text-[#6c63ff] dark:text-[#8c85ff] uppercase mb-2">📍 Location Details</div>
+                  <div className="text-[12px] dark:text-[#a0a3b1] text-gray-600 leading-[1.5]">
+                    <div className="font-extrabold dark:text-[#f0f0f8] text-gray-900 text-[13px] mb-0.5">{viewPost.pgId?.address?.landmark || 'Near Center'}</div>
+                    <div>{viewPost.pgId?.address?.city}, {viewPost.pgId?.address?.state} - {viewPost.pgId?.address?.pincode || ''}</div>
+                    <div className="mt-1 dark:text-[#6b6e82] text-gray-500 font-medium text-[11px]">
+                      Located inside <strong className="dark:text-[#f0f0f8] text-gray-800 font-bold">{viewPost.pgId?.name}</strong>
                     </div>
                   </div>
-                ) : (
-                  <div className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#ffa94d]/10 text-[#ffa94d] rounded-lg font-extrabold self-start">
-                    <Bed size={18} /> {viewPost.vacancyCount} Beds Remaining
-                  </div>
+                </div>
+                {viewPost.pgId?.location?.coordinates && (
+                  <a
+                    href={userLocation.latitude && userLocation.longitude
+                      ? `https://www.google.com/maps/dir/?api=1&origin=${userLocation.latitude},${userLocation.longitude}&destination=${viewPost.pgId.location.coordinates[1]},${viewPost.pgId.location.coordinates[0]}`
+                      : `https://www.google.com/maps/dir/?api=1&destination=${viewPost.pgId.location.coordinates[1]},${viewPost.pgId.location.coordinates[0]}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 bg-[#6c63ff]/10 hover:bg-[#6c63ff]/20 text-[#6c63ff] dark:text-[#8c85ff] border border-[#6c63ff]/25 hover:border-[#6c63ff]/50 font-extrabold text-[12px] rounded-xl transition-all shadow-sm uppercase tracking-wider"
+                    title="Open Google Maps"
+                  >
+                    🗺️ Get Directions on Google Maps
+                  </a>
                 )}
               </div>
-            </div>
 
-            <div className="detail-section">
-              <div className="detail-section-title">About this Property</div>
-              <p className="text-[14px] dark:text-[#a0a3b1] text-gray-600 leading-[1.6] mb-5">
-                {viewPost.description}
-              </p>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="detail-row">
-                  <span className="detail-key">Exact Location</span>
-                  <span className="detail-value">{viewPost.pgId?.address?.landmark}, {viewPost.pgId?.address?.city}, {viewPost.pgId?.address?.state}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-key">Available From</span>
-                  <span className="detail-value">{new Date(viewPost.availableFrom || Date.now()).toLocaleDateString()}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-key">Check-In Time</span>
-                  <span className="detail-value">{viewPost.pgId?.checkInTime || 'Anytime'}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-key">Check-Out Time</span>
-                  <span className="detail-value">{viewPost.pgId?.checkOutTime || 'Morning'}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-key">Property Rating</span>
-                  <span className="detail-value text-[#ffa94d] font-bold">★ {viewPost.pgId?.rating || 0}</span>
+              {/* Right card: Timings and Info */}
+              <div className="dark:bg-[#242740]/20 bg-gray-50/50 p-4 rounded-2xl border border-gray-100 dark:border-[#2d3052] flex flex-col justify-between hover:border-[#ffa94d]/20 transition-all duration-200">
+                <div>
+                  <div className="text-[11px] font-bold tracking-wider text-[#ffa94d] uppercase mb-3">🕒 Timings &amp; Info</div>
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div>
+                      <div className="text-[9px] dark:text-[#6b6e82] text-gray-400 font-bold uppercase tracking-wider">CHECK-IN</div>
+                      <div className="text-[12px] font-extrabold dark:text-[#f0f0f8] text-gray-900 mt-0.5">{viewPost.pgId?.checkInTime || 'Anytime'}</div>
+                    </div>
+                    <div>
+                      <div className="text-[9px] dark:text-[#6b6e82] text-gray-400 font-bold uppercase tracking-wider">CHECK-OUT</div>
+                      <div className="text-[12px] font-extrabold dark:text-[#f0f0f8] text-gray-900 mt-0.5">{viewPost.pgId?.checkOutTime || 'Morning'}</div>
+                    </div>
+                    <div>
+                      <div className="text-[9px] dark:text-[#6b6e82] text-gray-400 font-bold uppercase tracking-wider">AVAILABLE FROM</div>
+                      <div className="text-[12px] font-extrabold dark:text-[#f0f0f8] text-gray-900 mt-0.5">{new Date(viewPost.availableFrom || Date.now()).toLocaleDateString()}</div>
+                    </div>
+                    <div>
+                      <div className="text-[9px] dark:text-[#6b6e82] text-gray-400 font-bold uppercase tracking-wider">RATING</div>
+                      <div className="text-[12px] font-black text-[#ffa94d] flex items-center gap-1 mt-0.5">★ {viewPost.pgId?.rating || '0'}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
+            {/* Amenities & Facilities */}
             {viewPost.pgId?.facilities?.length > 0 && (
-              <div className="detail-section">
-                <div className="detail-section-title">Amenities &amp; Facilities</div>
-                <div className="flex flex-wrap gap-2.5">
+              <div className="dark:bg-[#242740]/20 bg-gray-50/50 p-4 rounded-2xl border border-gray-100 dark:border-[#2d3052]">
+                <div className="text-[11px] font-bold tracking-wider dark:text-[#f0f0f8] text-gray-700 uppercase mb-3">⭐ Amenities &amp; Facilities</div>
+                <div className="flex flex-wrap gap-2">
                   {viewPost.pgId.facilities.map(f => (
-                    <div key={f._id} className="flex items-center gap-1.5 px-3 py-1.5 dark:bg-[#242740] bg-gray-100 rounded-full text-[12px] border border-gray-200 dark:border-[#2d3052]">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#00d4aa]" />
+                    <div key={f._id} className="flex items-center gap-2 px-3 py-1.5 dark:bg-[#1a1d2e] bg-white rounded-lg text-[11px] border border-gray-100 dark:border-[#2d3052] font-semibold dark:text-[#f0f0f8] text-gray-700 hover:border-[#6c63ff]/20 transition-all duration-200">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#00d4aa] shrink-0" />
                       {f.name}
                     </div>
                   ))}
@@ -730,12 +1014,13 @@ export default function BrowsePosts() {
               </div>
             )}
 
+            {/* Gallery */}
             {viewPost.images && viewPost.images.length > 0 && (
-              <div className="detail-section mt-5">
-                <div className="detail-section-title">Vacancy Gallery</div>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              <div className="dark:bg-[#242740]/20 bg-gray-50/50 p-4 rounded-2xl border border-gray-100 dark:border-[#2d3052]">
+                <div className="text-[11px] font-bold tracking-wider dark:text-[#f0f0f8] text-gray-700 uppercase mb-3">📸 Room Gallery</div>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                   {viewPost.images.map((img, idx) => (
-                    <a key={idx} href={img} target="_blank" rel="noopener noreferrer" className="aspect-video rounded-lg overflow-hidden border border-gray-200 dark:border-[#2d3052] block hover:border-[#6c63ff] transition-all">
+                    <a key={idx} href={img} target="_blank" rel="noopener noreferrer" className="aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-[#2d3052] block hover:border-[#6c63ff] transition-all hover:scale-[1.02] shadow-sm">
                       <img src={img} alt={`Showcase ${idx + 1}`} className="w-full h-full object-cover" />
                     </a>
                   ))}
@@ -743,54 +1028,94 @@ export default function BrowsePosts() {
               </div>
             )}
 
-            <div className="mt-8 border-t border-gray-200 dark:border-[#2d3052] pt-6">
+            {/* Bottom Enquiry Action */}
+            <div className="mt-2">
               {!viewPost.enquiryData ? (
                 <Button 
                   onClick={() => handleEnquire(viewPost._id)}
                   loading={enquiryMut.isPending && enquiryMut.variables?.postId === viewPost._id}
-                  className="w-full h-[52px] text-[16px] font-extrabold"
+                  variant="custom"
+                  className="w-full h-10 text-[11px] font-black uppercase tracking-wider rounded-xl shadow-sm bg-[#6c63ff]/10 hover:bg-[#6c63ff]/20 text-[#6c63ff] border border-[#6c63ff]/25 hover:border-[#6c63ff]/50 transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
                 >
                   Show Interest &amp; Connect
                 </Button>
               ) : (
-                <div className="dark:bg-[#242740] bg-gray-50 rounded-xl border border-[#51cf66]/30 p-5">
-                  <div className="flex items-center gap-2 mb-4 text-[#51cf66]">
-                    <CheckCircle2 size={20} />
-                    <span className="text-[16px] font-extrabold">Enquiry Active!</span>
+                <div className="dark:bg-[#1a1d2e] bg-[#51cf66]/5 rounded-2xl border border-[#51cf66]/20 p-4 flex flex-col gap-3">
+                  <div className="flex items-center gap-2 text-[#51cf66] font-black uppercase tracking-wider text-[11px]">
+                    <span className="w-2 h-2 rounded-full bg-[#51cf66] animate-pulse" />
+                    Enquiry Active!
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4">
-                    {viewPost.enquiryData.owner && (
-                      <div className="flex justify-between items-center p-3 dark:bg-[#1a1d2e] bg-white rounded-lg">
-                        <div>
-                          <div className="text-[10px] dark:text-[#6b6e82] text-gray-500 uppercase font-extrabold mb-0.5">Property Owner</div>
-                          <div className="text-[15px] font-bold dark:text-[#f0f0f8] text-gray-900">{viewPost.enquiryData.owner.name}</div>
+                  {viewPost.enquiryData.owner && (
+                    <div className="flex justify-between items-center p-3 bg-white dark:bg-[#242740]/30 border border-gray-100 dark:border-[#2d3052] rounded-xl flex-wrap gap-3 sm:flex-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#ffa94d]/10 text-[#ffa94d] border border-[#ffa94d]/20 flex items-center justify-center font-black text-xs shrink-0">
+                          {viewPost.enquiryData.owner.name?.charAt(0).toUpperCase() || 'O'}
                         </div>
-                        
-                        {viewPost.enquiryData.status === 'contacted' ? (
-                          <a 
-                            href={`tel:${viewPost.enquiryData.owner.mobNo1}`}
-                            className="flex items-center gap-2 text-[#6c63ff] no-underline bg-[#6c63ff]/15 px-4 py-2 rounded-lg font-extrabold"
-                          >
-                            <Phone size={16} /> {viewPost.enquiryData.owner.mobNo1}
-                          </a>
-                        ) : (
-                          <Button 
-                            variant="primary" 
-                            onClick={(e) => handleRevealNumber(e, viewPost.enquiryData.enquiryId)}
-                            loading={updateEnquiryMut.isPending && updateEnquiryMut.variables?.id === viewPost.enquiryData.enquiryId}
-                          >
-                            Reveal Phone Number
-                          </Button>
-                        )}
+                        <div>
+                          <div className="text-[10px] dark:text-[#6b6e82] text-gray-500 uppercase font-extrabold">Property Owner</div>
+                          <div className="text-[13px] font-bold dark:text-[#f0f0f8] text-gray-900">{viewPost.enquiryData.owner.name}</div>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                      
+                      {viewPost.enquiryData.status === 'contacted' ? (
+                        <a 
+                          href={`tel:${viewPost.enquiryData.owner.mobNo1}`}
+                          className="flex items-center justify-center gap-1.5 bg-[#51cf66]/10 hover:bg-[#51cf66]/20 text-[#51cf66] border border-[#51cf66]/25 hover:border-[#51cf66]/50 transition-all px-4 py-2 rounded-xl font-black text-[11px] uppercase tracking-wider w-full sm:w-auto text-center"
+                        >
+                          <Phone size={12} className="stroke-[2.5]" /> {viewPost.enquiryData.owner.mobNo1}
+                        </a>
+                      ) : (
+                        <Button 
+                          onClick={(e) => handleRevealNumber(e, viewPost.enquiryData.enquiryId)}
+                          loading={updateEnquiryMut.isPending && updateEnquiryMut.variables?.id === viewPost.enquiryData.enquiryId}
+                          variant="custom"
+                          className="text-[11px] font-black px-4 py-2 rounded-xl uppercase tracking-wider bg-[#6c63ff]/10 hover:bg-[#6c63ff]/20 text-[#6c63ff] border border-[#6c63ff]/25 hover:border-[#6c63ff]/50 transition-all w-full sm:w-auto justify-center shadow-sm"
+                        >
+                          Reveal Phone Number
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Custom Location Permission Prompt Modal */}
+      <Modal
+        isOpen={showLocationPrompt}
+        onClose={handleDismissPrompt}
+        title="Find Stays Near You"
+        size="sm"
+      >
+        <div className="flex flex-col items-center text-center p-4">
+          <div className="w-12 h-12 rounded-full bg-[#6c63ff]/10 flex items-center justify-center text-[#6c63ff] mb-4">
+            <MapPin size={24} className="stroke-[2.5]" />
+          </div>
+          <h3 className="text-[16px] font-black dark:text-[#f0f0f8] text-gray-900 mb-2">Find Stays Near You</h3>
+          <p className="text-[13px] dark:text-[#a0a3b1] text-gray-500 leading-relaxed mb-6">
+            Allow location access to sort properties by proximity and see distance badges.
+          </p>
+          <div className="flex gap-3 w-full">
+            <Button 
+              variant="ghost" 
+              className="flex-1 font-bold text-[12px] h-10 rounded-xl"
+              onClick={handleDismissPrompt}
+            >
+              Not Now
+            </Button>
+            <Button 
+              variant="primary" 
+              className="flex-1 font-bold text-[12px] h-10 rounded-xl bg-[#6c63ff] hover:bg-[#5b52e0] text-white"
+              onClick={handleAcceptPrompt}
+            >
+              Allow Location
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
