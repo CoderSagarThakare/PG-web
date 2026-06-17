@@ -214,7 +214,8 @@ export default function BrowsePGs() {
       filters.pgType !== '' ||
       filters.facilities?.length > 0 ||
       filters.minRating !== '' ||
-      filters.onlyWithVacancy === true
+      filters.onlyWithVacancy === true ||
+      !!(userLocation.latitude && userLocation.longitude)
     );
   };
 
@@ -225,6 +226,7 @@ export default function BrowsePGs() {
     if (filters.facilities && filters.facilities.length > 0) count += filters.facilities.length;
     if (filters.minRating) count++;
     if (filters.onlyWithVacancy) count++;
+    if (userLocation.latitude && userLocation.longitude) count++;
     return count;
   };
 
@@ -268,6 +270,10 @@ export default function BrowsePGs() {
 
   const handleClearFilters = () => {
     setFilters({ city: '', pgType: '', facilities: [], minRating: '', onlyWithVacancy: false });
+    setUserLocation({ latitude: '', longitude: '' });
+    localStorage.removeItem('staysync_user_location');
+    localStorage.removeItem('staysync_near_me_active');
+    toast.success("All filters cleared successfully.");
   };
 
   return (

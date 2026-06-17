@@ -259,7 +259,8 @@ export default function BrowsePosts() {
       filters.minRating !== '' ||
       filters.onlyWithVacancy === true ||
       filters.pgId !== '' ||
-      selectedPgName !== ''
+      selectedPgName !== '' ||
+      !!(userLocation.latitude && userLocation.longitude)
     );
   };
 
@@ -275,6 +276,7 @@ export default function BrowsePosts() {
     if (filters.minRating) count++;
     if (filters.onlyWithVacancy) count++;
     if (filters.pgId) count++;
+    if (userLocation.latitude && userLocation.longitude) count++;
     return count;
   };
 
@@ -379,6 +381,10 @@ export default function BrowsePosts() {
       pgId: ''
     });
     setSelectedPgName('');
+    setUserLocation({ latitude: '', longitude: '' });
+    localStorage.removeItem('staysync_user_location');
+    localStorage.removeItem('staysync_near_me_active');
+    toast.success("All filters cleared successfully.");
   };
 
   const handleClearPgFilter = () => {
