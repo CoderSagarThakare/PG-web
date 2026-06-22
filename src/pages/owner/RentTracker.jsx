@@ -151,6 +151,32 @@ const getActiveDays = (rec) => {
   return '—';
 };
 
+const getRemainingDetails = (rec) => {
+  const penalty = rec.status === 'overdue' ? (rec.penaltyAmount || rec.pgId?.lateFee || 0) : (rec.penaltyAmount || 0);
+  const due = rec.amount + penalty;
+  const remaining = due - (rec.amountPaid || 0);
+  return { due, remaining };
+};
+
+const RemainingBadge = ({ remaining, formatFn }) => {
+  if (remaining === 0) {
+    return <span className="text-gray-400 dark:text-[#6b6e82] text-xs font-semibold">0</span>;
+  }
+  if (remaining > 0) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-[#ff4d6d]/10 text-[#ff4d6d]">
+        {formatFn(remaining)}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-[#51cf66]/10 text-[#51cf66]" title="Overpaid/Advance">
+      {formatFn(Math.abs(remaining))}
+    </span>
+  );
+};
+
+
 export default function RentTracker() {
   const qc = useQueryClient();
   const [activeTab, setActiveTab]       = useState('records'); // 'records' | 'approvals'
@@ -533,61 +559,55 @@ export default function RentTracker() {
                         onChange={e => handleSelectAll(e.target.checked)}
                       />
                     </th>
-                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Student Details</th>
-                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Bed / PG</th>
-                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Month</th>
-                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Days</th>
-                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Amount Due</th>
-                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Paid Amount</th>
-                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Mode</th>
-                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Txn Ref ID</th>
-                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left w-full">Tenant Notes</th>
-                    <th className="px-3 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-right whitespace-nowrap">Actions</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap w-[20%]">Tenant / Room</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap w-[15%]">Month / Active</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap w-[12%]">Due</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap w-[12%]">Paid</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap w-[12%]">Remaining</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap w-[20%]">Payment Details</th>
+                    <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-right whitespace-nowrap w-[9%]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {approvals.map(rec => (
                     <tr key={rec._id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-[#242740]/50 last:[&>td]:border-0">
-                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 w-10">
+                      <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30 w-10">
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(rec._id)}
                           onChange={e => handleSelectRow(rec._id, e.target.checked)}
                         />
                       </td>
-                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 whitespace-nowrap">
-                        <div className="font-bold text-[13px] dark:text-[#f0f0f8] text-gray-900">{rec.userId?.name || '—'}</div>
-                        <div className="text-[11px] dark:text-[#6b6e82] text-gray-500 flex items-center gap-1 mt-0.5">
-                          {rec.userId?.mobNo1 && <><Phone size={10} />{rec.userId.mobNo1}</>}
+                      <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30 whitespace-nowrap">
+                        <div className="font-bold text-[13px] dark:text-[#f0f0f8] text-gray-900 leading-tight">{rec.userId?.name || '—'}</div>
+                        <div className="text-[10px] text-gray-500 dark:text-[#6b6e82] mt-0.5">
+                          Bed {rec.bedId?.bedNumber} · Room {rec.roomId?.roomNumber || '—'}
                         </div>
                       </td>
-                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900 whitespace-nowrap">
-                        <div className="font-semibold">Bed {rec.bedId?.bedNumber}</div>
-                        <div className="text-gray-500 dark:text-[#6b6e82]">{rec.pgId?.name}</div>
+                      <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30 whitespace-nowrap">
+                        <div className="text-xs font-bold dark:text-[#f0f0f8] text-gray-900">{rec.rentMonth}</div>
+                        <div className="text-[10px] text-gray-500 dark:text-[#6b6e82]">{getActiveDays(rec)} active</div>
                       </td>
-                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs font-bold dark:text-[#f0f0f8] text-gray-900 whitespace-nowrap">{rec.rentMonth}</td>
-                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900 whitespace-nowrap">{getActiveDays(rec)}</td>
-                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 text-[13px] font-bold dark:text-[#f0f0f8] text-gray-900 whitespace-nowrap">
+                      <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30 text-[13px] font-bold dark:text-[#f0f0f8] text-gray-900 whitespace-nowrap">
                         <div>{f(rec.amount + (rec.penaltyAmount || 0))}</div>
-                        {rec.penaltyAmount > 0 ? (
-                          <div className="text-[10px] text-[#ff4d6d] font-semibold mt-0.5" title={`Base: ${f(rec.amount)} + Late Fee: ${f(rec.penaltyAmount)}`}>
-                            (+{f(rec.penaltyAmount)})
-                          </div>
-                        ) : rec.bedId?.price && rec.amount < rec.bedId.price ? (
-                          <div className="text-[10px] text-gray-500 dark:text-[#6b6e82] font-semibold mt-0.5" title={`Base Monthly: ${f(rec.bedId.price)} (Prorated)`}>
-                            (Prorated)
-                          </div>
-                        ) : null}
                       </td>
-                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 whitespace-nowrap">
+                      <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30 whitespace-nowrap">
                         <Badge variant="info">{f(rec.amountPaid)}</Badge>
                       </td>
-                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900 whitespace-nowrap"><PaymentModeBadge mode={rec.paymentMode} /></td>
-                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 text-[11px] text-gray-500 dark:text-[#6b6e82] font-mono whitespace-nowrap">{rec.referenceNo || '—'}</td>
-                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 text-[11px] text-gray-500 dark:text-[#6b6e82] w-full max-w-[200px] truncate" title={rec.notes}>
-                        {rec.notes || '—'}
+                      <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30 whitespace-nowrap">
+                        <RemainingBadge remaining={getRemainingDetails(rec).remaining} formatFn={f} />
                       </td>
-                      <td className="px-3 py-3 border-b border-gray-200 dark:border-[#2d3052]/30 whitespace-nowrap">
+                      <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <PaymentModeBadge mode={rec.paymentMode} />
+                          {rec.referenceNo && (
+                            <span className="text-[10px] font-mono text-gray-500 dark:text-[#6b6e82]">
+                              ({rec.referenceNo})
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30 whitespace-nowrap">
                         <div className="flex gap-1.5 justify-end items-center">
                           <button onClick={() => setBreakdownTarget(rec)}
                             className="p-1.5 bg-gray-50 dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg cursor-pointer text-[#6c63ff] hover:bg-gray-100 dark:hover:bg-[#2d3052] flex items-center justify-center h-8 w-8 transition-colors"
@@ -682,84 +702,61 @@ export default function RentTracker() {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-[#242740] border-b border-gray-200 dark:border-[#2d3052]">
-                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Tenant</th>
-                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Bed / Room</th>
-                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">PG</th>
-                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Month</th>
-                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Days</th>
-                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Due</th>
-                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Paid</th>
-                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Status</th>
-                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Mode</th>
-                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Paid On</th>
-                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap">Ref#</th>
-                      <th className="px-4 py-3 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-right whitespace-nowrap">Actions</th>
+                      <th className="px-4 py-3.5 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap w-[20%]">Tenant / Room</th>
+                      <th className="px-4 py-3.5 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap w-[15%]">Month / Active</th>
+                      <th className="px-4 py-3.5 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap w-[10%]">Due</th>
+                      <th className="px-4 py-3.5 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap w-[10%]">Paid</th>
+                      <th className="px-4 py-3.5 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap w-[10%]">Remaining</th>
+                      <th className="px-4 py-3.5 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap w-[10%]">Status</th>
+                      <th className="px-4 py-3.5 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-left whitespace-nowrap w-[18%]">Payment Details</th>
+                      <th className="px-4 py-3.5 text-xs font-semibold dark:text-[#6b6e82] text-gray-500 uppercase tracking-[0.8px] text-right whitespace-nowrap w-[7%]">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {records.map(rec => (
                       <tr key={rec._id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-[#242740]/50 last:[&>td]:border-0">
-                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
-                          <div className="font-bold text-[13px] dark:text-[#f0f0f8] text-gray-900">{rec.userId?.name || '—'}</div>
-                          <div className="text-[11px] dark:text-[#6b6e82] text-gray-500 flex items-center gap-1 mt-0.5">
-                            {rec.userId?.mobNo1 && <><Phone size={10} />{rec.userId.mobNo1}</>}
+                        <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30">
+                          <div className="font-bold text-[13px] dark:text-[#f0f0f8] text-gray-900 leading-tight">{rec.userId?.name || '—'}</div>
+                          <div className="text-[10px] text-gray-500 dark:text-[#6b6e82] mt-0.5">
+                            Bed {rec.bedId?.bedNumber} · Room {rec.roomId?.roomNumber || '—'}
                           </div>
                         </td>
-                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900">
-                          <div className="font-semibold">Bed {rec.bedId?.bedNumber}</div>
-                          <div className="text-gray-500 dark:text-[#6b6e82]">Room {rec.roomId?.roomNumber}</div>
+                        <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30">
+                          <div className="text-xs font-bold dark:text-[#f0f0f8] text-gray-900">{rec.rentMonth}</div>
+                          <div className="text-[10px] text-gray-500 dark:text-[#6b6e82]">{getActiveDays(rec)} active</div>
                         </td>
-                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900">{rec.pgId?.name || '—'}</td>
-                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs font-bold dark:text-[#f0f0f8] text-gray-900">{rec.rentMonth}</td>
-                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs font-semibold dark:text-[#f0f0f8] text-gray-900">{getActiveDays(rec)}</td>
-                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-[13px] font-bold dark:text-[#f0f0f8] text-gray-900">
+                        <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30 text-[13px] font-bold dark:text-[#f0f0f8] text-gray-900">
                           {(() => {
                             const penalty = rec.status === 'overdue' ? (rec.penaltyAmount || rec.pgId?.lateFee || 0) : (rec.penaltyAmount || 0);
-                            return (
-                              <>
-                                <div>{f(rec.amount + penalty)}</div>
-                                {penalty > 0 ? (
-                                  <div className="text-[10px] text-[#ff4d6d] font-semibold mt-0.5" title={`Base: ${f(rec.amount)} + Late Fee: ${f(penalty)}`}>
-                                    (+{f(penalty)})
-                                  </div>
-                                ) : rec.bedId?.price && rec.amount < rec.bedId.price ? (
-                                  <div className="text-[10px] text-gray-400 dark:text-[#6b6e82] font-semibold mt-0.5" title={`Base Monthly: ${f(rec.bedId.price)} (Prorated)`}>
-                                    (Prorated)
-                                  </div>
-                                ) : null}
-                              </>
-                            );
+                            return <div>{f(rec.amount + penalty)}</div>;
                           })()}
                         </td>
-                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
+                        <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30">
                           <Badge variant={rec.status === 'paid' ? 'success' : rec.status === 'partial' ? 'info' : 'default'}>
                             {f(rec.amountPaid)}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
+                        <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30">
+                          <RemainingBadge remaining={getRemainingDetails(rec).remaining} formatFn={f} />
+                        </td>
+                        <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30">
                           <Badge variant={STATUS_VARIANT[rec.status] || 'default'}>{rec.status}</Badge>
-                          {(() => {
-                            const penalty = rec.status === 'overdue' ? (rec.penaltyAmount || rec.pgId?.lateFee || 0) : (rec.penaltyAmount || 0);
-                            return penalty > 0 && rec.status === 'paid' ? (
-                              <div className="text-[10px] text-[#ff4d6d] font-semibold mt-0.5">
-                                (Late Fee Applied)
-                              </div>
-                            ) : null;
-                          })()}
                         </td>
-                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900"><PaymentModeBadge mode={rec.paymentMode} /></td>
-                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-xs dark:text-[#f0f0f8] text-gray-900" title={rec.paidDate ? formatDateTime(rec.paidDate) : '—'}>
-                          {rec.paidDate ? (
-                            <>
-                              <div className="font-semibold">{formatDate(rec.paidDate)}</div>
-                              <div className="text-[10px] text-gray-500 dark:text-[#6b6e82]">{formatTime(rec.paidDate)}</div>
-                            </>
-                          ) : '—'}
+                        <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30 whitespace-nowrap">
+                          {rec.status === 'pending' ? (
+                            <span className="text-gray-400 dark:text-[#6b6e82] text-xs">—</span>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <PaymentModeBadge mode={rec.paymentMode} />
+                              {rec.referenceNo && (
+                                <span className="text-[10px] font-mono text-gray-500 dark:text-[#6b6e82]">
+                                  ({rec.referenceNo})
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </td>
-                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30 text-[11px] text-gray-500 dark:text-[#6b6e82] max-w-[80px] truncate">
-                          {rec.referenceNo || '—'}
-                        </td>
-                        <td className="px-4 py-3.5 border-b border-gray-200 dark:border-[#2d3052]/30">
+                        <td className="px-4 py-2 border-b border-gray-200 dark:border-[#2d3052]/30">
                           <div className="flex gap-1.5 justify-end items-center">
                             <button onClick={() => setBreakdownTarget(rec)}
                               className="p-1.5 bg-gray-50 dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] rounded-lg cursor-pointer text-[#6c63ff] hover:bg-gray-100 dark:hover:bg-[#2d3052] h-7 w-7 flex items-center justify-center transition-colors"
