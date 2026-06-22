@@ -296,7 +296,7 @@ export default function BrowsePGs() {
         )}
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-center bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-2xl md:rounded-full p-3 md:py-1.5 md:px-2 gap-3 md:gap-2.5 mb-6">
+      <div className="flex flex-col md:flex-row md:items-center bg-light-surface dark:bg-dark-surface border border-gray-200 dark:border-[#2d3052] rounded-2xl md:rounded-full p-3 md:py-1.5 md:px-2 gap-3 md:gap-2.5 mb-6">
         <div className="flex items-center w-full md:flex-1 pl-1 md:pl-3 gap-2">
           <Search size={16} className="dark:text-[#6b6e82] text-gray-400 shrink-0" />
           <input
@@ -427,8 +427,8 @@ export default function BrowsePGs() {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {pgs.map(pg => (
-              <div key={pg._id} className="bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-xl overflow-hidden transition-all duration-200 flex flex-col hover:border-[#6c63ff] hover:shadow-md cursor-pointer" onClick={() => setSelectedPGId(pg._id)}>
-                <div className="h-[120px] bg-[#242740] dark:bg-[#242740] relative flex items-center justify-center overflow-hidden">
+              <div key={pg._id} className="bg-light-surface dark:bg-dark-surface border border-gray-200 dark:border-[#2d3052] rounded-xl overflow-hidden transition-all duration-200 flex flex-col hover:border-[#6c63ff] hover:shadow-md cursor-pointer" onClick={() => setSelectedPGId(pg._id)}>
+                <div className="h-[120px] bg-light-hover dark:bg-dark-elevated relative flex items-center justify-center overflow-hidden">
                   {pg.images && pg.images.length > 0 ? (
                     <img src={pg.images[0]} alt={pg.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
                   ) : (

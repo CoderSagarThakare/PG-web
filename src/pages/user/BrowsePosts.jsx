@@ -442,7 +442,7 @@ export default function BrowsePosts() {
         )}
       </div>
 
-      <div className="flex flex-col lg:flex-row lg:items-center bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-2xl lg:rounded-full p-3 lg:py-1.5 lg:px-2 gap-3 lg:gap-2.5 mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center bg-light-surface dark:bg-dark-surface border border-gray-200 dark:border-[#2d3052] rounded-2xl lg:rounded-full p-3 lg:py-1.5 lg:px-2 gap-3 lg:gap-2.5 mb-6">
         <div className="flex items-center w-full lg:flex-1 pl-1 lg:pl-3 gap-2">
           <Search size={16} className="dark:text-[#6b6e82] text-gray-400 shrink-0" />
           <input
@@ -630,8 +630,8 @@ export default function BrowsePosts() {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {posts.map(post => (
-              <div key={post._id} className="bg-white dark:bg-[#1a1d2e] border border-gray-200 dark:border-[#2d3052] rounded-xl overflow-hidden transition-all duration-200 flex flex-col hover:border-[#6c63ff] hover:shadow-md cursor-pointer" onClick={() => setViewPost(post)}>
-                <div className="h-[120px] bg-[#242740] dark:bg-[#242740] relative flex items-center justify-center overflow-hidden">
+              <div key={post._id} className="bg-light-surface dark:bg-dark-surface border border-gray-200 dark:border-[#2d3052] rounded-xl overflow-hidden transition-all duration-200 flex flex-col hover:border-[#6c63ff] hover:shadow-md cursor-pointer" onClick={() => setViewPost(post)}>
+                <div className="h-[120px] bg-light-hover dark:bg-dark-elevated relative flex items-center justify-center overflow-hidden">
                   {post.images && post.images.length > 0 ? (
                     <img src={post.images[0]} alt={post.title} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
                   ) : (
