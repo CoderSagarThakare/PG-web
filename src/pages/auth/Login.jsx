@@ -72,7 +72,13 @@ export default function Login() {
             required
           />
 
-          <Button type="submit" loading={loading} className="w-full mt-2" size="lg">
+          <Button 
+            type="submit" 
+            loading={loading} 
+            disabled={!form.email.trim() || !form.password.trim()} 
+            className="w-full mt-2" 
+            size="lg"
+          >
             Sign In
           </Button>
         </form>

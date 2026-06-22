@@ -122,7 +122,13 @@ export default function Register() {
             </div>
           </div>
 
-          <Button type="submit" loading={loading} className="w-full mt-2" size="lg">
+          <Button 
+            type="submit" 
+            loading={loading} 
+            disabled={!form.name.trim() || !form.email.trim() || !form.mobNo1.trim() || !form.password.trim() || !form.confirmPassword.trim()} 
+            className="w-full mt-2" 
+            size="lg"
+          >
             Create Account
           </Button>
         </form>
