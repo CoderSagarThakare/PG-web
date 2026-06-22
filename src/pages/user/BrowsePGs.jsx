@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { discoverPGsApi, getFacilitiesApi, getPGByIdApi } from '../../api/pg.api';
 import { Search, MapPin, Building2, Star, Users, Filter, ChevronRight, Info, Check, X } from 'lucide-react';
-import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, Pagination, SelectDropdown } from '../../components/common';
+import { Button, Card, Badge, Modal, Spinner, EmptyState, QueryError, Input, Pagination, SelectDropdown } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
 
 export default function BrowsePGs() {
@@ -230,7 +230,7 @@ export default function BrowsePGs() {
     return count;
   };
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['discover-pgs', activeFilters, page, limit, userLocation],
     queryFn: async () => (await discoverPGsApi({ 
       ...activeFilters, 
@@ -240,6 +240,7 @@ export default function BrowsePGs() {
       longitude: userLocation.longitude
     })).data?.data,
     enabled: locationReady,
+    retry: 1,
   });
 
   const { data: facilitiesList } = useQuery({
@@ -404,7 +405,9 @@ export default function BrowsePGs() {
         </div>
       </div>
 
-      {!locationReady || isLoading ? <Spinner center /> : pgs.length === 0 ? (
+      {!locationReady || isLoading ? <Spinner center /> : isError ? (
+        <QueryError onRetry={refetch} error={error} />
+      ) : pgs.length === 0 ? (
         <EmptyState 
           icon={<Building2 size={64} />} 
           title="No properties found" 

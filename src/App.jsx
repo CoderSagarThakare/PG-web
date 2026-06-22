@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import {
   createBrowserRouter,
   RouterProvider,
@@ -7,8 +7,8 @@ import {
 } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute, RoleRoute, GuestRoute } from './routes/guards';
-import { Toaster } from 'react-hot-toast';
-import { Spinner } from './components/common';
+import toast, { Toaster } from 'react-hot-toast';
+import { Spinner, OfflineOverlay, RouteErrorFallback } from './components/common';
 
 import AppLayout from './components/layout/AppLayout';
 
@@ -31,6 +31,43 @@ const MyRent       = lazy(() => import('./pages/user/MyRent'));
 // ── Root layout: wraps the whole app with providers + toast ───────────────────
 // Must live INSIDE the data router so that useBlocker works in any descendant.
 function RootLayout() {
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      toast.success("Connection restored! You are back online.", { id: 'online-toast' });
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+      toast.error("Connection lost. Operating in offline mode.", { id: 'offline-toast' });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Polling fallback: some browsers don't fire the offline event reliably
+    // (e.g. when network was already cut before the page loaded, or killed mid-session)
+    const poll = setInterval(() => {
+      const offline = !navigator.onLine;
+      setIsOffline(prev => {
+        if (offline && !prev) {
+          toast.error("Connection lost. Operating in offline mode.", { id: 'offline-toast' });
+        } else if (!offline && prev) {
+          toast.success("Connection restored! You are back online.", { id: 'online-toast' });
+        }
+        return offline;
+      });
+    }, 3000);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(poll);
+    };
+  }, []);
+
+
   return (
     <AuthProvider>
       <Toaster
@@ -43,6 +80,7 @@ function RootLayout() {
           },
         }}
       />
+      {isOffline && <OfflineOverlay />}
       <Suspense fallback={<Spinner center />}>
         <Outlet />
       </Suspense>
@@ -54,6 +92,7 @@ function RootLayout() {
 const router = createBrowserRouter([
   {
     element: <RootLayout />,
+    errorElement: <RouteErrorFallback />,
     children: [
       // Guest-only routes (redirect to app if already logged in)
       {

@@ -6,7 +6,7 @@ import { searchPostsApi } from '../../api/post.api';
 import { getFacilitiesApi } from '../../api/pg.api';
 import { createEnquiryApi, updateEnquiryApi } from '../../api/enquiry.api';
 import { Search, MapPin, Bed, Filter, Phone, User as UserIcon, CheckCircle2, Building2, X, ArrowLeft, Check } from 'lucide-react';
-import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, Pagination, SelectDropdown } from '../../components/common';
+import { Button, Card, Badge, Modal, Spinner, EmptyState, QueryError, Input, Pagination, SelectDropdown } from '../../components/common';
 import { getErrorMessage, formatPrice } from '../../utils/helpers';
 import { useAuth } from '../../context/AuthContext';
 
@@ -280,7 +280,7 @@ export default function BrowsePosts() {
     return count;
   };
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['browse-posts', activeFilters, page, limit, userLocation],
     queryFn: async () => (await searchPostsApi({ 
       ...activeFilters, 
@@ -290,6 +290,7 @@ export default function BrowsePosts() {
       longitude: userLocation.longitude
     })).data?.data,
     enabled: locationReady,
+    retry: 1,
   });
 
   const enquiryMut = useMutation({
@@ -607,7 +608,9 @@ export default function BrowsePosts() {
         </div>
       )}
 
-      {!locationReady || isLoading ? <Spinner center /> : posts.length === 0 ? (
+      {!locationReady || isLoading ? <Spinner center /> : isError ? (
+        <QueryError onRetry={refetch} error={error} />
+      ) : posts.length === 0 ? (
         <EmptyState 
           icon={<Search size={64} />} 
           title="No PGs found" 

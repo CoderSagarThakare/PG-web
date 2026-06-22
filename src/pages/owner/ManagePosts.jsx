@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { getPostsApi, createPostApi, updatePostApi, deletePostApi } from '../../api/post.api';
 import { getMyPGsApi } from '../../api/pg.api';
 import { FileText, Plus, Edit2, Trash2, Bed, ChevronLeft, ChevronRight, X, Image as ImageIcon, ZoomIn, AlertTriangle } from 'lucide-react';
-import { Button, Card, Badge, Modal, Spinner, EmptyState, ConfirmModal } from '../../components/common';
+import { Button, Card, Badge, Modal, Spinner, EmptyState, QueryError, ConfirmModal } from '../../components/common';
 import PostForm from '../../components/owner/PostForm';
 import { getErrorMessage, formatPrice, formatDate } from '../../utils/helpers';
 
@@ -209,9 +209,10 @@ export default function ManagePosts() {
   const [confirmId, setConfirmId] = useState(null);
   const [lightbox, setLightbox] = useState(null); // { images: [], startIndex: 0 }
 
-  const { data: postsData, isLoading } = useQuery({
+  const { data: postsData, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['posts'],
     queryFn: async () => (await getPostsApi()).data?.data,
+    retry: 1,
   });
 
   const { data: pgsData } = useQuery({
@@ -263,6 +264,7 @@ export default function ManagePosts() {
   };
 
   if (isLoading) return <Spinner center />;
+  if (isError) return <QueryError onRetry={refetch} error={error} />;
 
   return (
     <div className="fade-in">

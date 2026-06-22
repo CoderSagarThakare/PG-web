@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { getMyPGsApi, getPGByIdApi, createPGApi, updatePGApi, deletePGApi, getFacilitiesApi, getManagersApi } from '../../api/pg.api';
 import { Building2, Plus, Edit2, Trash2, MapPin, Users, Bed } from 'lucide-react';
-import { Button, Card, Badge, Modal, Spinner, EmptyState, ConfirmModal, StatCard } from '../../components/common';
+import { Button, Card, Badge, Modal, Spinner, EmptyState, QueryError, ConfirmModal, StatCard } from '../../components/common';
 import PGForm from '../../components/owner/PGForm';
 import { getErrorMessage, formatDate } from '../../utils/helpers';
 import { useAuth } from '../../context/AuthContext';
@@ -25,9 +25,10 @@ export default function ManagePGs() {
   const { user } = useAuth();
   const isOwner = user?.role === 'owner';
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['my-pgs'],
     queryFn: async () => { const r = await getMyPGsApi(); return r.data?.data; },
+    retry: 1,
   });
 
   // Only fetch managers if the user is an owner and the modal is open
@@ -108,7 +109,9 @@ export default function ManagePGs() {
         <StatCard label="Empty Beds" value={pgs.reduce((s, p) => s + (p.emptyBeds || 0), 0)} color="success" />
       </div>
 
-      {pgs.length === 0 ? (
+      {isLoading ? <Spinner center /> : isError ? (
+        <QueryError onRetry={refetch} error={error} />
+      ) : pgs.length === 0 ? (
         <EmptyState
           icon={<Building2 size={64} />}
           title="No PGs yet"

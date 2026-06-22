@@ -7,7 +7,7 @@ import { getRoomsApi, assignTenantApi } from '../../api/room.api';
 import { getMyPGsApi } from '../../api/pg.api';
 import { useAuth } from '../../context/AuthContext';
 import { MessageSquare, Search, ChevronLeft, ChevronRight, Phone, CheckCircle2, Bed, Building2 } from 'lucide-react';
-import { Badge, Card, Spinner, EmptyState, Modal, Input, Button, SelectDropdown } from '../../components/common';
+import { Badge, Card, Spinner, EmptyState, QueryError, Modal, Input, Button, SelectDropdown } from '../../components/common';
 import { getErrorMessage, formatDate, formatTime, capitalize } from '../../utils/helpers';
 import { cn } from '../../utils/cn';
 
@@ -66,9 +66,10 @@ export default function Enquiries() {
     ...(userName && !isUserRole && { userName }),
   };
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['enquiries', params],
     queryFn: async () => (await getEnquiriesApi(params)).data?.data,
+    retry: 1,
   });
 
   // PG list for staff filter — use a long staleTime so the cached result from
@@ -126,6 +127,7 @@ export default function Enquiries() {
   };
 
   if (isLoading) return <Spinner center />;
+  if (isError) return <QueryError onRetry={refetch} error={error} />;
 
   return (
     <div className="fade-in">

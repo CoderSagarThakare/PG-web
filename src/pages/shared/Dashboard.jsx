@@ -4,7 +4,7 @@ import { getMyPGsApi } from '../../api/pg.api';
 import { getPostsApi } from '../../api/post.api';
 import { getEnquiriesApi } from '../../api/enquiry.api';
 import { Building2, FileText, MessageSquare, Bed, UserCircle2, ChevronRight, TrendingUp } from 'lucide-react';
-import { Badge, Spinner } from '../../components/common';
+import { Badge, Spinner, QueryError } from '../../components/common';
 import { formatPrice } from '../../utils/helpers';
 import { Link } from 'react-router-dom';
 
@@ -54,9 +54,10 @@ export default function Dashboard() {
     queryFn: async () => (await getPostsApi()).data?.data,
   });
 
-  const { data: enquiriesData, isLoading: enqLoading } = useQuery({
+  const { data: enquiriesData, isLoading: enqLoading, isError: enqError, error: enqErrObj, refetch: enqRefetch } = useQuery({
     queryKey: ['enquiries', ''],
     queryFn: async () => (await getEnquiriesApi()).data?.data,
+    retry: 1,
   });
 
   const pgs = pgsData?.pgs || [];
@@ -75,6 +76,7 @@ export default function Dashboard() {
   const recentPGs       = pgs.slice(0, 5);
 
   if (pgsLoading || postsLoading || enqLoading) return <Spinner center />;
+  if (enqError) return <QueryError onRetry={enqRefetch} error={enqErrObj} />;
 
   return (
     <div className="fade-in flex flex-col gap-3.5">

@@ -268,6 +268,63 @@ export const EmptyState = ({ icon, title, description, action }) => (
   </div>
 );
 
+// ── QueryError — inline error state for failed useQuery calls ──────────────────
+// Accepts the raw error from useQuery so it can distinguish:
+//   • Network / offline errors  (no response from server)
+//   • Server errors             (5xx responses)
+//   • Other client errors       (4xx etc.)
+export const QueryError = ({ onRetry, error }) => {
+  // A network error has no response object — the request never reached the server.
+  // This covers: internet off, DNS failure, server unreachable, request timeout.
+  const isNetworkError = error && !error.response;
+  const friendlyMsg = error?.friendlyMessage;
+
+  const isOfflineStyle = isNetworkError;
+
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-5 text-center gap-5">
+      <div className={`w-14 h-14 rounded-full flex items-center justify-center animate-pulse ${isOfflineStyle ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'}`}>
+        {isOfflineStyle ? (
+          /* WifiOff icon */
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
+          </svg>
+        ) : (
+          /* AlertTriangle icon */
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        )}
+      </div>
+
+      <div>
+        <h3 className="text-base font-black text-gray-900 dark:text-[#f0f0f8] mb-1">
+          {isOfflineStyle ? 'No Internet Connection' : 'Failed to load'}
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-[#a0a3b1] max-w-xs leading-relaxed">
+          {friendlyMsg || (isOfflineStyle
+            ? 'Unable to reach the server. Please check your internet connection and try again.'
+            : 'Something went wrong while fetching data. Please try again.')}
+        </p>
+      </div>
+
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider bg-[#6c63ff]/10 hover:bg-[#6c63ff]/20 text-[#6c63ff] border border-[#6c63ff]/25 hover:border-[#6c63ff]/50 transition-all"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21.5 2v6h-6"/><path d="M2.5 22v-6h6"/><path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.2"/>
+          </svg>
+          Try Again
+        </button>
+      )}
+    </div>
+  );
+};
+
+
+
 // ── Badge ──────────────────────────────────────────────────────────────────────
 const badgeVariants = {
   default:  'bg-gray-100 text-gray-600 dark:bg-[#242740] dark:text-[#a0a3b1] border border-gray-200/50 dark:border-[#2d3052]',
@@ -586,3 +643,5 @@ export const Pagination = ({ currentPage, totalResults, limit, onPageChange, onL
 
 export { Logo } from './Logo';
 export { default as ImageUploader } from './ImageUploader';
+export { OfflineOverlay, RouteErrorFallback, GlobalErrorBoundary } from './ErrorBoundary';
+

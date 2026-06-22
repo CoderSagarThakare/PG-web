@@ -82,10 +82,18 @@ export const truncate = (str, maxLen = 80) => {
   return str.length > maxLen ? str.slice(0, maxLen) + '...' : str;
 };
 
-// Extract API error message
+// Extract API error message — shows friendly messages for network/server errors,
+// and the server's own message for validation/auth errors (400, 403, 404, etc.)
 export const getErrorMessage = (err) => {
-  return err?.response?.data?.message || err?.message || 'Something went wrong';
+  // friendlyMessage is injected by the axios response interceptor for 5xx / no-response errors
+  if (err?.friendlyMessage) return err.friendlyMessage;
+  // For 4xx errors the server sends a human-readable message; use it directly
+  const serverMsg = err?.response?.data?.message;
+  if (serverMsg) return serverMsg;
+  // Fallback — avoid leaking raw error strings like ENOTFOUND or ECONNREFUSED
+  return 'Something went wrong. Please try again.';
 };
+
 
 // Capitalize first letter
 export const capitalize = (str) => {
