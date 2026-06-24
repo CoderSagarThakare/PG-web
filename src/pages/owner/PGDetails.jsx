@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPGByIdApi, updatePGApi, getManagersApi, getFacilitiesApi } from '../../api/pg.api';
-import { Spinner, Card, Badge, EmptyState, Button, StatCard, Modal } from '../../components/common';
+import { Spinner, Card, Badge, EmptyState, Button, StatCard, Modal, ImageLightbox } from '../../components/common';
 import PGForm from '../../components/owner/PGForm';
 import { Building2, MapPin, ArrowLeft, Bed, Users, FileText, CheckCircle, Clock, Edit2, Image as ImageIcon } from 'lucide-react';
 import { getErrorMessage } from '../../utils/helpers';
@@ -18,6 +18,7 @@ export default function PGDetails() {
   const { pgId } = useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [lightboxIdx, setLightboxIdx] = useState(null);
 
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -130,15 +131,13 @@ export default function PGDetails() {
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {pg.images.map((img, idx) => (
-                  <a 
-                    key={idx} 
-                    href={img} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="aspect-video rounded-lg overflow-hidden border border-gray-200 dark:border-[#2d3052] block hover:border-[#6c63ff] hover:scale-[1.02] active:scale-95 transition-all shadow-sm"
+                  <button
+                    key={idx}
+                    onClick={() => setLightboxIdx(idx)}
+                    className="aspect-video rounded-lg overflow-hidden border border-gray-200 dark:border-[#2d3052] block hover:border-[#6c63ff] hover:scale-[1.02] active:scale-95 transition-all shadow-sm cursor-zoom-in w-full"
                   >
                     <img src={img} alt={`Showcase ${idx + 1}`} className="w-full h-full object-cover" />
-                  </a>
+                  </button>
                 ))}
               </div>
             </Card>
@@ -239,6 +238,15 @@ export default function PGDetails() {
           onCancel={() => setModalOpen(false)}
         />
       </Modal>
+
+      {/* Image Lightbox */}
+      {lightboxIdx !== null && pg.images?.length > 0 && (
+        <ImageLightbox
+          images={pg.images}
+          startIndex={lightboxIdx}
+          onClose={() => setLightboxIdx(null)}
+        />
+      )}
     </div>
   );
 }

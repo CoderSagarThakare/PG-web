@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { discoverPGsApi, getFacilitiesApi, getPGByIdApi } from '../../api/pg.api';
 import { Search, MapPin, Building2, Star, Users, Filter, ChevronRight, Info, Check, X } from 'lucide-react';
-import { Button, Card, Badge, Modal, Spinner, EmptyState, QueryError, Input, Pagination, SelectDropdown } from '../../components/common';
+import { Button, Card, Badge, Modal, Spinner, EmptyState, QueryError, Input, Pagination, SelectDropdown, ImageLightbox } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
 
 export default function BrowsePGs() {
@@ -39,6 +39,8 @@ export default function BrowsePGs() {
   const [activeFilters, setActiveFilters] = useState(getInitialFilters);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedPGId, setSelectedPGId] = useState(null);
+  const [lightboxIdx, setLightboxIdx] = useState(null);
+  const [lightboxImages, setLightboxImages] = useState([]);
   const [userLocation, setUserLocation] = useState({ latitude: '', longitude: '' });
   const [locationReady, setLocationReady] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
@@ -834,9 +836,13 @@ export default function BrowsePGs() {
                 <div className="text-[11px] font-bold tracking-wider dark:text-[#f0f0f8] text-gray-700 uppercase mb-3">📸 Property Gallery</div>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                   {pgDetail.images.map((img, idx) => (
-                    <a key={idx} href={img} target="_blank" rel="noopener noreferrer" className="aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-[#2d3052] block hover:border-[#6c63ff] transition-all hover:scale-[1.02] shadow-sm">
+                    <button
+                      key={idx}
+                      onClick={() => { setLightboxImages(pgDetail.images); setLightboxIdx(idx); }}
+                      className="aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-[#2d3052] block hover:border-[#6c63ff] transition-all hover:scale-[1.02] shadow-sm cursor-zoom-in w-full"
+                    >
                       <img src={img} alt={`Showcase ${idx + 1}`} className="w-full h-full object-cover" />
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -896,6 +902,15 @@ export default function BrowsePGs() {
           </div>
         </div>
       </Modal>
+
+      {/* Image Lightbox */}
+      {lightboxIdx !== null && (
+        <ImageLightbox
+          images={lightboxImages}
+          startIndex={lightboxIdx}
+          onClose={() => { setLightboxIdx(null); setLightboxImages([]); }}
+        />
+      )}
     </div>
   );
 }

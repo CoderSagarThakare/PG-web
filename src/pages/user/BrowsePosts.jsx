@@ -6,7 +6,7 @@ import { searchPostsApi } from '../../api/post.api';
 import { getFacilitiesApi } from '../../api/pg.api';
 import { createEnquiryApi, updateEnquiryApi } from '../../api/enquiry.api';
 import { Search, MapPin, Bed, Filter, Phone, User as UserIcon, CheckCircle2, Building2, X, ArrowLeft, Check } from 'lucide-react';
-import { Button, Card, Badge, Modal, Spinner, EmptyState, QueryError, Input, Pagination, SelectDropdown } from '../../components/common';
+import { Button, Card, Badge, Modal, Spinner, EmptyState, QueryError, Input, Pagination, SelectDropdown, ImageLightbox } from '../../components/common';
 import { getErrorMessage, formatPrice } from '../../utils/helpers';
 import { useAuth } from '../../context/AuthContext';
 
@@ -72,6 +72,8 @@ export default function BrowsePosts() {
   const [locationReady, setLocationReady] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState(null);
+  const [lightboxImages, setLightboxImages] = useState([]);
 
   const handleDismissPrompt = () => {
     setShowLocationPrompt(false);
@@ -1074,9 +1076,13 @@ export default function BrowsePosts() {
                 <div className="text-[11px] font-bold tracking-wider dark:text-[#f0f0f8] text-gray-700 uppercase mb-3">📸 Room Gallery</div>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                   {viewPost.images.map((img, idx) => (
-                    <a key={idx} href={img} target="_blank" rel="noopener noreferrer" className="aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-[#2d3052] block hover:border-[#6c63ff] transition-all hover:scale-[1.02] shadow-sm">
+                    <button
+                      key={idx}
+                      onClick={() => { setLightboxImages(viewPost.images); setLightboxIdx(idx); }}
+                      className="aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-[#2d3052] block hover:border-[#6c63ff] transition-all hover:scale-[1.02] shadow-sm cursor-zoom-in w-full"
+                    >
                       <img src={img} alt={`Showcase ${idx + 1}`} className="w-full h-full object-cover" />
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -1171,6 +1177,15 @@ export default function BrowsePosts() {
           </div>
         </div>
       </Modal>
+
+      {/* Image Lightbox */}
+      {lightboxIdx !== null && (
+        <ImageLightbox
+          images={lightboxImages}
+          startIndex={lightboxIdx}
+          onClose={() => { setLightboxIdx(null); setLightboxImages([]); }}
+        />
+      )}
     </div>
   );
 }

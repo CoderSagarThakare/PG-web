@@ -645,3 +645,158 @@ export { Logo } from './Logo';
 export { default as ImageUploader } from './ImageUploader';
 export { OfflineOverlay, RouteErrorFallback, GlobalErrorBoundary } from './ErrorBoundary';
 
+// ─── ImageLightbox ────────────────────────────────────────────────────────────
+// Usage:
+//   const [lightboxIdx, setLightboxIdx] = useState(null);
+//   <ImageLightbox images={images} startIndex={lightboxIdx} onClose={() => setLightboxIdx(null)} />
+//   onClick of thumbnail: setLightboxIdx(idx)
+import { useEffect, useCallback, useRef } from 'react';
+
+export const ImageLightbox = ({ images = [], startIndex = 0, onClose }) => {
+  const [current, setCurrent] = useState(startIndex ?? 0);
+  const thumbStripRef = useRef(null);
+
+  // Sync when startIndex changes (re-opening with different image)
+  useEffect(() => {
+    if (startIndex !== null && startIndex !== undefined) {
+      setCurrent(startIndex);
+    }
+  }, [startIndex]);
+
+  // Scroll thumbnail into view whenever current changes
+  useEffect(() => {
+    if (!thumbStripRef.current) return;
+    const thumb = thumbStripRef.current.children[current];
+    if (thumb) {
+      thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [current]);
+
+  const prev = useCallback(() => setCurrent(c => (c - 1 + images.length) % images.length), [images.length]);
+  const next = useCallback(() => setCurrent(c => (c + 1) % images.length), [images.length]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); prev(); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
+      if (e.key === 'Escape')     { e.preventDefault(); onClose(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [prev, next, onClose]);
+
+  // Lock body scroll while open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  if (!images.length || startIndex === null) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex flex-col"
+      style={{ background: 'rgba(0,0,0,0.95)' }}
+      onClick={onClose}
+    >
+      {/* ── Header bar ── */}
+      <div
+        className="flex items-center justify-between px-5 py-3 shrink-0"
+        onClick={e => e.stopPropagation()}
+      >
+        <span className="text-white/60 text-[13px] font-semibold tracking-wide select-none">
+          📸 {current + 1} <span className="text-white/30">/</span> {images.length}
+        </span>
+        <button
+          onClick={onClose}
+          className="text-white/60 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
+          title="Close (Esc)"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      {/* ── Main image area ── */}
+      <div
+        className="flex-1 flex items-center justify-center relative overflow-hidden min-h-0 px-14"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Prev button */}
+        {images.length > 1 && (
+          <button
+            onClick={prev}
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white transition-all hover:scale-110 active:scale-95 backdrop-blur-sm"
+            title="Previous (←)"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+        )}
+
+        {/* Main image */}
+        <img
+          key={current}
+          src={images[current]}
+          alt={`Image ${current + 1}`}
+          className="max-h-full max-w-full object-contain rounded-lg shadow-2xl"
+          style={{ animation: 'lightboxFadeIn 0.18s ease' }}
+        />
+
+        {/* Next button */}
+        {images.length > 1 && (
+          <button
+            onClick={next}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white transition-all hover:scale-110 active:scale-95 backdrop-blur-sm"
+            title="Next (→)"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        )}
+      </div>
+
+      {/* ── Thumbnail strip ── */}
+      {images.length > 1 && (
+        <div
+          className="shrink-0 px-4 py-3"
+          onClick={e => e.stopPropagation()}
+        >
+          <div
+            ref={thumbStripRef}
+            className="flex gap-2 overflow-x-auto pb-1 justify-center"
+            style={{ scrollbarWidth: 'none' }}
+          >
+            {images.map((img, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrent(idx)}
+                className="shrink-0 transition-all duration-150"
+                style={{
+                  width: 52,
+                  height: 36,
+                  borderRadius: 6,
+                  border: idx === current
+                    ? '2px solid #6c63ff'
+                    : '2px solid rgba(255,255,255,0.15)',
+                  overflow: 'hidden',
+                  opacity: idx === current ? 1 : 0.5,
+                  transform: idx === current ? 'scale(1.1)' : 'scale(1)',
+                }}
+              >
+                <img src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes lightboxFadeIn {
+          from { opacity: 0; transform: scale(0.97); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+
