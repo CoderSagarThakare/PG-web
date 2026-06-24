@@ -459,6 +459,89 @@ export default function BrowsePosts() {
     }
   };
 
+  // Determine dynamic title, description, and action button for the EmptyState
+  let emptyStateTitle = "No stays found";
+  let emptyStateDescription = "Try adjusting your filters to find more results.";
+  let emptyStateAction = hasActiveFilters() ? (
+    <Button 
+      variant="danger" 
+      size="sm" 
+      className="font-bold px-5" 
+      onClick={handleClearFilters}
+    >
+      Reset Filters
+    </Button>
+  ) : null;
+
+  if (filters.pgId && selectedPgName) {
+    const hasOtherFilters = 
+      filters.title !== '' ||
+      filters.city !== '' ||
+      filters.pgType !== '' ||
+      filters.occupancyType !== '' ||
+      filters.minPrice !== '' ||
+      filters.maxPrice !== '' ||
+      (filters.facilities && filters.facilities.length > 0) ||
+      filters.minRating !== '' ||
+      filters.onlyWithVacancy === true ||
+      !!(userLocation.latitude && userLocation.longitude);
+
+    if (hasOtherFilters) {
+      emptyStateTitle = `No matching vacancies in ${selectedPgName}`;
+      emptyStateDescription = "No stays match your active search filters inside this property.";
+      emptyStateAction = (
+        <div className="flex gap-3">
+          <Button 
+            variant="primary" 
+            size="sm" 
+            className="font-bold px-5 bg-[#6c63ff] hover:bg-[#5b52e0] text-white" 
+            onClick={() => {
+              // Clear other filters but keep pgId and selectedPgName
+              setFilters({
+                title: '',
+                city: '',
+                pgType: '',
+                occupancyType: '',
+                minPrice: '',
+                maxPrice: '',
+                facilities: [],
+                minRating: '',
+                onlyWithVacancy: false,
+                pgId: filters.pgId
+              });
+              setUserLocation({ latitude: '', longitude: '' });
+              localStorage.removeItem('staysync_user_location');
+              localStorage.removeItem('staysync_near_me_active');
+            }}
+          >
+            Clear Search Filters
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="font-bold px-5" 
+            onClick={handleClearPgFilter}
+          >
+            View Other Properties
+          </Button>
+        </div>
+      );
+    } else {
+      emptyStateTitle = `No vacancies posted for ${selectedPgName}`;
+      emptyStateDescription = "This property hasn't listed any active room vacancies at the moment.";
+      emptyStateAction = (
+        <Button 
+          variant="primary" 
+          size="sm" 
+          className="font-bold px-5 bg-[#6c63ff] hover:bg-[#5b52e0] text-white" 
+          onClick={handleClearPgFilter}
+        >
+          View Other Properties
+        </Button>
+      );
+    }
+  }
+
   return (
     <div className="fade-in">
       <div className="flex items-center justify-between mb-7 flex-wrap gap-4">
@@ -660,18 +743,9 @@ export default function BrowsePosts() {
       ) : posts.length === 0 ? (
         <EmptyState 
           icon={<Search size={64} />} 
-          title="No PGs found" 
-          description="Try adjusting your filters to find more results." 
-          action={hasActiveFilters() ? (
-            <Button 
-              variant="danger" 
-              size="sm" 
-              className="font-bold px-5" 
-              onClick={handleClearFilters}
-            >
-              Reset Filters
-            </Button>
-          ) : null}
+          title={emptyStateTitle} 
+          description={emptyStateDescription} 
+          action={emptyStateAction}
         />
       ) : (
         <>
