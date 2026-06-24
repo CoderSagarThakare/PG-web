@@ -77,43 +77,88 @@ export default function BrowsePosts() {
     setShowLocationPrompt(false);
   };
 
-  const executeGetLocation = () => {
-    if (navigator.geolocation) {
-      setLoadingLocation(true);
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const loc = {
-            latitude: latitude.toFixed(6),
-            longitude: longitude.toFixed(6)
-          };
-          setUserLocation(loc);
-          localStorage.setItem('staysync_user_location', JSON.stringify(loc));
-          localStorage.setItem('staysync_near_me_active', 'true');
-          setLocationReady(true);
-          setLoadingLocation(false);
-          toast.success("Location locked successfully!");
-        },
-        (error) => {
-          console.error("Browser Geolocation error:", error.code, error.message);
-          setLoadingLocation(false);
-          setUserLocation({ latitude: '', longitude: '' });
-          setLocationReady(true);
-          if (error.code === 1) { // PERMISSION_DENIED
-            toast.error(
-              "Location access is blocked. Please click the lock/settings icon in your browser's address bar next to the URL, set Location to 'Allow', and refresh the page."
-            );
-          } else if (error.code === 3) { // TIMEOUT
-            toast.error("Location request timed out. Please try again.");
-          } else {
-            toast.error("Location unavailable: " + error.message);
-          }
-        },
-        { enableHighAccuracy: false, timeout: 10000 }
-      );
-    } else {
+  const executeGetLocation = async () => {
+    if (!navigator.geolocation) {
       toast.error("Geolocation is not supported by your browser.");
+      return;
     }
+
+    // ── Step 1: Check current permission state ──────────────────────────
+    // NOTE: We do NOT touch locationReady here at all — it is only managed
+    // by the initial useEffect. Touching it here would cause the full-page
+    // spinner to flash while the native popup is open.
+    let permissionState = 'prompt';
+    let permissionStatus = null;
+    try {
+      if (navigator.permissions?.query) {
+        permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+        permissionState = permissionStatus.state;
+      }
+    } catch (err) {
+      console.warn("Permissions API unavailable, falling back to default behaviour", err);
+    }
+
+    if (permissionState === 'denied') {
+      // Already blocked — bail immediately, no native popup will appear
+      toast.error("Location access is blocked. Please click the lock icon in your browser's address bar, set Location to 'Allow', then try again.");
+      return;
+    }
+
+    if (permissionState === 'granted') {
+      // No popup will appear — show the button spinner immediately since
+      // GPS lookup is starting right now
+      setLoadingLocation(true);
+    } else {
+      // permissionState === 'prompt':
+      // The native browser popup is about to appear.
+      // Do NOT show any spinner yet — user is reading the native popup.
+      // The moment the user clicks Allow, fire the button spinner.
+      if (permissionStatus) {
+        permissionStatus.onchange = () => {
+          if (permissionStatus.state === 'granted') {
+            setLoadingLocation(true);
+          }
+          permissionStatus.onchange = null;
+        };
+      }
+    }
+
+    // ── Step 2: Call getCurrentPosition with the right timeout ──────────
+    // 'granted' → 10 000 ms  (just a quick GPS lookup, no popup)
+    // 'prompt'  → Infinity   (wait as long as the user needs; fires the
+    //                          moment they click Allow or Block)
+    const gpsTimeout = permissionState === 'granted' ? 10000 : Infinity;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const loc = {
+          latitude: latitude.toFixed(6),
+          longitude: longitude.toFixed(6)
+        };
+        setUserLocation(loc);
+        localStorage.setItem('staysync_user_location', JSON.stringify(loc));
+        localStorage.setItem('staysync_near_me_active', 'true');
+        // locationReady is already true — changing userLocation drives a refetch
+        // via the queryKey, which naturally shows isLoading during the API call
+        setLoadingLocation(false);
+        toast.success("Location locked successfully!");
+      },
+      (error) => {
+        console.error("Geolocation error:", error.code, error.message);
+        setLoadingLocation(false);
+        if (error.code === 1) {
+          toast.error("Location access was denied. Please update your browser settings to allow location and try again.");
+        } else if (error.code === 2) {
+          toast.error("Could not determine your location. Please check your device's location settings.");
+        } else if (error.code === 3) {
+          toast.error("Location request timed out. Please try again.");
+        } else {
+          toast.error("Location unavailable: " + error.message);
+        }
+      },
+      { enableHighAccuracy: false, timeout: gpsTimeout, maximumAge: 0 }
+    );
   };
 
   const handleAcceptPrompt = () => {
