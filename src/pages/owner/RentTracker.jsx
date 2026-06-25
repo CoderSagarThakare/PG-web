@@ -129,7 +129,7 @@ const getMonthName = (yearMonth) => {
 
 const emptyForm = {
   bedId: '', userId: '', amount: '', amountPaid: '',
-  paymentMode: 'cash', paidDate: '', referenceNo: '', notes: '', rentMonth: currentMonth(),
+  paymentMode: '', paidDate: '', referenceNo: '', notes: '', rentMonth: currentMonth(),
   status: 'paid', activeDays: '', joiningDate: '', penaltyAmount: 0
 };
 
@@ -383,7 +383,7 @@ export default function RentTracker() {
 
     setForm({
       amount: rec.amount, amountPaid: rec.amountPaid,
-      paymentMode: rec.paymentMode || 'cash',
+      paymentMode: rec.paymentMode || '',
       paidDate: rec.paidDate ? rec.paidDate.slice(0, 10) : '',
       referenceNo: rec.referenceNo || '',
       notes: rec.notes || '',
@@ -408,6 +408,15 @@ export default function RentTracker() {
       toast.error('Please select an occupied tenant bed from the list');
       return;
     }
+    if (!form.status) {
+      toast.error('Payment status is required');
+      return;
+    }
+    const requiresPaymentMode = form.status === 'paid' || form.status === 'partial' || form.status === 'under_review';
+    if (requiresPaymentMode && !form.paymentMode) {
+      toast.error('Payment mode is required');
+      return;
+    }
     if (form.amount !== '' && Number(form.amount) < 0) {
       toast.error('Rent amount cannot be negative');
       return;
@@ -418,7 +427,7 @@ export default function RentTracker() {
     }
 
     const submitForm = { ...form };
-    if (submitForm.status === 'pending') {
+    if (submitForm.status === 'pending' || submitForm.status === 'overdue') {
       submitForm.amountPaid = 0;
       submitForm.paymentMode = null;
       submitForm.paidDate = null;
@@ -1020,7 +1029,7 @@ export default function RentTracker() {
             />
 
             <div>
-              <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">PAYMENT STATUS</label>
+              <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">PAYMENT STATUS <span className="text-[#ff4d6d]">*</span></label>
               <SelectDropdown
                 value={form.status}
                 onChange={e => {
@@ -1040,7 +1049,8 @@ export default function RentTracker() {
                   { value: 'paid', label: 'Paid (Full)' },
                   { value: 'pending', label: 'Pending' },
                   { value: 'partial', label: 'Partial' },
-                  { value: 'under_review', label: 'Under Review' }
+                  { value: 'under_review', label: 'Under Review' },
+                  { value: 'overdue', label: 'Overdue' }
                 ]}
               />
             </div>
@@ -1053,13 +1063,15 @@ export default function RentTracker() {
               }} />
 
             <div>
-              <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">PAYMENT MODE</label>
+              <label className="text-[10px] font-bold text-gray-500 dark:text-[#6b6e82] uppercase tracking-[0.8px] mb-1.5 block">
+                PAYMENT MODE {!(form.status === 'pending' || form.status === 'overdue') && <span className="text-[#ff4d6d]">*</span>}
+              </label>
               <SelectDropdown
-                value={form.status === 'pending' ? '' : (form.paymentMode || '')}
-                disabled={form.status === 'pending'}
+                value={(form.status === 'pending' || form.status === 'overdue') ? '' : (form.paymentMode || '')}
+                disabled={form.status === 'pending' || form.status === 'overdue'}
                 onChange={e => setForm(f => ({ ...f, paymentMode: e.target.value || null }))}
                 options={
-                  form.status === 'pending'
+                  (form.status === 'pending' || form.status === 'overdue')
                     ? [{ value: '', label: '-- No Payment Mode --' }]
                     : [
                         { value: 'cash', label: 'Cash' },
@@ -1072,12 +1084,12 @@ export default function RentTracker() {
               />
             </div>
 
-            <Input label="Payment Date" type="date" value={form.status === 'pending' ? '' : form.paidDate}
-              disabled={form.status === 'pending'}
+            <Input label="Payment Date" type="date" value={(form.status === 'pending' || form.status === 'overdue') ? '' : form.paidDate}
+              disabled={form.status === 'pending' || form.status === 'overdue'}
               onChange={e => setForm(f => ({ ...f, paidDate: e.target.value }))} />
             
-            <Input label="Reference / Txn ID" value={form.status === 'pending' ? '' : form.referenceNo}
-              disabled={form.status === 'pending'}
+            <Input label="Reference / Txn ID" value={(form.status === 'pending' || form.status === 'overdue') ? '' : form.referenceNo}
+              disabled={form.status === 'pending' || form.status === 'overdue'}
               onChange={e => setForm(f => ({ ...f, referenceNo: e.target.value }))} placeholder="UPI ID, cheque no..." />
           </div>
           <Input label="Notes" value={form.notes}
