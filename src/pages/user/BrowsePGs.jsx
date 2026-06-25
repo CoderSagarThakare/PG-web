@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { discoverPGsApi, getFacilitiesApi, getPGByIdApi } from '../../api/pg.api';
 import { Search, MapPin, Building2, Star, Users, Filter, ChevronRight, Info, Check, X } from 'lucide-react';
-import { Button, Card, Badge, Modal, Spinner, EmptyState, QueryError, Input, Pagination, SelectDropdown, ImageLightbox } from '../../components/common';
+import { Button, Card, Badge, Modal, Spinner, EmptyState, QueryError, Input, Pagination, SelectDropdown, ImageLightbox, ReviewsSection } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
 
 export default function BrowsePGs() {
@@ -482,7 +482,7 @@ export default function BrowsePGs() {
                     <Building2 size={40} className="opacity-10" />
                   )}
                   <div className="absolute top-2.5 right-2.5 bg-black/50 px-2 py-0.5 rounded flex items-center gap-1 text-white text-[11px] backdrop-blur-sm">
-                    <Star size={12} fill="#ffa94d" color="#ffa94d" /> {pg.rating ?? 0}
+                    <Star size={12} fill="#ffa94d" color="#ffa94d" /> {pg.rating ? pg.rating.toFixed(1) : '0.0'} ({pg.numReviews ?? 0})
                   </div>
                   <div className="absolute bottom-2.5 left-2.5">
                     <Badge variant={pg.pgType === 'male' ? 'info' : pg.pgType === 'female' ? 'danger' : 'accent'}>
@@ -696,7 +696,7 @@ export default function BrowsePGs() {
                       {pgDetail.pgType} Only
                     </Badge>
                     <div className="flex items-center gap-1 text-[#ffa94d] font-extrabold text-[12px] bg-[#ffa94d]/10 px-2 py-0.5 rounded-md">
-                      <Star size={13} fill="#ffa94d" /> {pgDetail.rating ?? 0}
+                      <Star size={13} fill="#ffa94d" /> {pgDetail.rating ? pgDetail.rating.toFixed(1) : '0.0'} ({pgDetail.numReviews ?? 0})
                     </div>
                   </div>
                   <h2 className="text-[22px] font-black dark:text-[#f0f0f8] text-gray-900 mb-1 leading-tight">{pgDetail.name}</h2>
@@ -847,6 +847,9 @@ export default function BrowsePGs() {
                 </div>
               </div>
             )}
+
+            {/* Reviews Section */}
+            <ReviewsSection pgId={pgDetail._id} />
 
             {/* Bottom CTA footer */}
             <div className="p-4 bg-[#6c63ff]/10 dark:bg-[#6c63ff]/15 border border-[#6c63ff]/20 rounded-2xl flex items-center gap-3.5 flex-wrap sm:flex-nowrap">

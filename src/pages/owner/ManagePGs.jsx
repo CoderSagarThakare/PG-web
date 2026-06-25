@@ -158,7 +158,7 @@ export default function ManagePGs() {
               <div className="flex justify-between items-center" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center gap-1.5">
                   <div className="flex items-center gap-1 bg-[#ffa94d]/12 text-[#ffa94d] px-2 py-1 rounded-lg text-xs font-bold">
-                    ★ {pg.rating || 0}
+                    ★ {pg.rating ? pg.rating.toFixed(1) : '0.0'} ({pg.numReviews ?? 0})
                   </div>
                 </div>
                 <div className="flex gap-2">

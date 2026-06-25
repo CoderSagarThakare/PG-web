@@ -204,7 +204,7 @@ export default function Dashboard() {
                 </span>
                 <span className="hidden md:inline text-[13px] font-medium dark:text-[#f0f0f8] text-gray-900 leading-snug">{pg.totalRooms}</span>
                 <span className="hidden md:inline text-[13px] font-bold text-[#00d4aa] leading-snug">{pg.emptyBeds ?? 0}</span>
-                <span className="hidden md:inline text-[13px] font-semibold text-[#ffa94d] leading-snug">★ {pg.rating ?? 0}</span>
+                <span className="hidden md:inline text-[13px] font-semibold text-[#ffa94d] leading-snug">★ {pg.rating ? pg.rating.toFixed(1) : '0.0'} ({pg.numReviews ?? 0})</span>
               </div>
             ))}
           </div>

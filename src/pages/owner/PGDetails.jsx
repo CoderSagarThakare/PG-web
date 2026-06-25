@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPGByIdApi, updatePGApi, getManagersApi, getFacilitiesApi } from '../../api/pg.api';
-import { Spinner, Card, Badge, EmptyState, Button, StatCard, Modal, ImageLightbox } from '../../components/common';
+import { Spinner, Card, Badge, EmptyState, Button, StatCard, Modal, ImageLightbox, ReviewsSection } from '../../components/common';
 import PGForm from '../../components/owner/PGForm';
 import { Building2, MapPin, ArrowLeft, Bed, Users, FileText, CheckCircle, Clock, Edit2, Image as ImageIcon } from 'lucide-react';
 import { getErrorMessage } from '../../utils/helpers';
@@ -166,6 +166,9 @@ export default function PGDetails() {
               <p className="dark:text-[#6b6e82] text-gray-500">No facilities listed.</p>
             )}
           </Card>
+
+          {/* Reviews Section */}
+          <ReviewsSection pgId={pgId} />
         </div>
 
         {/* Right Column */}
@@ -199,7 +202,7 @@ export default function PGDetails() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="dark:text-[#6b6e82] text-gray-500 text-sm">Rating</span>
-                <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">⭐ {pg.rating ?? 0}</span>
+                <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">⭐ {pg.rating ? pg.rating.toFixed(1) : '0.0'} ({pg.numReviews ?? 0})</span>
               </div>
             </div>
           </Card>

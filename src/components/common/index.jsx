@@ -644,6 +644,7 @@ export const Pagination = ({ currentPage, totalResults, limit, onPageChange, onL
 export { Logo } from './Logo';
 export { default as ImageUploader } from './ImageUploader';
 export { OfflineOverlay, RouteErrorFallback, GlobalErrorBoundary } from './ErrorBoundary';
+export { default as ReviewsSection } from './ReviewsSection';
 
 // ─── ImageLightbox ────────────────────────────────────────────────────────────
 // Usage:

@@ -6,7 +6,7 @@ import { searchPostsApi } from '../../api/post.api';
 import { getFacilitiesApi } from '../../api/pg.api';
 import { createEnquiryApi, updateEnquiryApi } from '../../api/enquiry.api';
 import { Search, MapPin, Bed, Filter, Phone, User as UserIcon, CheckCircle2, Building2, X, ArrowLeft, Check } from 'lucide-react';
-import { Button, Card, Badge, Modal, Spinner, EmptyState, QueryError, Input, Pagination, SelectDropdown, ImageLightbox } from '../../components/common';
+import { Button, Card, Badge, Modal, Spinner, EmptyState, QueryError, Input, Pagination, SelectDropdown, ImageLightbox, ReviewsSection } from '../../components/common';
 import { getErrorMessage, formatPrice } from '../../utils/helpers';
 import { useAuth } from '../../context/AuthContext';
 
@@ -1122,7 +1122,7 @@ export default function BrowsePosts() {
                     </div>
                     <div>
                       <div className="text-[9px] dark:text-[#6b6e82] text-gray-400 font-bold uppercase tracking-wider">RATING</div>
-                      <div className="text-[12px] font-black text-[#ffa94d] flex items-center gap-1 mt-0.5">★ {viewPost.pgId?.rating || '0'}</div>
+                      <div className="text-[12px] font-black text-[#ffa94d] flex items-center gap-1 mt-0.5">★ {viewPost.pgId?.rating ? viewPost.pgId.rating.toFixed(1) : '0.0'} ({viewPost.pgId?.numReviews ?? 0})</div>
                     </div>
                   </div>
                 </div>
@@ -1160,6 +1160,11 @@ export default function BrowsePosts() {
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Reviews Section */}
+            {viewPost.pgId && (
+              <ReviewsSection pgId={viewPost.pgId?._id || viewPost.pgId} />
             )}
 
             {/* Bottom Enquiry Action */}
