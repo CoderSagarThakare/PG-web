@@ -80,7 +80,7 @@ export default function PGDetails() {
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900">{pg.name}</h1>
+             <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900">{pg.name} <span className="text-sm font-medium text-gray-400 dark:text-gray-500">({pg.pgDisplayId})</span></h1>
             <Badge variant={pgTypeColors[pg.pgType] || 'default'}>{pgTypeLabels[pg.pgType] || pg.pgType}</Badge>
           </div>
           <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-1 flex items-center gap-1.5 flex-wrap">

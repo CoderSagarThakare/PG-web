@@ -767,7 +767,7 @@ export default function BrowsePosts() {
                 </div>
 
                 <div className="p-3.5 flex flex-col flex-1">
-                  <div className="text-[10px] font-bold text-[#00d4aa] uppercase mb-0.5">{post.pgId?.name}</div>
+                  <div className="text-[10px] font-bold text-[#00d4aa] uppercase mb-0.5">{post.pgId?.name} ({post.pgId?.pgDisplayId})</div>
                   <h3 className="text-[15px] font-bold dark:text-[#f0f0f8] text-gray-900 mb-1 leading-snug truncate">{post.title}</h3>
                   <div className="flex items-center justify-between gap-2 text-[11px] dark:text-[#6b6e82] text-gray-500 mb-3">
                     <div className="flex items-center gap-1 truncate">
@@ -1029,7 +1029,7 @@ export default function BrowsePosts() {
               </div>
               <div className="flex-[1.5] flex flex-col justify-between py-0.5">
                 <div>
-                  <div className="text-[10px] font-black text-[#00d4aa] dark:text-[#00e5b7] uppercase tracking-wider mb-1">{viewPost.pgId?.name}</div>
+                  <div className="text-[10px] font-black text-[#00d4aa] dark:text-[#00e5b7] uppercase tracking-wider mb-1">{viewPost.pgId?.name} ({viewPost.pgId?.pgDisplayId})</div>
                   <h2 className="text-[22px] font-black dark:text-[#f0f0f8] text-gray-900 mb-1 leading-tight">{viewPost.title}</h2>
                   <p className="flex items-center gap-1 dark:text-[#6b6e82] text-gray-500 text-[12px] font-medium">
                     <MapPin size={13} className="text-[#6c63ff]" /> {viewPost.pgId?.address?.city}, {viewPost.pgId?.address?.state}

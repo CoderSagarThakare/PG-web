@@ -124,7 +124,7 @@ export default function ManagePGs() {
             <Card key={pg._id} hover onClick={() => navigate(`/pg/${pg._id}`)}>
               <div className="flex items-start justify-between mb-5">
                 <div>
-                  <div className="text-base font-bold dark:text-[#f0f0f8] text-gray-900">{pg.name}</div>
+                   <div className="text-base font-bold dark:text-[#f0f0f8] text-gray-900">{pg.name} <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">({pg.pgDisplayId})</span></div>
                   <div className="flex items-center gap-1 mt-1">
                     <MapPin size={12} className="text-[#6b6e82]" />
                     <span className="text-xs dark:text-[#6b6e82] text-gray-500">{pg.address?.city}, {pg.address?.state}</span>

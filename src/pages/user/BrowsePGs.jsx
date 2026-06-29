@@ -492,7 +492,7 @@ export default function BrowsePGs() {
                 </div>
 
                 <div className="p-3.5 flex flex-col flex-1">
-                  <h3 className="text-[16px] font-bold dark:text-[#f0f0f8] text-gray-900 mb-1 leading-snug truncate">{pg.name}</h3>
+                  <h3 className="text-[16px] font-bold dark:text-[#f0f0f8] text-gray-900 mb-1 leading-snug truncate" title={pg.name}>{pg.name} <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">({pg.pgDisplayId})</span></h3>
                   <div className="flex items-center justify-between gap-2 text-[12px] dark:text-[#6b6e82] text-gray-500 mb-3">
                     <div className="flex items-center gap-1 truncate">
                       <MapPin size={12} className="text-[#6c63ff] shrink-0" />
@@ -677,7 +677,7 @@ export default function BrowsePGs() {
       </Modal>
 
       {/* Property Details Modal */}
-      <Modal isOpen={!!selectedPGId} onClose={() => setSelectedPGId(null)} title={pgDetail?.name || "Loading..."} size="lg">
+      <Modal isOpen={!!selectedPGId} onClose={() => setSelectedPGId(null)} title={pgDetail ? `${pgDetail.name} (${pgDetail.pgDisplayId})` : "Loading..."} size="lg">
         {isDetailLoading ? <Spinner center /> : pgDetail && (
           <div className="fade-in text-[13px] flex flex-col gap-5">
             {/* Hero Banner Section */}
