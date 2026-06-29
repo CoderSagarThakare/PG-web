@@ -13,12 +13,12 @@ import {
   verifyAadharApi,
   deleteAadharFileApi
 } from '../../api/profile.api';
-import { Input, Button, Card, ConfirmModal, Badge } from '../../components/common';
+import { Input, Button, Card, ConfirmModal, Badge, SelectDropdown } from '../../components/common';
 import { cn } from '../../utils/cn';
 import { getErrorMessage } from '../../utils/helpers';
 import {
   MapPin, Shield, ExternalLink, Camera, Trash2,
-  FileText, CheckCircle, AlertCircle, Loader2, Upload
+  FileText, CheckCircle, AlertCircle, Loader2, Upload, Car
 } from 'lucide-react';
 
 export default function Profile() {
@@ -38,6 +38,8 @@ export default function Profile() {
       aadharNumber: '',
       aadharFileKey: '',
       gender: '',
+      vehicleType: 'none',
+      vehicleNumber: '',
     }
   });
 
@@ -85,6 +87,8 @@ export default function Profile() {
         aadharNumber: user.aadharNumber || '',
         aadharFileKey: user.aadharFileKey || '',
         gender: user.gender || '',
+        vehicleType: user.vehicleType || 'none',
+        vehicleNumber: user.vehicleNumber || '',
       });
       setAvatarUrl(user.picture || null);
       setAadharFileUrl(user.aadharFileUrl || null);
@@ -162,7 +166,11 @@ export default function Profile() {
       return;
     }
     // Send null for empty gender so backend clears it
-    const payload = { ...data, gender: data.gender || null };
+    const payload = { 
+      ...data, 
+      gender: data.gender || null,
+      vehicleNumber: data.vehicleType === 'none' ? null : data.vehicleNumber || null 
+    };
     isSavedRef.current = true;
     updateMut.mutate(payload);
   };
@@ -277,28 +285,42 @@ export default function Profile() {
         confirmVariant="danger"
       />
 
-      {/* Page Header */}
-      <div className="flex items-start justify-between mb-4 flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900">My Profile</h1>
-          <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-1">Manage your personal information and verification details</p>
-        </div>
-      </div>
-
-      {/* ── Unsaved Changes Banner ── */}
-      {hasUnsaved && (
-        <div className="flex items-center gap-3 bg-[#ffa94d]/10 border border-[#ffa94d]/35 rounded-lg px-4 py-2.5 mb-5 text-[13px] font-medium text-[#ffa94d]">
-          <AlertCircle size={16} className="shrink-0" />
-          <span>
-            {hasUnsavedAadharUpload()
-              ? <>Your Aadhaar has been verified but <strong>not saved</strong>. If you leave this page, the uploaded document will be deleted and your profile will <strong>NOT</strong> be updated.</>
-              : <>You have <strong>unsaved changes</strong>. Click "Save Changes" before leaving or your edits will be lost.</>
-            }
-          </span>
-        </div>
-      )}
-
       <form onSubmit={handleSubmit(onSubmit)}>
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
+          <div>
+            <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900">My Profile</h1>
+            <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-1">Manage your personal information and verification details</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {hasUnsaved && (
+              <span className="text-[12px] dark:text-[#6b6e82] text-gray-500">
+                You have unsaved changes
+              </span>
+            )}
+            <Button
+              type="submit"
+              loading={updateMut.isPending}
+              disabled={(!isDirty && !hasUnsavedAadharUpload()) || aadharUploading || aadharVerifying}
+            >
+              Save Changes
+            </Button>
+          </div>
+        </div>
+
+        {/* ── Unsaved Changes Banner ── */}
+        {hasUnsaved && (
+          <div className="flex items-center gap-3 bg-[#ffa94d]/10 border border-[#ffa94d]/35 rounded-lg px-4 py-2.5 mb-5 text-[13px] font-medium text-[#ffa94d]">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>
+              {hasUnsavedAadharUpload()
+                ? <>Your Aadhaar has been verified but <strong>not saved</strong>. If you leave this page, the uploaded document will be deleted and your profile will <strong>NOT</strong> be updated.</>
+                : <>You have <strong>unsaved changes</strong>. Click "Save Changes" before leaving or your edits will be lost.</>
+              }
+            </span>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
 
           {/* ══ LEFT COLUMN ══ */}
@@ -484,6 +506,58 @@ export default function Profile() {
                 </div>
               )}
             </Card>
+
+            {/* Vehicle Details */}
+            <Card>
+              <div className="flex items-center gap-2.5 mb-5">
+                <div className="w-[30px] h-[30px] rounded-lg bg-[#ffa94d]/15 flex items-center justify-center">
+                  <Car size={14} className="text-[#ffa94d]" />
+                </div>
+                <div>
+                  <h3 className="text-[14px] font-bold dark:text-[#f0f0f8] text-gray-900">Vehicle Details</h3>
+                  <p className="text-[11px] dark:text-[#6b6e82] text-gray-500">For PG parking verification</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-5">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-gray-400 dark:text-[#6b6e82] uppercase tracking-[0.8px] block">Do you own a vehicle?</label>
+                  <SelectDropdown
+                    value={watch('vehicleType') || 'none'}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setValue('vehicleType', val, { shouldDirty: true });
+                      if (val === 'none') {
+                        setValue('vehicleNumber', '', { shouldDirty: true });
+                      }
+                    }}
+                    options={[
+                      { value: 'none', label: 'No Vehicle' },
+                      { value: 'bike', label: 'Two-Wheeler (Bike/Scooter)' },
+                      { value: 'car', label: 'Four-Wheeler (Car)' }
+                    ]}
+                  />
+                </div>
+
+                {(watch('vehicleType') === 'bike' || watch('vehicleType') === 'car') && (
+                  <Input
+                    label="Vehicle Number Plate"
+                    placeholder="e.g. MH19AC2317"
+                    {...register('vehicleNumber', {
+                      required: 'Vehicle number is required',
+                      pattern: {
+                        value: /^(?:[a-zA-Z]{2}[0-9]{1,2}[a-zA-Z]{1,2}[0-9]{4}|[0-9]{2}BH[0-9]{4}[a-zA-Z]{2})$/,
+                        message: 'Enter a valid Indian vehicle number without spaces or hyphens (e.g. MH19AC2317 or 22BH1234AA)'
+                      },
+                      onChange: (e) => {
+                        e.target.value = e.target.value.toUpperCase().replace(/[^a-zA-Z0-9]/g, '');
+                      }
+                    })}
+                    error={errors.vehicleNumber?.message}
+                    required
+                  />
+                )}
+              </div>
+            </Card>
           </div>
 
           {/* ══ RIGHT COLUMN ══ */}
@@ -579,22 +653,6 @@ export default function Profile() {
                 />
               </div>
             </Card>
-
-            {/* Save Row */}
-            <div className="flex items-center justify-end gap-3">
-              {hasUnsaved && (
-                <span className="text-[12px] dark:text-[#6b6e82] text-gray-500">
-                  You have unsaved changes
-                </span>
-              )}
-              <Button
-                type="submit"
-                loading={updateMut.isPending}
-                disabled={(!isDirty && !hasUnsavedAadharUpload()) || aadharUploading || aadharVerifying}
-              >
-                Save Changes
-              </Button>
-            </div>
           </div>
         </div>
       </form>

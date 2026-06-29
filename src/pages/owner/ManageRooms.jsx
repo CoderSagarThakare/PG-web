@@ -42,7 +42,8 @@ export default function ManageRooms() {
     const bedMatch = room.beds?.some(bed => 
       bed.bedNumber.toLowerCase().includes(searchLower) ||
       bed.userId?.name?.toLowerCase().includes(searchLower) ||
-      bed.userId?.mobNo1?.toLowerCase().includes(searchLower)
+      bed.userId?.mobNo1?.toLowerCase().includes(searchLower) ||
+      bed.userId?.vehicleNumber?.toLowerCase().includes(searchLower)
     );
 
     if (searchTerm && !roomMatch && !bedMatch) return false;
@@ -264,8 +265,13 @@ export default function ManageRooms() {
                         </span>
                       </div>
                       {bed.status === 'occupied' ? (
-                        <div className="text-[11px] text-[#6c63ff] font-semibold truncate">
-                          {bed.userId?.name || 'Assigned'} {bed.userId?.mobNo1 && `· ${bed.userId.mobNo1}`}
+                        <div className="text-[11px] text-[#6c63ff] font-semibold truncate flex items-center gap-1.5 flex-wrap">
+                          <span>{bed.userId?.name || 'Assigned'} {bed.userId?.mobNo1 && `· ${bed.userId.mobNo1}`}</span>
+                          {bed.userId?.vehicleType && bed.userId.vehicleType !== 'none' && (
+                            <span className="inline-flex items-center gap-0.5 px-1 py-0.2 bg-gray-100 dark:bg-[#1a1d2e] text-gray-600 dark:text-[#a0a3b1] rounded text-[9px] font-bold border border-gray-200 dark:border-[#2d3052]">
+                              {bed.userId.vehicleType === 'bike' ? '🏍️' : '🚗'} {bed.userId.vehicleNumber}
+                            </span>
+                          )}
                         </div>
                       ) : (
                         <div className="text-[10px] text-[#51cf66]">Available</div>
