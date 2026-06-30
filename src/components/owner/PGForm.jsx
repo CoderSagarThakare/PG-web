@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Input, Button, ImageUploader, Badge } from '../common';
 import FacilitiesPicker from '../common/FacilitiesPicker';
-import { getPGImageUploadUrlApi, deletePGImageFileApi } from '../../api/pg.api';
+import { getPGImageUploadUrlApi, deletePGImageFileApi, getPGPaymentQrUploadUrlApi } from '../../api/pg.api';
 
 const pgTypeOptions = [
   { value: 'male', label: 'Male' },
@@ -30,6 +30,8 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
       locationLink: '',
       pgStartedDate: '',
       images: [],
+      upiId: '',
+      paymentQrKey: '',
       location: {
         type: 'Point',
         coordinates: [] // no default coordinates
@@ -75,6 +77,8 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
         locationLink: initialData.locationLink || '',
         pgStartedDate: initialData.pgStartedDate ? new Date(initialData.pgStartedDate).toISOString().slice(0, 10) : '',
         images: initialData.images || [],
+        upiId: initialData.upiId || '',
+        paymentQrKey: initialData.paymentQrUrl || '',
         location: initialData.location || { type: 'Point', coordinates: [] }
       });
     }
@@ -544,6 +548,42 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
                     />
                   )}
                 />
+              </div>
+            </div>
+
+            <div className="col-span-full border-t dark:border-[#2d3052] border-gray-200 pt-5 mt-2">
+              <h4 className="text-[13px] font-bold dark:text-[#f0f0f8] text-gray-900 mb-0.5">Payment Settings (Optional)</h4>
+              <p className="text-[11px] dark:text-[#6b6e82] text-gray-500 mb-4">Provide scanner and UPI ID so tenants can pay rent online directly from the app.</p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+                <Input
+                  label="UPI ID (for Direct Pay)"
+                  placeholder="e.g. owner@upi"
+                  {...register('upiId', {
+                    validate: (val) => !val || /^[\w.-]+@[\w.-]+$/.test(val) || 'Enter a valid UPI ID (e.g. name@bank)'
+                  })}
+                  error={errors.upiId?.message}
+                />
+                
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1] block mb-1">
+                    Payment QR Code Image
+                  </label>
+                  <Controller
+                    name="paymentQrKey"
+                    control={control}
+                    render={({ field }) => (
+                      <ImageUploader
+                        initialImages={field.value ? [field.value] : []}
+                        onChange={(val) => field.onChange(val?.[0] || '')}
+                        uploadUrlApi={getPGPaymentQrUploadUrlApi}
+                        deleteUrlApi={deletePGImageFileApi}
+                        maxImages={1}
+                        helpText="* Upload a high-quality payment QR scanner image. JPEG, PNG, WEBP files under 5MB are supported."
+                      />
+                    )}
+                  />
+                </div>
               </div>
             </div>
           </div>

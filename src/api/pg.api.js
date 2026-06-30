@@ -10,6 +10,8 @@ export const updatePGApi = (pgId, data) => api.patch(`/pg/${pgId}`, data);
 export const deletePGApi = (pgId) => api.delete(`/pg/${pgId}`);
 export const getPGImageUploadUrlApi = (fileName, fileType) =>
   api.get('/pg/upload-url', { params: { fileName, fileType } });
+export const getPGPaymentQrUploadUrlApi = (fileName, fileType) =>
+  api.get('/pg/payment-qr-upload-url', { params: { fileName, fileType } });
 export const deletePGImageFileApi = (key) =>
   api.delete('/pg/file', { data: { key } });
 

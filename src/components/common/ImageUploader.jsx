@@ -7,7 +7,8 @@ export default function ImageUploader({
   onChange, 
   uploadUrlApi, 
   deleteUrlApi, 
-  maxImages = 10 
+  maxImages = 10,
+  helpText
 }) {
   const [images, setImages] = useState([]);
   const fileInputRef = useRef(null);
@@ -156,11 +157,11 @@ export default function ImageUploader({
   return (
     <div className="flex flex-col gap-3">
       {/* Grid of Preview Thumbnails */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+      <div className={maxImages === 1 ? "flex flex-wrap gap-3.5" : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5"}>
         {images.map((img) => (
           <div 
             key={img.id} 
-            className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] group flex items-center justify-center"
+            className={`relative aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-[#242740] border border-gray-200 dark:border-[#2d3052] group flex items-center justify-center ${maxImages === 1 ? 'w-44' : 'w-full'}`}
           >
             <img 
               src={img.url} 
@@ -196,7 +197,7 @@ export default function ImageUploader({
           <button
             type="button"
             onClick={triggerFileSelect}
-            className="relative aspect-video rounded-xl border-2 border-dashed border-gray-200 dark:border-[#2d3052] hover:border-[#6c63ff] bg-gray-50 dark:bg-[#242740]/30 hover:bg-[#6c63ff]/5 dark:hover:bg-[#6c63ff]/10 flex flex-col items-center justify-center gap-1.5 text-gray-500 dark:text-[#a0a3b1] hover:text-[#6c63ff] transition-all cursor-pointer group"
+            className={`relative aspect-video rounded-xl border-2 border-dashed border-gray-200 dark:border-[#2d3052] hover:border-[#6c63ff] bg-gray-50 dark:bg-[#242740]/30 hover:bg-[#6c63ff]/5 dark:hover:bg-[#6c63ff]/10 flex flex-col items-center justify-center gap-1.5 text-gray-500 dark:text-[#a0a3b1] hover:text-[#6c63ff] transition-all cursor-pointer group ${maxImages === 1 ? 'w-44' : 'w-full'}`}
           >
             <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-[#2d3052]/50 group-hover:bg-[#6c63ff]/15 flex items-center justify-center text-gray-400 dark:text-[#6b6e82] group-hover:text-[#6c63ff] transition-colors">
               <Plus size={16} />
@@ -218,7 +219,7 @@ export default function ImageUploader({
       
       {/* Help text */}
       <p className="text-[11px] text-[#6b6e82] dark:text-[#6b6e82]">
-        * Upload up to {maxImages} high-quality showcase images. JPEG, PNG, WEBP files under 5MB are supported.
+        {helpText || `* Upload up to ${maxImages} high-quality showcase images. JPEG, PNG, WEBP files under 5MB are supported.`}
       </p>
     </div>
   );

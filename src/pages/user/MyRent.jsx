@@ -4,7 +4,8 @@ import toast from 'react-hot-toast';
 import { getMyRentPaymentsApi, submitPaymentProofApi } from '../../api/rent.api';
 import { Badge, Button, Card, Modal, Spinner, EmptyState, Input, SelectDropdown } from '../../components/common';
 import { getErrorMessage, formatDate } from '../../utils/helpers';
-import { IndianRupee, Clock, CheckCircle2, AlertCircle, FileText, Send, QrCode, Phone, Landmark } from 'lucide-react';
+import { IndianRupee, Clock, CheckCircle2, AlertCircle, FileText, Send, QrCode, Phone, Landmark, Copy } from 'lucide-react';
+import { useEffect } from 'react';
 
 const STATUS_VARIANT = {
   paid: 'success',
@@ -44,27 +45,36 @@ const getActiveDays = (rec) => {
 
 export default function MyRent() {
   const qc = useQueryClient();
-  const [selectedRent, setSelectedRent] = useState(null);
+  const [selectedRentId, setSelectedRentId] = useState(null);
   const [paymentMode, setPaymentMode] = useState('upi');
   const [referenceNo, setReferenceNo] = useState('');
   const [amountPaid, setAmountPaid] = useState('');
   const [notes, setNotes] = useState('');
   const [breakdownTarget, setBreakdownTarget] = useState(null);
+  const [imageError, setImageError] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['my-rent'],
     queryFn: async () => (await getMyRentPaymentsApi()).data?.data,
+    staleTime: 0,
     refetchOnWindowFocus: false,
   });
 
   const records = data?.records || [];
+
+  // Derive live rent from fresh query data — automatically updates after refetch
+  const liveRent = selectedRentId ? records.find(r => r._id === selectedRentId) ?? null : null;
+
+  useEffect(() => {
+    setImageError(false);
+  }, [selectedRentId]);
 
   const submitProofMut = useMutation({
     mutationFn: ({ id, data }) => submitPaymentProofApi(id, data),
     onSuccess: () => {
       toast.success('Payment proof submitted successfully! The owner will verify and approve.');
       qc.invalidateQueries(['my-rent']);
-      setSelectedRent(null);
+      setSelectedRentId(null);
       setReferenceNo('');
       setAmountPaid('');
       setNotes('');
@@ -73,7 +83,9 @@ export default function MyRent() {
   });
 
   const openSubmitModal = (rent) => {
-    setSelectedRent(rent);
+    // Re-fetch so owner's latest UPI/QR changes appear immediately
+    refetch();
+    setSelectedRentId(rent._id);
     const penalty = rent.status === 'overdue' ? (rent.penaltyAmount || rent.pgId?.lateFee || 0) : (rent.penaltyAmount || 0);
     setAmountPaid((rent.amount + penalty).toString());
   };
@@ -85,7 +97,7 @@ export default function MyRent() {
     }
 
     submitProofMut.mutate({
-      id: selectedRent._id,
+      id: liveRent._id,
       data: {
         paymentMode,
         referenceNo: referenceNo.trim() || null,
@@ -125,7 +137,7 @@ export default function MyRent() {
                 Bed {activeRent.bedId?.bedNumber} · Room {activeRent.roomId?.roomNumber} · {activeRent.pgId?.name}
               </p>
             </div>
-            
+
             <div className="text-right">
               <div className="text-[11px] font-bold dark:text-[#6b6e82] text-gray-500 uppercase mb-1">Total Amount Due</div>
               {(() => {
@@ -273,46 +285,107 @@ export default function MyRent() {
       )}
 
       {/* Proof Submission Modal */}
-      {selectedRent && (
+      {liveRent && (
         <Modal
-          isOpen={!!selectedRent}
-          onClose={() => setSelectedRent(null)}
+          isOpen={!!liveRent}
+          onClose={() => setSelectedRentId(null)}
           title="Submit Payment Proof"
           size="lg"
         >
           <div className="flex flex-col gap-[18px]">
-            {/* Scannable info box */}
-            <div className="dark:bg-[#1a1d2e] bg-white p-4 rounded-[10px] flex gap-3.5 items-center border border-gray-200 dark:border-[#2d3052]">
-              <div className="dark:bg-[#242740] bg-gray-100 p-2 rounded-lg flex items-center justify-center">
-                <QrCode size={40} className="text-[#6c63ff]" />
-              </div>
-              <div className="flex-1">
-                <div className="text-[13px] font-extrabold dark:text-[#f0f0f8] text-gray-900">Easy Payment Guide</div>
-                <div className="text-[11px] dark:text-[#6b6e82] text-gray-500 mt-0.5">
-                  Pay via scanning the owner's QR code at the counter or use direct UPI ID transfers. Please copy and enter the UPI Transaction ID exactly to avoid delays.
+            {/* Scannable info box — only if owner has set UPI or QR */}
+            {(liveRent.pgId?.upiId?.trim() || (liveRent.pgId?.paymentQrUrl && !imageError)) && (
+              <div className="dark:bg-[#1a1d2e] bg-white p-4 rounded-[10px] flex flex-col gap-4 border border-gray-200 dark:border-[#2d3052]">
+                <div className="flex gap-3 items-center">
+                  <div className="dark:bg-[#242740] bg-gray-100 p-2 rounded-lg flex items-center justify-center">
+                    <QrCode size={20} className="text-[#6c63ff]" />
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-extrabold dark:text-[#f0f0f8] text-gray-900">Direct Online Payment</div>
+                    <div className="text-[11px] dark:text-[#6b6e82] text-gray-500">Scan the QR code or copy the UPI ID below to pay.</div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4 items-center justify-center border-t border-dashed dark:border-[#2d3052] border-gray-200 pt-4">
+                  {liveRent.pgId.paymentQrUrl && !imageError && (
+                    <div className="w-40 h-40 shrink-0 bg-white p-1.5 rounded-lg border border-gray-200 dark:border-[#2d3052] flex items-center justify-center group relative overflow-hidden">
+                      <img
+                        src={liveRent.pgId.paymentQrUrl}
+                        alt="Payment Scanner QR"
+                        className="w-full h-full object-contain"
+                        onError={() => setImageError(true)}
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex-1 w-full flex flex-col gap-2.5">
+                    {liveRent.pgId.upiId?.trim() && (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-bold text-gray-400 dark:text-[#6b6e82] uppercase tracking-[0.8px]">UPI ID</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[13px] font-semibold dark:text-[#f0f0f8] text-gray-900 bg-gray-100 dark:bg-[#242740] px-2.5 py-1.5 rounded-lg flex-1 overflow-hidden text-ellipsis whitespace-nowrap select-all">{liveRent.pgId.upiId}</span>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(liveRent.pgId.upiId);
+                              toast.success('UPI ID copied!');
+                            }}
+                            className="p-2 bg-[#6c63ff]/10 text-[#6c63ff] hover:bg-[#6c63ff]/20 rounded-lg transition-colors cursor-pointer"
+                            title="Copy UPI ID"
+                            type="button"
+                          >
+                            <Copy size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold text-gray-400 dark:text-[#6b6e82] uppercase tracking-[0.8px]">Exact Amount Due</span>
+                      {(() => {
+                        const penalty = liveRent.status === 'overdue' ? (liveRent.penaltyAmount || liveRent.pgId?.lateFee || 0) : (liveRent.penaltyAmount || 0);
+                        const totalDue = liveRent.amount + penalty;
+                        return (
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-[14px] text-[#6c63ff] bg-gray-100 dark:bg-[#242740] px-2.5 py-1.5 rounded-lg flex-1">{f(totalDue)}</span>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(totalDue.toString());
+                                toast.success('Amount copied!');
+                              }}
+                              className="p-2 bg-[#6c63ff]/10 text-[#6c63ff] hover:bg-[#6c63ff]/20 rounded-lg transition-colors cursor-pointer"
+                              title="Copy Amount"
+                              type="button"
+                            >
+                              <Copy size={14} />
+                            </button>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Billing detail summary */}
             <div className="grid grid-cols-2 gap-3 p-3 dark:bg-[#242740] bg-gray-100 rounded-lg text-[12px]">
               <div>
-                <span className="dark:text-[#6b6e82] text-gray-500">PG Name:</span> <strong className="block dark:text-[#f0f0f8] text-gray-900">{selectedRent.pgId?.name}</strong>
+                <span className="dark:text-[#6b6e82] text-gray-500">PG Name:</span> <strong className="block dark:text-[#f0f0f8] text-gray-900">{liveRent.pgId?.name}</strong>
               </div>
               <div>
-                <span className="dark:text-[#6b6e82] text-gray-500">Bed / Room:</span> <strong className="block dark:text-[#f0f0f8] text-gray-900">Bed {selectedRent.bedId?.bedNumber} (Room {selectedRent.roomId?.roomNumber})</strong>
+                <span className="dark:text-[#6b6e82] text-gray-500">Bed / Room:</span> <strong className="block dark:text-[#f0f0f8] text-gray-900">Bed {liveRent.bedId?.bedNumber} (Room {liveRent.roomId?.roomNumber})</strong>
               </div>
               <div>
-                <span className="dark:text-[#6b6e82] text-gray-500">Rent Month:</span> <strong className="block dark:text-[#f0f0f8] text-gray-900">{selectedRent.rentMonth}</strong>
+                <span className="dark:text-[#6b6e82] text-gray-500">Rent Month:</span> <strong className="block dark:text-[#f0f0f8] text-gray-900">{liveRent.rentMonth}</strong>
               </div>
               <div>
                 <span className="dark:text-[#6b6e82] text-gray-500">Due Amount:</span>
                 {(() => {
-                  const penalty = selectedRent.status === 'overdue' ? (selectedRent.penaltyAmount || selectedRent.pgId?.lateFee || 0) : (selectedRent.penaltyAmount || 0);
+                  const penalty = liveRent.status === 'overdue' ? (liveRent.penaltyAmount || liveRent.pgId?.lateFee || 0) : (liveRent.penaltyAmount || 0);
                   return (
                     <>
                       <strong className="block text-[#6c63ff] text-[14px]">
-                        {f(selectedRent.amount + penalty)}
+                        {f(liveRent.amount + penalty)}
                       </strong>
                       {penalty > 0 && (
                         <span className="text-[10px] text-[#ff4d6d] font-semibold">
@@ -369,7 +442,7 @@ export default function MyRent() {
             />
 
             <div className="flex gap-2.5 mt-2">
-              <Button variant="ghost" className="flex-1" onClick={() => setSelectedRent(null)}>Cancel</Button>
+              <Button variant="ghost" className="flex-1" onClick={() => setSelectedRentId(null)}>Cancel</Button>
               <Button className="flex-1" onClick={handleSubmitProof} loading={submitProofMut.isPending}>
                 Submit Proof
               </Button>
