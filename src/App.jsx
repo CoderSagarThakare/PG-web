@@ -27,6 +27,8 @@ const StaffTracker = lazy(() => import('./pages/owner/StaffTracker'));
 const BrowsePosts  = lazy(() => import('./pages/user/BrowsePosts'));
 const BrowsePGs    = lazy(() => import('./pages/user/BrowsePGs'));
 const MyRent       = lazy(() => import('./pages/user/MyRent'));
+const MyPG         = lazy(() => import('./pages/user/MyPG'));
+const OnboardingWizard = lazy(() => import('./pages/owner/OnboardingWizard'));
 
 // ── Root layout: wraps the whole app with providers + toast ───────────────────
 // Must live INSIDE the data router so that useBlocker works in any descendant.
@@ -125,6 +127,8 @@ const router = createBrowserRouter([
                   { path: '/pg/:pgId/inventory',      element: <ManageRooms /> },
                   { path: '/rent',                    element: <RentTracker /> },
                   { path: '/staff',                   element: <StaffTracker /> },
+                  { path: '/onboarding/new',          element: <OnboardingWizard /> },
+                  { path: '/onboarding/:id',          element: <OnboardingWizard /> },
                 ],
               },
 
@@ -151,6 +155,7 @@ const router = createBrowserRouter([
                 children: [
                   { path: '/my-enquiries',  element: <Enquiries /> },
                   { path: '/my-rent',       element: <MyRent /> },
+                  { path: '/my-pg',         element: <MyPG /> },
                 ],
               },
 

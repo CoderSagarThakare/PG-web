@@ -37,6 +37,7 @@ const userNav = [
   { label: 'Browse PGs', icon: <Building2 size={18} />, to: '/browse-pgs' },
   { label: 'My Enquiries', icon: <MessageSquare size={18} />, to: '/my-enquiries' },
   { label: 'My Rent', icon: <IndianRupee size={18} />, to: '/my-rent' },
+  { label: 'My PG', icon: <Home size={18} />, to: '/my-pg' },
   { section: 'Account' },
   { label: 'Profile', icon: <User size={18} />, to: '/profile' },
 ];

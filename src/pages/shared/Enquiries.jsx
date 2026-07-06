@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { getEnquiriesApi, updateEnquiryApi } from '../../api/enquiry.api';
-import { getRoomsApi, assignTenantApi } from '../../api/room.api';
 import { getMyPGsApi } from '../../api/pg.api';
 import { useAuth } from '../../context/AuthContext';
-import { MessageSquare, Search, ChevronLeft, ChevronRight, Phone, CheckCircle2, Bed, Building2 } from 'lucide-react';
+import { MessageSquare, Search, ChevronLeft, ChevronRight, Phone, CheckCircle2, Building2, ClipboardList, Edit } from 'lucide-react';
 import { Badge, Card, Spinner, EmptyState, QueryError, Modal, Input, Button, SelectDropdown } from '../../components/common';
 import { getErrorMessage, formatDate, formatTime, capitalize } from '../../utils/helpers';
 import { cn } from '../../utils/cn';
@@ -35,28 +34,50 @@ const LIMIT = 10;
 export default function Enquiries() {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const isUserRole = user?.role === 'user';
   const isStaff = !isUserRole;
 
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterPgId, setFilterPgId] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [userName, setUserName] = useState('');
-  const [page, setPage] = useState(1);
+  const [filterStatus, setFilterStatus] = useState(searchParams.get('status') || '');
+  const [filterPgId, setFilterPgId] = useState(searchParams.get('pgId') || '');
+  const [searchInput, setSearchInput] = useState(searchParams.get('userName') || '');
+  const [userName, setUserName] = useState(searchParams.get('userName') || '');
+  const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
   const [selected, setSelected] = useState(null);
   const [newStatus, setNewStatus] = useState('');
   const [remarks, setRemarks] = useState('');
-  const [assignUserModal, setAssignUserModal] = useState(null); // { userId, userName, pgId, pgName }
+  const [onboardingPrompt, setOnboardingPrompt] = useState(null); // { enquiryId, userId, userName, pgName }
+
+  // Sync state changes to searchParams
+  useEffect(() => {
+    const nextParams = {};
+    if (filterStatus) nextParams.status = filterStatus;
+    if (filterPgId) nextParams.pgId = filterPgId;
+    if (userName) nextParams.userName = userName;
+    if (page > 1) nextParams.page = page;
+    setSearchParams(nextParams, { replace: true });
+  }, [filterStatus, filterPgId, userName, page, setSearchParams]);
 
   // Debounce userName search
   useEffect(() => {
-    const t = setTimeout(() => { setUserName(searchInput); setPage(1); }, 400);
+    const t = setTimeout(() => {
+      const trimmed = searchInput.trim();
+      setUserName(trimmed);
+      setPage(1);
+    }, 400);
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  // Reset page on filter change
-  useEffect(() => { setPage(1); }, [filterStatus, filterPgId]);
+  // Reset page on filter change (except when initializing from URL)
+  useEffect(() => {
+    // Only reset if query is changing dynamically
+    const currentStatusInUrl = searchParams.get('status') || '';
+    const currentPgInUrl = searchParams.get('pgId') || '';
+    if (filterStatus !== currentStatusInUrl || filterPgId !== currentPgInUrl) {
+      setPage(1);
+    }
+  }, [filterStatus, filterPgId]);
 
   const params = {
     page,
@@ -87,13 +108,13 @@ export default function Enquiries() {
       toast.success('Enquiry updated!');
       qc.invalidateQueries(['enquiries']);
       
-      // If deal is done, ask to assign to a room
+      // If deal is done, prompt to start onboarding
       if (variables.data.status === 'dealDone') {
-        setAssignUserModal({ 
-          userId: selected.userId?._id, 
-          userName: selected.userId?.name, 
-          pgId: selected.pgId?._id, 
-          pgName: selected.pgId?.name 
+        setOnboardingPrompt({
+          enquiryId: selected._id,
+          userId:    selected.userId?._id,
+          userName:  selected.userId?.name,
+          pgName:    selected.pgId?.name,
         });
       }
       
@@ -274,14 +295,30 @@ export default function Enquiries() {
                       </td>
                     )}
 
-                    {/* Action column */}
-                    {isStaff && (
-                      <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">
-                        <Button variant="ghost" size="sm" onClick={() => openUpdate(enq)}>
-                          Update
-                        </Button>
-                      </td>
-                    )}
+                     {/* Action column */}
+                     {isStaff && (
+                       <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={() => openUpdate(enq)}
+                              className="p-1.5 hover:bg-gray-100 dark:hover:bg-[#2d3052] rounded-lg transition-colors text-gray-500 dark:text-[#a0a3b1] border-none bg-transparent cursor-pointer flex items-center justify-center"
+                              title="Update Status"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            {enq.status === 'dealDone' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/onboarding/new?enquiryId=${enq._id}`)}
+                                className="text-[#6c63ff] border-[#6c63ff]/20"
+                              >
+                                <ClipboardList size={13} /> Onboard
+                              </Button>
+                            )}
+                          </div>
+                       </td>
+                     )}
                   </tr>
                 ))}
               </tbody>
@@ -352,29 +389,31 @@ export default function Enquiries() {
         )}
       </Modal>
 
-      {/* Success & Navigation Modal */}
-      <Modal isOpen={!!assignUserModal} onClose={() => setAssignUserModal(null)} title="Deal Confirmed! 🚀">
-        {assignUserModal && (
+      {/* Start Onboarding Modal (replaces old assign-bed modal) */}
+      <Modal isOpen={!!onboardingPrompt} onClose={() => setOnboardingPrompt(null)} title="Start Onboarding 🎉">
+        {onboardingPrompt && (
           <div className="text-center py-2.5">
             <div className="w-16 h-16 dark:bg-[#51cf66]/10 bg-[#51cf66]/10 rounded-full flex items-center justify-center mx-auto mb-4 text-[#51cf66]">
               <CheckCircle2 size={32} />
             </div>
-            <h3 className="mb-2 font-bold text-lg dark:text-[#f0f0f8] text-gray-900">Congratulations!</h3>
+            <h3 className="mb-2 font-bold text-lg dark:text-[#f0f0f8] text-gray-900">Deal Confirmed!</h3>
             <p className="dark:text-[#6b6e82] text-gray-500 text-sm mb-6">
-              The deal for <strong>{assignUserModal.userName}</strong> is marked as done.{' '}
-              Would you like to assign them to a room now?
+              Start the onboarding process for{' '}
+              <strong>{onboardingPrompt.userName}</strong> at{' '}
+              <strong>{onboardingPrompt.pgName}</strong>.
             </p>
             <div className="flex flex-col gap-2.5">
               <Button
                 onClick={() => {
-                  setAssignUserModal(null);
-                  navigate(`/pg/${assignUserModal.pgId}/inventory`);
+                  setOnboardingPrompt(null);
+                  navigate(`/onboarding/new?enquiryId=${onboardingPrompt.enquiryId}`);
                 }}
-                className="w-full bg-gradient-to-r from-[#6c63ff] to-[#a78bfa] border-0"
+                className="w-full"
               >
-                Go to Manage Rooms &amp; Beds
+                <ClipboardList size={16} />
+                Start Onboarding
               </Button>
-              <Button variant="ghost" onClick={() => setAssignUserModal(null)} className="w-full">
+              <Button variant="ghost" onClick={() => setOnboardingPrompt(null)} className="w-full">
                 I'll do it later
               </Button>
             </div>

@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Building2, MessageSquare, User, Search, IndianRupee, Receipt } from 'lucide-react';
+import { LayoutDashboard, Building2, MessageSquare, User, Search, IndianRupee, Receipt, Home } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 const ownerManagerItems = [
@@ -14,7 +14,7 @@ const ownerManagerItems = [
 const userItems = [
   { label: 'Discover', icon: Search, to: '/browse' },
   { label: 'Browse', icon: Building2, to: '/browse-pgs' },
-  { label: 'Enquiries', icon: MessageSquare, to: '/my-enquiries' },
+  { label: 'My PG', icon: Home, to: '/my-pg' },
   { label: 'My Rent', icon: IndianRupee, to: '/my-rent' },
   { label: 'Account', icon: User, to: '/profile' },
 ];
