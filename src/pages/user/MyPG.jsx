@@ -4,8 +4,8 @@ import { getMyPGInfoApi, getBedHistoryApi } from '../../api/onboarding.api';
 import { Badge, Card, Spinner, EmptyState, Button } from '../../components/common';
 import { formatDate } from '../../utils/helpers';
 import {
-  Home, Building2, Calendar, ShieldCheck, Phone, FileText,
-  User, CheckCircle2, ChevronRight, Clock, ArrowRight, BookOpen, AlertCircle
+  Home, Building2, Calendar, ShieldCheck, Phone,
+  User, CheckCircle2, ChevronRight, Clock, ArrowRight
 } from 'lucide-react';
 
 export default function MyPG() {
@@ -27,7 +27,7 @@ export default function MyPG() {
 
   if (isLoading) return <Spinner center />;
 
-  if (pgError || !pgInfoData || !pgInfoData.assignment) {
+  if (pgError || !pgInfoData || !pgInfoData.onboarding) {
     return (
       <div className="fade-in max-w-4xl mx-auto py-10 px-4">
         <EmptyState
@@ -58,9 +58,15 @@ export default function MyPG() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Building2 size={20} className="text-[#6c63ff]" />
-            <Badge variant="success" className="text-xs uppercase font-extrabold tracking-wider px-2 py-0.5">
-              Active Stay
-            </Badge>
+            {assignment ? (
+              <Badge variant="success" className="text-xs uppercase font-extrabold tracking-wider px-2 py-0.5">
+                Active Stay
+              </Badge>
+            ) : (
+              <Badge variant="warning" className="text-xs uppercase font-extrabold tracking-wider px-2 py-0.5">
+                Onboarded - Room Allocation Pending
+              </Badge>
+            )}
           </div>
           <h1 className="text-3xl font-black dark:text-[#f0f0f8] text-gray-900 leading-tight">
             {pgInfo?.name}
@@ -116,46 +122,6 @@ export default function MyPG() {
                 </span>
               </div>
             </div>
-          </Card>
-
-          {/* Rules and Regulations Card */}
-          <Card className="p-6 dark:bg-[#242740] bg-gray-50 border border-gray-200 dark:border-[#2d3052] rounded-[14px]">
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
-              <h3 className="text-lg font-bold dark:text-[#f0f0f8] text-gray-900 flex items-center gap-2">
-                <BookOpen size={18} className="text-[#6c63ff]" /> PG Rules &amp; Regulations
-              </h3>
-
-            </div>
-
-            {pgInfo?.rulesDocument?.type === 'pdf' && pgInfo?.rulesDocument?.url ? (
-              <div className="flex flex-col items-center justify-center py-6 border border-dashed dark:border-[#2d3052] border-gray-200 rounded-lg">
-                <FileText size={48} className="text-gray-400 dark:text-[#6b6e82] mb-3" />
-                <h4 className="font-semibold text-sm dark:text-[#f0f0f8] text-gray-900">Official Rules PDF</h4>
-                <p className="text-xs dark:text-[#6b6e82] text-gray-500 mt-1 mb-4">Please download or view the PDF to inspect policies.</p>
-                <a
-                  href={pgInfo.rulesDocument.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-4 py-2 bg-[#6c63ff]/10 hover:bg-[#6c63ff]/20 text-[#6c63ff] font-bold text-xs rounded-lg transition-colors inline-flex items-center gap-1.5 no-underline"
-                >
-                  View Rules Document
-                </a>
-              </div>
-            ) : pgInfo?.rulesDocument?.type === 'bullets' && pgInfo?.rulesDocument?.bulletPoints?.length > 0 ? (
-              <ul className="flex flex-col gap-3 pl-0 list-none m-0">
-                {pgInfo.rulesDocument.bulletPoints.map((rule, index) => (
-                  <li key={index} className="flex gap-3 text-sm dark:text-[#f0f0f8] text-gray-700">
-                    <span className="font-bold text-[#6c63ff] shrink-0">{index + 1}.</span>
-                    <span>{rule}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="flex items-center gap-2 p-4 dark:bg-[#1a1d2e] bg-white rounded-lg border dark:border-[#2d3052] border-gray-200">
-                <AlertCircle size={18} className="text-gray-400 dark:text-[#6b6e82]" />
-                <span className="text-sm dark:text-[#6b6e82] text-gray-500">No PG-specific rules guidelines have been published yet by the owner.</span>
-              </div>
-            )}
           </Card>
 
           {/* Occupancy History Timeline */}

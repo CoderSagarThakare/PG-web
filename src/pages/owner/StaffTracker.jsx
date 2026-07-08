@@ -1552,9 +1552,17 @@ function AddExpenseModal({ isOpen, onClose, pgOptions, employees, currentUser, d
   const isEmployee = currentUser?.role === 'employee';
   const isStaff = currentUser?.role === 'owner' || currentUser?.role === 'manager';
 
+  const getLocalDateString = () => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
   const [form, setForm] = useState({
     pgId: defaultPgId || '', amount: '', description: '', category: 'General',
-    spentDate: new Date().toISOString().slice(0, 10), spentBy: '', reimbursementType: '',
+    spentDate: getLocalDateString(), spentBy: '', reimbursementType: '',
   });
 
   // Sync defaultPgId when it resolves asynchronously (employee's PG loaded after component mount)
@@ -1570,7 +1578,7 @@ function AddExpenseModal({ isOpen, onClose, pgOptions, employees, currentUser, d
       setForm({
         pgId: defaultPgId || '',
         amount: '', description: '', category: 'General',
-        spentDate: new Date().toISOString().slice(0, 10),
+        spentDate: getLocalDateString(),
         spentBy: '', reimbursementType: '',
       });
     }

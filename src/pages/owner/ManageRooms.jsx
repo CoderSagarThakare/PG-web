@@ -450,15 +450,20 @@ function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
 }
 
 function AssignForm({ bedInfo, onSubmit, loading, pgId, pgName }) {
-  const { data: tenants = [], isLoading } = useQuery({
+  const { data: tenantData, isLoading } = useQuery({
     queryKey: ['eligible-tenants', pgId],
     queryFn: async () => (await getEligibleTenantsApi(pgId)).data?.data,
   });
+  const tenants = tenantData?.users ?? [];
+  const genderMismatchCount = tenantData?.genderMismatchCount ?? 0;
 
   const [selectedUser, setSelectedUser] = useState(null);
   const [joiningDate, setJoiningDate] = useState(() => {
     const today = new Date();
-    return today.toISOString().slice(0, 10);
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   });
 
   return (
@@ -486,7 +491,17 @@ function AssignForm({ bedInfo, onSubmit, loading, pgId, pgName }) {
         ) : tenants.length === 0 ? (
           <div className="text-center py-4 dark:text-[#6b6e82] text-gray-500">
             <Users size={32} className="opacity-30 mb-2 mx-auto" />
-            <p>No eligible tenants found.<br /><small>Users must have an enquiry with "Deal Done" status.</small></p>
+            {genderMismatchCount > 0 ? (
+              <p>
+                No eligible tenants found.<br />
+                <small>
+                  {genderMismatchCount} onboarded tenant{genderMismatchCount > 1 ? 's are' : ' is'} excluded
+                  due to gender mismatch with this PG type.
+                </small>
+              </p>
+            ) : (
+              <p>No eligible tenants found.<br /><small>Users must have completed onboarding for this PG.</small></p>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto p-1">

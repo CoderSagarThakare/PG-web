@@ -126,8 +126,8 @@ function StepVerificationAndDetails({ onboarding, onSave, isSaving }) {
       toast.error('Please fill all emergency contact fields');
       return;
     }
-    if (!/^[6-9]\d{9}$/.test(ec.phone.trim())) {
-      toast.error('Please enter a valid 10-digit phone number (e.g. 9876543210)');
+    if (!/^\d{10}$/.test(ec.phone.trim())) {
+      toast.error('Emergency contact number must be exactly 10 digits');
       return;
     }
     if (!verified) {
@@ -140,10 +140,12 @@ function StepVerificationAndDetails({ onboarding, onSave, isSaving }) {
     });
   };
 
+  const phoneInvalid = ec.phone.trim().length > 0 && !/^\d{10}$/.test(ec.phone.trim());
+
   const isSaveDisabled =
     !ec.name.trim() ||
-    !ec.phone.trim() ||
-    !/^[6-9]\d{9}$/.test(ec.phone.trim()) ||
+    ec.phone.trim().length !== 10 ||
+    phoneInvalid ||
     !ec.relation ||
     !verified;
 
@@ -234,17 +236,22 @@ function StepVerificationAndDetails({ onboarding, onSave, isSaving }) {
             onChange={e => setEc(p => ({ ...p, name: e.target.value }))}
             placeholder="e.g. Ramesh Kumar"
           />
-          <Input
-            label={<span className="inline-flex items-center gap-1.5"><Phone size={14} /> Phone Number</span>}
-            required
-            type="tel"
-            value={ec.phone}
-            onChange={e => {
-              const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-              setEc(p => ({ ...p, phone: val }));
-            }}
-            placeholder="e.g. 9876543210"
-          />
+          <div className="flex flex-col gap-1">
+            <Input
+              label={<span className="inline-flex items-center gap-1.5"><Phone size={14} /> Phone Number</span>}
+              required
+              type="tel"
+              value={ec.phone}
+              onChange={e => {
+                const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                setEc(p => ({ ...p, phone: val }));
+              }}
+              placeholder="e.g. 9876543210"
+            />
+            {phoneInvalid && (
+              <span className="text-xs text-[#ff4d6d] mt-0.5">Must be exactly 10 digits</span>
+            )}
+          </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1] inline-flex items-center gap-1.5">
               <Users size={14} /> Relation <span className="text-[#ff4d6d]">*</span>
@@ -563,17 +570,32 @@ export default function OnboardingWizard() {
 
   const handleStepSave = (data, advance = true) => {
     if (Object.keys(data).length > 0) {
-      saveMut.mutate(data);
-    }
-    if (activeStep === 3) {
-      setCompleted(prev => [...new Set([...prev, 3])]);
-      setShowAssignBedModal(true);
+      saveMut.mutate(data, {
+        onSuccess: () => {
+          if (activeStep === 3) {
+            setCompleted(prev => [...new Set([...prev, 3])]);
+            setShowAssignBedModal(true);
+          } else {
+            if (advance && activeStep < 3) {
+              setCompleted(prev => [...new Set([...prev, activeStep])]);
+              setActiveStep(s => s + 1);
+            } else if (advance) {
+              setCompleted(prev => [...new Set([...prev, activeStep])]);
+            }
+          }
+        }
+      });
     } else {
-      if (advance && activeStep < 3) {
-        setCompleted(prev => [...new Set([...prev, activeStep])]);
-        setActiveStep(s => s + 1);
-      } else if (advance) {
-        setCompleted(prev => [...new Set([...prev, activeStep])]);
+      if (activeStep === 3) {
+        setCompleted(prev => [...new Set([...prev, 3])]);
+        setShowAssignBedModal(true);
+      } else {
+        if (advance && activeStep < 3) {
+          setCompleted(prev => [...new Set([...prev, activeStep])]);
+          setActiveStep(s => s + 1);
+        } else if (advance) {
+          setCompleted(prev => [...new Set([...prev, activeStep])]);
+        }
       }
     }
   };
