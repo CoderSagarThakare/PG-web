@@ -113,7 +113,16 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
 
     // Clean empty optional fields so they don't fail backend validation
     if (!cleaned.landline?.trim()) delete cleaned.landline;
-    if (!cleaned.locationLink?.trim()) delete cleaned.locationLink;
+    
+    // Auto-prepend https:// if link scheme is missing (e.g. maps.google.com)
+    if (cleaned.locationLink?.trim()) {
+      cleaned.locationLink = cleaned.locationLink.trim();
+      if (!/^https?:\/\//i.test(cleaned.locationLink)) {
+        cleaned.locationLink = `https://${cleaned.locationLink}`;
+      }
+    } else {
+      delete cleaned.locationLink;
+    }
 
     if (cleaned.address) {
       cleaned.address = { ...cleaned.address };
