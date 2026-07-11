@@ -24,6 +24,7 @@ const ManageRooms  = lazy(() => import('./pages/owner/ManageRooms'));
 const ManagePosts  = lazy(() => import('./pages/owner/ManagePosts'));
 const RentTracker  = lazy(() => import('./pages/owner/RentTracker'));
 const StaffTracker = lazy(() => import('./pages/owner/StaffTracker'));
+const ManageTenants = lazy(() => import('./pages/owner/ManageTenants'));
 const BrowsePosts  = lazy(() => import('./pages/user/BrowsePosts'));
 const BrowsePGs    = lazy(() => import('./pages/user/BrowsePGs'));
 const MyRent       = lazy(() => import('./pages/user/MyRent'));
@@ -127,6 +128,7 @@ const router = createBrowserRouter([
                   { path: '/pg/:pgId/inventory',      element: <ManageRooms /> },
                   { path: '/rent',                    element: <RentTracker /> },
                   { path: '/staff',                   element: <StaffTracker /> },
+                  { path: '/tenants',                 element: <ManageTenants /> },
                   { path: '/onboarding/new',          element: <OnboardingWizard /> },
                   { path: '/onboarding/:id',          element: <OnboardingWizard /> },
                 ],

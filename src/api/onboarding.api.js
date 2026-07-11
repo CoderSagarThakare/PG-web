@@ -38,9 +38,19 @@ export const listOnboardingsApi = (pgId, params) =>
 export const shiftBedApi = (data) =>
   api.post('/onboarding/shift-bed', data);
 
-/** POST /onboarding/offboard  — Offboard a tenant (vacate + settlement) */
+/**
+ * POST /onboarding/offboard  — Owner initiates offboarding (settlement_pending).
+ * Body: { onboardingId, exitDate, reason, deductions, deductionNotes, pendingRent, settlementReference }
+ */
 export const offboardTenantApi = (data) =>
   api.post('/onboarding/offboard', data);
+
+/**
+ * POST /onboarding/confirm-settlement  — Tenant confirms receipt of refund (→ removed).
+ * Body: { onboardingId }
+ */
+export const confirmSettlementApi = (onboardingId) =>
+  api.post('/onboarding/confirm-settlement', { onboardingId });
 
 /** GET /onboarding/pg/:pgId/rules-upload-url  — Get S3 presigned URL for rules PDF upload */
 export const getPGRulesUploadUrlApi = (pgId, params) =>
@@ -57,3 +67,10 @@ export const getMyPGInfoApi = () =>
 /** GET /onboarding/tenant/history  — Get the tenant's bed assignment history */
 export const getBedHistoryApi = () =>
   api.get('/onboarding/tenant/history');
+
+/**
+ * GET /onboarding/tenants  — Owner: list all tenants across managed PGs.
+ * Params: { search, pgId, status, page, limit }
+ */
+export const listTenantsApi = (params) =>
+  api.get('/onboarding/tenants', { params });

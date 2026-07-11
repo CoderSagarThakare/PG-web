@@ -1,38 +1,40 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { offboardTenantApi } from '../../api/onboarding.api';
 import { Modal, Button, Input } from '../common';
 import { getErrorMessage, formatDate } from '../../utils/helpers';
-import { AlertTriangle, User, Home, Bed, Calendar, IndianRupee, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, Home, Bed, Calendar, IndianRupee, CheckCircle2 } from 'lucide-react';
 
 /**
  * OffboardingModal
- * Triggered from tenant management.
+ * Triggered from ManageTenants / tenant management.
  *
  * Props:
  *  - isOpen     {boolean}
  *  - onClose    {function}
- *  - onboarding {object}  — active onboarding record with financialTerms, userId, pgId, currentBedId etc.
+ *  - onboarding {object}  — active onboarding record with financialTerms, userId, pgId etc.
  */
 export default function OffboardingModal({ isOpen, onClose, onboarding }) {
   const qc = useQueryClient();
 
-  const [vacatingDate,     setVacatingDate]     = useState('');
-  const [deductions,       setDeductions]       = useState('');
-  const [deductionNotes,   setDeductionNotes]   = useState('');
-  const [pendingRent,      setPendingRent]       = useState('');
-  const [settleReference,  setSettleReference]  = useState('');
-  const [confirmed,        setConfirmed]        = useState(false);
+  const [exitDate,        setExitDate]        = useState('');
+  const [reason,          setReason]          = useState('');
+  const [deductions,      setDeductions]      = useState('');
+  const [deductionNotes,  setDeductionNotes]  = useState('');
+  const [pendingRent,     setPendingRent]     = useState('');
+  const [settleReference, setSettleReference] = useState('');
+  const [confirmed,       setConfirmed]       = useState(false);
 
-  // Derived values
-  const deposit      = Number(onboarding?.financialTerms?.securityDeposit || 0);
-  const ded          = Number(deductions) || 0;
-  const rent         = Number(pendingRent) || 0;
-  const netRefund    = deposit - ded - rent;
+  // Derived values — use securityDepositAmount (correct field name)
+  const deposit   = Number(onboarding?.financialTerms?.securityDepositAmount || 0);
+  const ded       = Number(deductions) || 0;
+  const rent      = Number(pendingRent) || 0;
+  const netRefund = Math.max(0, deposit - ded - rent);
 
   const resetForm = () => {
-    setVacatingDate('');
+    setExitDate('');
+    setReason('');
     setDeductions('');
     setDeductionNotes('');
     setPendingRent('');
@@ -48,8 +50,9 @@ export default function OffboardingModal({ isOpen, onClose, onboarding }) {
   const offboardMut = useMutation({
     mutationFn: (data) => offboardTenantApi(data),
     onSuccess: () => {
-      toast.success('Tenant offboarded successfully. Bed is now available.');
+      toast.success('Offboarding initiated. Tenant has been notified to confirm the settlement.');
       qc.invalidateQueries(['onboardings']);
+      qc.invalidateQueries(['tenants']);
       qc.invalidateQueries(['rooms']);
       handleClose();
     },
@@ -57,29 +60,33 @@ export default function OffboardingModal({ isOpen, onClose, onboarding }) {
   });
 
   const handleConfirm = () => {
-    if (!vacatingDate) {
-      toast.error('Please set a vacating date');
+    if (!exitDate) {
+      toast.error('Please set an exit date');
+      return;
+    }
+    if (!reason.trim()) {
+      toast.error('Please enter a reason for offboarding');
       return;
     }
     if (!confirmed) {
-      toast.error('Please confirm the net refundable amount has been paid');
+      toast.error('Please confirm the settlement breakdown is correct');
       return;
     }
     offboardMut.mutate({
-      onboardingId:    onboarding._id,
-      vacatingDate,
-      deductions:      ded,
-      deductionNotes,
-      pendingRent:     rent,
-      netRefund,
-      settleReference,
+      onboardingId:       onboarding._id,
+      exitDate,
+      reason,
+      deductions:         ded,
+      deductionNotes:     deductionNotes || undefined,
+      pendingRent:        rent,
+      settlementReference: settleReference || undefined,
     });
   };
 
   const f = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Offboard Tenant" size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Initiate Tenant Offboarding" size="lg">
       {onboarding && (
         <div className="flex flex-col gap-5">
           {/* Header info */}
@@ -109,30 +116,45 @@ export default function OffboardingModal({ isOpen, onClose, onboarding }) {
               <div className="flex items-center gap-2">
                 <Calendar size={13} className="dark:text-[#6b6e82] text-gray-400" />
                 <span className="dark:text-[#a0a3b1] text-gray-600">
-                  Joined {formatDate(onboarding.joiningDate)}
+                  Joined {onboarding.joiningDate ? formatDate(onboarding.joiningDate) : '—'}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Section 1: Vacating date */}
+          {/* Section 1: Exit date */}
           <div>
             <h4 className="text-xs font-extrabold dark:text-[#6b6e82] text-gray-500 uppercase tracking-wider mb-2">
-              Vacating Date
+              Exit Date
             </h4>
             <div className="max-w-xs">
               <Input
-                label="Date of Vacating"
+                label="Date of Exit"
                 required
                 type="date"
-                name="vacatingDate"
-                value={vacatingDate}
-                onChange={e => setVacatingDate(e.target.value)}
+                name="exitDate"
+                value={exitDate}
+                onChange={(e) => setExitDate(e.target.value)}
               />
             </div>
           </div>
 
-          {/* Section 2: Final Settlement Calculator */}
+          {/* Section 2: Reason */}
+          <div>
+            <h4 className="text-xs font-extrabold dark:text-[#6b6e82] text-gray-500 uppercase tracking-wider mb-2">
+              Reason for Offboarding
+            </h4>
+            <Input
+              label="Reason"
+              required
+              name="reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Tenant shifting out, End of lease term..."
+            />
+          </div>
+
+          {/* Section 3: Final Settlement Calculator */}
           <div>
             <h4 className="text-xs font-extrabold dark:text-[#6b6e82] text-gray-500 uppercase tracking-wider mb-3">
               Final Settlement Calculator
@@ -153,7 +175,7 @@ export default function OffboardingModal({ isOpen, onClose, onboarding }) {
                   type="number"
                   min="0"
                   value={deductions}
-                  onChange={e => setDeductions(e.target.value)}
+                  onChange={(e) => setDeductions(e.target.value)}
                   placeholder="0"
                 />
               </div>
@@ -163,7 +185,7 @@ export default function OffboardingModal({ isOpen, onClose, onboarding }) {
                   as="textarea"
                   rows={2}
                   value={deductionNotes}
-                  onChange={e => setDeductionNotes(e.target.value)}
+                  onChange={(e) => setDeductionNotes(e.target.value)}
                   placeholder="e.g. Broken furniture, overdue bills..."
                 />
               </div>
@@ -175,8 +197,8 @@ export default function OffboardingModal({ isOpen, onClose, onboarding }) {
                   type="number"
                   min="0"
                   value={pendingRent}
-                  onChange={e => setPendingRent(e.target.value)}
-                  placeholder="Auto-calculated or enter manually"
+                  onChange={(e) => setPendingRent(e.target.value)}
+                  placeholder="Enter outstanding rent if any"
                 />
                 <p className="text-xs dark:text-[#6b6e82] text-gray-400 mt-1">
                   Check Rent Tracker for outstanding rent balances.
@@ -187,14 +209,13 @@ export default function OffboardingModal({ isOpen, onClose, onboarding }) {
               <div className="border-t dark:border-[#2d3052] border-gray-200 pt-3">
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-sm dark:text-[#a0a3b1] text-gray-600">
-                    Net Refundable
+                    Net Refundable to Tenant
                   </span>
                   <span
                     className="text-xl font-black"
                     style={{ color: netRefund >= 0 ? '#51cf66' : '#ff4d6d' }}
                   >
-                    {netRefund >= 0 ? '' : '- '}
-                    {f(Math.abs(netRefund))}
+                    {f(netRefund)}
                   </span>
                 </div>
                 <p className="text-xs dark:text-[#6b6e82] text-gray-400 mt-0.5 text-right">
@@ -204,7 +225,7 @@ export default function OffboardingModal({ isOpen, onClose, onboarding }) {
             </div>
           </div>
 
-          {/* Section 3: Settlement confirmation */}
+          {/* Section 4: Settlement reference */}
           <div>
             <h4 className="text-xs font-extrabold dark:text-[#6b6e82] text-gray-500 uppercase tracking-wider mb-2">
               Settlement Confirmation
@@ -213,22 +234,22 @@ export default function OffboardingModal({ isOpen, onClose, onboarding }) {
               <Input
                 label="Settlement Reference (Txn ID / Notes)"
                 value={settleReference}
-                onChange={e => setSettleReference(e.target.value)}
+                onChange={(e) => setSettleReference(e.target.value)}
                 placeholder="e.g. IMPS1234567890 or 'Cash paid to tenant'"
               />
               <label className="flex items-start gap-3 p-4 dark:bg-[#242740] bg-gray-50 rounded-xl border dark:border-[#2d3052] border-gray-200 cursor-pointer hover:border-[#6c63ff]/50 transition-colors">
                 <input
                   type="checkbox"
                   checked={confirmed}
-                  onChange={e => setConfirmed(e.target.checked)}
+                  onChange={(e) => setConfirmed(e.target.checked)}
                   className="w-5 h-5 mt-0.5 accent-[#6c63ff] cursor-pointer shrink-0"
                 />
                 <div>
                   <span className="font-semibold dark:text-[#f0f0f8] text-gray-900 text-sm">
-                    I confirm the net refundable amount ({f(netRefund)}) has been paid to the tenant
+                    I confirm the settlement breakdown ({f(netRefund)} refundable) is correct
                   </span>
                   <p className="text-xs dark:text-[#6b6e82] text-gray-500 mt-0.5">
-                    This is a required acknowledgement before completing offboarding.
+                    The tenant will see this on their "My PG" page and must confirm receipt to close the stay.
                   </p>
                 </div>
               </label>
@@ -239,7 +260,7 @@ export default function OffboardingModal({ isOpen, onClose, onboarding }) {
           <div className="flex items-start gap-2 p-3.5 dark:bg-[#ff4d6d]/10 bg-[#ff4d6d]/5 border border-[#ff4d6d]/30 rounded-lg">
             <AlertTriangle size={16} className="text-[#ff4d6d] mt-0.5 shrink-0" />
             <p className="text-sm text-[#ff4d6d] font-medium">
-              This action will remove the tenant and free up the bed. This cannot be undone.
+              This will free up the bed immediately. The tenant must log in to confirm receipt and close the stay.
             </p>
           </div>
 
@@ -252,9 +273,9 @@ export default function OffboardingModal({ isOpen, onClose, onboarding }) {
               variant="danger"
               onClick={handleConfirm}
               loading={offboardMut.isPending}
-              disabled={!confirmed || !vacatingDate}
+              disabled={!confirmed || !exitDate || !reason.trim()}
             >
-              Confirm Offboarding
+              Initiate Offboarding
             </Button>
           </div>
         </div>

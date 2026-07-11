@@ -759,10 +759,13 @@ export default function BrowsePosts() {
                     <Building2 size={40} className="opacity-10" />
                   )}
                   <div className="absolute top-2.5 right-2.5 bg-black/60 backdrop-blur-md text-white border border-white/10 px-2 py-0.5 rounded-md font-bold text-[11px]">{formatPrice(post.minPrice)} - {formatPrice(post.maxPrice)}</div>
-                  <div className="absolute bottom-2.5 left-2.5">
-                    <Badge variant={post.pgType === 'male' ? 'info' : post.pgType === 'female' ? 'danger' : 'accent'}>
-                      {post.pgType}
-                    </Badge>
+                  {/* PG Type overlay left */}
+                  <div className={`absolute top-2.5 left-2.5 text-white px-2.5 py-0.5 rounded-md font-bold text-[10px] uppercase tracking-wider backdrop-blur-sm shadow-sm ${
+                    post.pgType === 'male' ? 'bg-[#6c63ff]/35 border border-[#6c63ff]/40' : 
+                    post.pgType === 'female' ? 'bg-[#ff4d6d]/35 border border-[#ff4d6d]/40' : 
+                    post.pgType === 'unisex' ? 'bg-[#cc5de8]/35 border border-[#cc5de8]/40' : 'bg-[#00d4aa]/35 border border-[#00d4aa]/40'
+                  }`}>
+                    {post.pgType}
                   </div>
                 </div>
 
@@ -793,7 +796,7 @@ export default function BrowsePosts() {
 
                   <div className="flex gap-1.5 mb-3 flex-wrap">
                     {post.occupancyTypes?.map(type => (
-                      <Badge key={type} variant="accent" className="text-[9px] py-0.5 capitalize">{type}</Badge>
+                      <Badge key={type} variant="default" className="text-[9px] py-0.5 capitalize">{type}</Badge>
                     ))}
                     {post.pgType === 'unisex' ? (
                       <Badge variant="warning" className="text-[9px] py-0.5">

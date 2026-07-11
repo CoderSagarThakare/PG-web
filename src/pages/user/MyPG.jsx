@@ -1,13 +1,160 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { getMyPGInfoApi, getBedHistoryApi } from '../../api/onboarding.api';
+import toast from 'react-hot-toast';
+import { getMyPGInfoApi, getBedHistoryApi, confirmSettlementApi } from '../../api/onboarding.api';
 import { Badge, Card, Spinner, EmptyState, Button } from '../../components/common';
-import { formatDate } from '../../utils/helpers';
+import { formatDate, getErrorMessage } from '../../utils/helpers';
 import {
   Home, Building2, Calendar, ShieldCheck, Phone,
-  User, CheckCircle2, ChevronRight, Clock, ArrowRight
+  CheckCircle2, Clock, ArrowRight, LogOut, IndianRupee,
+  AlertTriangle
 } from 'lucide-react';
 
+// ── Settlement Pending Card ────────────────────────────────────────────────────
+// Shown to the tenant when status === 'settlement_pending'
+function SettlementCard({ onboarding, pgInfo, onConfirmed }) {
+  const qc = useQueryClient();
+  const [confirmed, setConfirmed] = useState(false);
+
+  const f = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+  const ob = onboarding?.offboarding || {};
+
+  const confirmMut = useMutation({
+    mutationFn: () => confirmSettlementApi(onboarding._id),
+    onSuccess: () => {
+      toast.success('Settlement confirmed! Your stay is now closed. Thank you.');
+      qc.invalidateQueries(['my-pg-info']);
+      qc.invalidateQueries(['my-bed-history']);
+      if (onConfirmed) onConfirmed();
+    },
+    onError: (e) => toast.error(getErrorMessage(e)),
+  });
+
+  return (
+    <div className="fade-in pb-10 max-w-3xl mx-auto px-4">
+      {/* Header banner */}
+      <div className="relative overflow-hidden rounded-[16px] mb-8 bg-gradient-to-r from-[#ff4d6d]/15 to-[#f97316]/15 border border-[#ff4d6d]/30 p-8 flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-[#ff4d6d]/20 flex items-center justify-center">
+            <LogOut size={22} className="text-[#ff4d6d]" />
+          </div>
+          <div>
+            <Badge variant="danger" className="text-xs uppercase font-extrabold tracking-wider mb-1">
+              Checkout Pending
+            </Badge>
+            <h1 className="text-2xl font-black dark:text-[#f0f0f8] text-gray-900">
+              Stay Settlement — {pgInfo?.name}
+            </h1>
+          </div>
+        </div>
+        <p className="text-sm dark:text-[#6b6e82] text-gray-500 max-w-xl">
+          Your owner has initiated your checkout. Please review the settlement breakdown below and confirm receipt of your refund to close your stay.
+        </p>
+      </div>
+
+      <Card className="p-7 dark:bg-[#242740] bg-gray-50 border border-gray-200 dark:border-[#2d3052] rounded-[14px] flex flex-col gap-6">
+        {/* Reason */}
+        {ob.reason && (
+          <div>
+            <h4 className="text-xs font-extrabold dark:text-[#6b6e82] text-gray-500 uppercase tracking-wider mb-1">
+              Reason for Checkout
+            </h4>
+            <p className="text-sm dark:text-[#f0f0f8] text-gray-800 font-medium">{ob.reason}</p>
+          </div>
+        )}
+
+        {/* Exit date */}
+        {ob.exitDate && (
+          <div className="flex items-center gap-3">
+            <Calendar size={16} className="dark:text-[#6b6e82] text-gray-400" />
+            <div>
+              <span className="text-xs dark:text-[#6b6e82] text-gray-500 uppercase tracking-wider">Exit Date</span>
+              <div className="font-semibold dark:text-[#f0f0f8] text-gray-900 text-sm">{formatDate(ob.exitDate)}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Settlement calculator */}
+        <div>
+          <h4 className="text-xs font-extrabold dark:text-[#6b6e82] text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <IndianRupee size={13} /> Final Settlement Breakdown
+          </h4>
+          <div className="rounded-xl border dark:border-[#2d3052] border-gray-200 overflow-hidden">
+            <div className="flex justify-between items-center px-4 py-3 border-b dark:border-[#2d3052] border-gray-200">
+              <span className="text-sm dark:text-[#a0a3b1] text-gray-600">Security Deposit Paid</span>
+              <span className="font-bold dark:text-[#f0f0f8] text-gray-900">
+                {f(onboarding?.financialTerms?.securityDepositAmount)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center px-4 py-3 border-b dark:border-[#2d3052] border-gray-200">
+              <div>
+                <span className="text-sm text-[#ff4d6d]">− Deductions</span>
+                {ob.deductionNotes && (
+                  <p className="text-xs dark:text-[#6b6e82] text-gray-400 mt-0.5">{ob.deductionNotes}</p>
+                )}
+              </div>
+              <span className="font-bold text-[#ff4d6d]">{f(ob.deductions)}</span>
+            </div>
+            <div className="flex justify-between items-center px-4 py-3 border-b dark:border-[#2d3052] border-gray-200">
+              <span className="text-sm text-[#ff4d6d]">− Pending Rent Dues</span>
+              <span className="font-bold text-[#ff4d6d]">{f(ob.pendingRent)}</span>
+            </div>
+            <div className="flex justify-between items-center px-4 py-4 dark:bg-[#1a1d2e] bg-white">
+              <span className="font-extrabold dark:text-[#f0f0f8] text-gray-900">Net Refund to You</span>
+              <span className="text-2xl font-black text-[#51cf66]">{f(ob.refundAmount)}</span>
+            </div>
+          </div>
+          {ob.settlementReference && (
+            <p className="text-xs dark:text-[#6b6e82] text-gray-500 mt-2">
+              Payment ref: <span className="font-mono">{ob.settlementReference}</span>
+            </p>
+          )}
+        </div>
+
+        {/* Confirmation checkbox */}
+        <div className="border-t dark:border-[#2d3052] border-gray-200 pt-5">
+          <label className="flex items-start gap-3 p-4 dark:bg-[#1a1d2e] bg-white rounded-xl border dark:border-[#2d3052] border-gray-200 cursor-pointer hover:border-[#6c63ff]/50 transition-colors">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(e) => setConfirmed(e.target.checked)}
+              className="w-5 h-5 mt-0.5 accent-[#6c63ff] cursor-pointer shrink-0"
+            />
+            <div>
+              <span className="font-semibold dark:text-[#f0f0f8] text-gray-900 text-sm">
+                I confirm I have received {f(ob.refundAmount)} from the owner
+              </span>
+              <p className="text-xs dark:text-[#6b6e82] text-gray-500 mt-0.5">
+                This action is final and will close your stay record.
+              </p>
+            </div>
+          </label>
+        </div>
+
+        {/* Danger warning */}
+        <div className="flex items-start gap-2 p-3.5 dark:bg-[#ff4d6d]/10 bg-[#ff4d6d]/5 border border-[#ff4d6d]/30 rounded-lg">
+          <AlertTriangle size={15} className="text-[#ff4d6d] mt-0.5 shrink-0" />
+          <p className="text-sm text-[#ff4d6d] font-medium">
+            Once confirmed, this cannot be undone. Your stay history will be archived.
+          </p>
+        </div>
+
+        <Button
+          onClick={() => confirmMut.mutate()}
+          loading={confirmMut.isPending}
+          disabled={!confirmed}
+          className="w-full bg-[#51cf66] hover:bg-[#51cf66]/90 text-white font-bold flex items-center justify-center gap-2 py-3"
+        >
+          <CheckCircle2 size={18} />
+          Confirm Receipt of {f(ob.refundAmount)}
+        </Button>
+      </Card>
+    </div>
+  );
+}
+
+// ── Main MyPG page ────────────────────────────────────────────────────────────
 export default function MyPG() {
   const navigate = useNavigate();
 
@@ -51,6 +198,17 @@ export default function MyPG() {
   const { assignment, onboarding, pgInfo } = pgInfoData;
   const history = historyData || [];
 
+  // ── Settlement Pending view ──────────────────────────────────────────────
+  if (onboarding?.status === 'settlement_pending') {
+    return (
+      <SettlementCard
+        onboarding={onboarding}
+        pgInfo={pgInfo}
+        onConfirmed={() => navigate('/my-pg')}
+      />
+    );
+  }
+
   return (
     <div className="fade-in pb-10 max-w-6xl mx-auto px-4">
       {/* Hero section / PG Header */}
@@ -64,7 +222,7 @@ export default function MyPG() {
               </Badge>
             ) : (
               <Badge variant="warning" className="text-xs uppercase font-extrabold tracking-wider px-2 py-0.5">
-                Onboarded - Room Allocation Pending
+                Onboarded — Room Allocation Pending
               </Badge>
             )}
           </div>
@@ -133,10 +291,10 @@ export default function MyPG() {
               <div className="text-sm dark:text-[#6b6e82] text-gray-500">No previous occupancy logs found.</div>
             ) : (
               <div className="relative pl-6 border-l-2 dark:border-[#2d3052] border-gray-200 flex flex-col gap-6 ml-2">
-                {history.map((assignment, index) => {
-                  const isActive = !assignment.endDate;
+                {history.map((item) => {
+                  const isActive = !item.endDate;
                   return (
-                    <div key={assignment._id} className="relative">
+                    <div key={item._id} className="relative">
                       {/* Timeline dot */}
                       <div
                         className={[
@@ -149,19 +307,21 @@ export default function MyPG() {
                       <div>
                         <div className="flex items-center justify-between flex-wrap gap-2">
                           <h4 className="font-bold text-sm dark:text-[#f0f0f8] text-gray-900">
-                            Room {assignment.roomId?.roomNumber || '—'} · Bed {assignment.bedId?.bedNumber || '—'}
+                            Room {item.roomId?.roomNumber || '—'} · Bed {item.bedId?.bedNumber || '—'}
                           </h4>
                           <span className="text-xs dark:text-[#6b6e82] text-gray-500">
-                            {formatDate(assignment.startDate)} – {assignment.endDate ? formatDate(assignment.endDate) : 'Present'}
+                            {formatDate(item.startDate)} – {item.endDate ? formatDate(item.endDate) : 'Present'}
                           </span>
                         </div>
                         <p className="text-xs dark:text-[#6b6e82] text-gray-500 mt-1">
-                          {assignment.shiftReason === 'initial_onboarding'
+                          {item.shiftReason === 'initial_onboarding'
                             ? 'Onboarding Stay Admission'
-                            : assignment.shiftReason === 'room_shift'
+                            : item.shiftReason === 'room_shift'
                             ? 'Bed Shift Transfer'
+                            : item.shiftReason === 'offboarding'
+                            ? 'Checkout'
                             : 'Occupancy Log'}
-                          {assignment.shiftNote && ` (${assignment.shiftNote})`}
+                          {item.shiftNote && ` (${item.shiftNote})`}
                         </p>
                       </div>
                     </div>
@@ -172,7 +332,7 @@ export default function MyPG() {
           </Card>
         </div>
 
-        {/* Side Panel: Onboarding Status, Deposits & Emergency Info */}
+        {/* Side Panel: Security Deposit & Emergency Contact */}
         <div className="flex flex-col gap-6">
           {/* Security Deposit Details */}
           <Card className="p-6 dark:bg-[#242740] bg-gray-50 border border-gray-200 dark:border-[#2d3052] rounded-[14px]">

@@ -314,12 +314,12 @@ export default function ManagePosts() {
                 <div className="text-[11px] dark:text-[#6b6e82] text-gray-500 mb-2.5 whitespace-nowrap overflow-hidden text-ellipsis">{post.pgId?.name}</div>
 
                 <div className="flex flex-wrap gap-1 mb-2.5">
-                  {post.occupancyTypes?.map(type => (
-                    <Badge key={type} variant="accent">{type}</Badge>
-                  ))}
-                  <Badge variant={post.pgType === 'male' ? 'info' : post.pgType === 'female' ? 'danger' : 'accent'}>
+                  <Badge variant={post.pgType === 'male' ? 'info' : post.pgType === 'female' ? 'danger' : post.pgType === 'unisex' ? 'purple' : 'accent'} className="capitalize font-black">
                     {post.pgType}
                   </Badge>
+                  {post.occupancyTypes?.map(type => (
+                    <Badge key={type} variant="default" className="capitalize">{type}</Badge>
+                  ))}
 
                   {/* Vacancy badge — gender split for unisex, single count otherwise */}
                   {post.pgType === 'unisex' ? (

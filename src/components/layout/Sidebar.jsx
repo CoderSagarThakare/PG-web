@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Logo, ConfirmModal } from '../common';
 import {
   LayoutDashboard, Building2, FileText, MessageSquare,
-  Users, Settings, LogOut, User, Home, Search, Sun, Moon, IndianRupee, X, Receipt
+  Users, Users2, Settings, LogOut, User, Home, Search, Sun, Moon, IndianRupee, X, Receipt
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -15,6 +15,7 @@ const ownerNav = [
   { label: 'Vacancy Posts', icon: <FileText size={18} />, to: '/posts' },
   { label: 'Enquiries', icon: <MessageSquare size={18} />, to: '/enquiries' },
   { label: 'Rent Tracker', icon: <IndianRupee size={18} />, to: '/rent' },
+  { label: 'My Tenants', icon: <Users2 size={18} />, to: '/tenants' },
   { label: 'Staff & Payroll', icon: <Users size={18} />, to: '/staff' },
   { section: 'Account' },
   { label: 'Profile', icon: <User size={18} />, to: '/profile' },
@@ -27,6 +28,7 @@ const managerNav = [
   { label: 'Posts', icon: <FileText size={18} />, to: '/posts' },
   { label: 'Enquiries', icon: <MessageSquare size={18} />, to: '/enquiries' },
   { label: 'Rent Tracker', icon: <IndianRupee size={18} />, to: '/rent' },
+  { label: 'My Tenants', icon: <Users2 size={18} />, to: '/tenants' },
   { label: 'Staff & Payroll', icon: <Users size={18} />, to: '/staff' },
   { section: 'Account' },
   { label: 'Profile', icon: <User size={18} />, to: '/profile' },
