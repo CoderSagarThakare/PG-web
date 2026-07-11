@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { listTenantsApi } from '../../api/onboarding.api';
 import { getMyPGsApi } from '../../api/pg.api';
+import { getRentPaymentsApi } from '../../api/rent.api';
 import {
-  Badge, Card, Spinner, EmptyState, Button, Input
+  Badge, Card, Spinner, EmptyState, Button, Input, Modal
 } from '../../components/common';
-import { formatDate } from '../../utils/helpers';
+import { formatDate, getErrorMessage } from '../../utils/helpers';
 import OffboardingModal from '../../components/owner/OffboardingModal';
 import {
   Users, Search, Building2, Phone, Calendar, Filter,
-  LogOut, Eye, User, ChevronRight, RefreshCw, Home
+  LogOut, Eye, User, ChevronRight, RefreshCw, Home, AlertTriangle
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 // ── Status badge helper ────────────────────────────────────────────────────────
 const STATUS_MAP = {
@@ -198,7 +201,7 @@ function TenantDrawer({ tenant, onClose, onOffboard }) {
 }
 
 // ── Tenant Row Card ────────────────────────────────────────────────────────────
-function TenantCard({ tenant, onView, onOffboard }) {
+function TenantCard({ tenant, onView, onOffboard, isChecking }) {
   const u = tenant.userId || {};
   return (
     <div className="p-5 dark:bg-[#242740] bg-white rounded-[14px] border dark:border-[#2d3052] border-gray-200 hover:border-[#6c63ff]/40 transition-all flex flex-col sm:flex-row sm:items-center gap-4">
@@ -246,9 +249,10 @@ function TenantCard({ tenant, onView, onOffboard }) {
           <Button
             variant="danger"
             onClick={() => onOffboard(tenant)}
+            loading={isChecking}
             className="text-xs flex items-center gap-1.5 h-8 px-3"
           >
-            <LogOut size={13} /> Offboard
+            {!isChecking && <LogOut size={13} />} Offboard
           </Button>
         )}
       </div>
@@ -258,12 +262,15 @@ function TenantCard({ tenant, onView, onOffboard }) {
 
 // ── Main ManageTenants page ────────────────────────────────────────────────────
 export default function ManageTenants() {
+  const navigate = useNavigate();
   const [search, setSearch]             = useState('');
   const [pgFilter, setPgFilter]         = useState('');
   const [statusFilter, setStatusFilter] = useState('onboarding_completed');
   const [page, setPage]                 = useState(1);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [offboardTarget, setOffboardTarget] = useState(null);
+  const [checkingRent, setCheckingRent] = useState(null);
+  const [rentWarning, setRentWarning]   = useState(null);
 
   // Fetch managed PGs for filter dropdown
   const { data: pgsData } = useQuery({
@@ -292,6 +299,30 @@ export default function ManageTenants() {
   const handleStatusFilter = (s) => { setStatusFilter(s); setPage(1); };
   const handlePgFilter     = (v) => { setPgFilter(v); setPage(1); };
   const handleSearch       = (v) => { setSearch(v); setPage(1); };
+
+  const handleInitiateOffboard = async (tenant) => {
+    try {
+      setCheckingRent(tenant._id);
+      const res = await getRentPaymentsApi({
+        userId: tenant.userId?._id || tenant.userId,
+        limit: 20,
+      });
+
+      const unpaid = (res.data?.data?.records || []).filter((r) =>
+        ['pending', 'under_review', 'partial', 'overdue'].includes(r.status)
+      );
+
+      if (unpaid.length > 0) {
+        setRentWarning({ tenant, unpaid });
+      } else {
+        setOffboardTarget(tenant);
+      }
+    } catch (err) {
+      toast.error('Failed to verify tenant rent status. Please try again.');
+    } finally {
+      setCheckingRent(null);
+    }
+  };
 
   return (
     <div className="fade-in pb-10 max-w-6xl mx-auto px-4">
@@ -393,7 +424,8 @@ export default function ManageTenants() {
               key={tenant._id}
               tenant={tenant}
               onView={setSelectedTenant}
-              onOffboard={setOffboardTarget}
+              onOffboard={handleInitiateOffboard}
+              isChecking={checkingRent === tenant._id}
             />
           ))}
         </div>
@@ -429,7 +461,7 @@ export default function ManageTenants() {
         <TenantDrawer
           tenant={selectedTenant}
           onClose={() => setSelectedTenant(null)}
-          onOffboard={(t) => { setSelectedTenant(null); setOffboardTarget(t); }}
+          onOffboard={handleInitiateOffboard}
         />
       )}
 
@@ -439,6 +471,64 @@ export default function ManageTenants() {
         onClose={() => setOffboardTarget(null)}
         onboarding={offboardTarget}
       />
+
+      {/* Rent Warning Modal */}
+      {rentWarning && (
+        <Modal
+          isOpen={true}
+          onClose={() => setRentWarning(null)}
+          title="Outstanding Rent Warning"
+        >
+          <div className="flex flex-col items-center text-center p-2 gap-4">
+            <div className="w-12 h-12 rounded-full bg-[#ff4d6d]/10 flex items-center justify-center text-[#ff4d6d]">
+              <AlertTriangle size={24} />
+            </div>
+            <div>
+              <h3 className="font-black text-gray-900 dark:text-[#f0f0f8] text-base">
+                Cannot Offboard {rentWarning.tenant.userId?.name}
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-[#a0a3b1] mt-2 max-w-sm leading-relaxed">
+                This tenant has unpaid or pending rent records. All outstanding rent must be cleared before the offboarding process can be completed.
+              </p>
+            </div>
+
+            {/* List of unpaid rents */}
+            <div className="w-full bg-gray-50 dark:bg-[#242740] rounded-xl p-3 border dark:border-[#2d3052] border-gray-100 flex flex-col gap-2 max-h-[160px] overflow-y-auto mt-1 text-left">
+              {rentWarning.unpaid.map((rent) => (
+                <div key={rent._id} className="flex justify-between items-center text-xs border-b dark:border-[#2d3052]/40 border-gray-200/40 pb-2 last:border-0 last:pb-0">
+                  <div>
+                    <span className="font-semibold dark:text-[#f0f0f8] text-gray-800">Rent for {rent.rentMonth}</span>
+                    <p className="text-[10px] dark:text-[#6b6e82] text-gray-400 mt-0.5">Status: <span className="capitalize font-medium">{rent.status.replace('_', ' ')}</span></p>
+                  </div>
+                  <span className="font-bold text-[#ff4d6d]">
+                    ₹{(rent.amount - rent.amountPaid).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-3 w-full mt-4">
+              <Button
+                variant="ghost"
+                onClick={() => setRentWarning(null)}
+                className="flex-1"
+              >
+                Close
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setRentWarning(null);
+                  navigate(`/rent?search=${rentWarning.tenant.userId?.name}`);
+                }}
+                className="flex-1"
+              >
+                Go to Rent Tracker
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
