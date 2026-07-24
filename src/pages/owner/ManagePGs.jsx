@@ -76,8 +76,8 @@ export default function ManagePGs() {
 
 
   const onSubmit = (formData) => {
-    if (editPG) updateMutation.mutate({ id: editPG._id, data: formData });
-    else createMutation.mutate(formData);
+    if (editPG) return updateMutation.mutateAsync({ id: editPG._id, data: formData });
+    else return createMutation.mutateAsync(formData);
   };
 
   const pgTypeLabels = { male: 'Male', female: 'Female', unisex: 'Unisex', coLiving: 'Co-Living' };

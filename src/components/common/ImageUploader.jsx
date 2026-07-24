@@ -8,7 +8,9 @@ export default function ImageUploader({
   uploadUrlApi, 
   deleteUrlApi, 
   maxImages = 10,
-  helpText
+  helpText,
+  onUploadSuccess,
+  onImageRemoved
 }) {
   const [images, setImages] = useState([]);
   const fileInputRef = useRef(null);
@@ -79,6 +81,10 @@ export default function ImageUploader({
         handleImagesChange(updated);
         return updated;
       });
+
+      if (onUploadSuccess) {
+        onUploadSuccess(key);
+      }
     } catch (err) {
       console.error('Image upload error:', err);
       toast.error(`Failed to upload ${item.file.name}`);
@@ -138,6 +144,10 @@ export default function ImageUploader({
       handleImagesChange(updated);
       return updated;
     });
+
+    if (target && target.key && onImageRemoved) {
+      onImageRemoved(target.key);
+    }
 
     if (target && target.isNew && target.status === 'success' && target.key && deleteUrlApi) {
       try {

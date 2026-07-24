@@ -257,9 +257,9 @@ export default function ManagePosts() {
     const payload = { ...formData, vacancyCount: Number(formData.vacancyCount), minPrice: Number(formData.minPrice), maxPrice: Number(formData.maxPrice) };
     if (editPost) {
       payload.pgId = editPost.pgId?._id || editPost.pgId;
-      updateMut.mutate({ id: editPost._id, data: payload });
+      return updateMut.mutateAsync({ id: editPost._id, data: payload });
     } else {
-      createMut.mutate(payload);
+      return createMut.mutateAsync(payload);
     }
   };
 
