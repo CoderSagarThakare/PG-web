@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Input, Button, ImageUploader, Badge } from '../common';
 import FacilitiesPicker from '../common/FacilitiesPicker';
@@ -43,6 +43,55 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
 
   const [managerSearch, setManagerSearch] = useState('');
   const [showManagerDropdown, setShowManagerDropdown] = useState(false);
+
+  const newlyUploadedKeysRef = useRef(new Set());
+  const removedExistingKeysRef = useRef(new Set());
+  const isSubmittedRef = useRef(false);
+
+  const cleanupUnsubmittedKeys = async () => {
+    const keysToDelete = Array.from(newlyUploadedKeysRef.current);
+    if (keysToDelete.length === 0) return;
+    newlyUploadedKeysRef.current.clear();
+
+    await Promise.all(
+      keysToDelete.map(async (key) => {
+        try {
+          await deletePGImageFileApi(key);
+        } catch (err) {
+          console.error('Failed to clean up unsubmitted S3 file:', key, err);
+        }
+      })
+    );
+  };
+
+  useEffect(() => {
+    return () => {
+      if (!isSubmittedRef.current) {
+        cleanupUnsubmittedKeys();
+      }
+    };
+  }, []);
+
+  const handleUploadSuccess = (key) => {
+    if (key) {
+      newlyUploadedKeysRef.current.add(key);
+    }
+  };
+
+  const handleImageRemoved = (key) => {
+    if (!key) return;
+    if (newlyUploadedKeysRef.current.has(key)) {
+      newlyUploadedKeysRef.current.delete(key);
+    } else {
+      removedExistingKeysRef.current.add(key);
+    }
+  };
+
+  const handleCancel = async () => {
+    await cleanupUnsubmittedKeys();
+    setManagerSearch('');
+    if (onCancel) onCancel();
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -108,7 +157,7 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
     );
   };
 
-  const handleFormSubmit = (data) => {
+  const handleFormSubmit = async (data) => {
     const cleaned = { ...data };
 
     // Clean empty optional fields so they don't fail backend validation
@@ -153,7 +202,31 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
     if (cleaned.dueDayOfMonth) cleaned.dueDayOfMonth = Number(cleaned.dueDayOfMonth);
     if (cleaned.lateFee) cleaned.lateFee = Number(cleaned.lateFee);
 
-    onSubmit(cleaned);
+    try {
+      isSubmittedRef.current = true;
+      if (onSubmit) {
+        await onSubmit(cleaned);
+      }
+
+      if (removedExistingKeysRef.current.size > 0) {
+        const keysToDelete = Array.from(removedExistingKeysRef.current);
+        removedExistingKeysRef.current.clear();
+        await Promise.all(
+          keysToDelete.map(async (key) => {
+            try {
+              await deletePGImageFileApi(key);
+            } catch (err) {
+              console.error('Failed to clean up removed S3 file:', key, err);
+            }
+          })
+        );
+      }
+
+      newlyUploadedKeysRef.current.clear();
+    } catch (err) {
+      console.error('PG Form submission failed:', err);
+      isSubmittedRef.current = false;
+    }
   };
 
   const filteredManagers = managers.filter(m => {
@@ -554,6 +627,8 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
                       uploadUrlApi={getPGImageUploadUrlApi}
                       deleteUrlApi={deletePGImageFileApi}
                       maxImages={10}
+                      onUploadSuccess={handleUploadSuccess}
+                      onImageRemoved={handleImageRemoved}
                     />
                   )}
                 />
@@ -589,6 +664,8 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
                         deleteUrlApi={deletePGImageFileApi}
                         maxImages={1}
                         helpText="* Upload a high-quality payment QR scanner image. JPEG, PNG, WEBP files under 5MB are supported."
+                        onUploadSuccess={handleUploadSuccess}
+                        onImageRemoved={handleImageRemoved}
                       />
                     )}
                   />
@@ -609,7 +686,7 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
           )}
         </div>
         <div className="flex gap-3 flex-col-reverse sm:flex-row">
-          <Button variant="ghost" type="button" onClick={() => { setManagerSearch(''); if (onCancel) onCancel(); }} disabled={loading}>Cancel</Button>
+          <Button variant="ghost" type="button" onClick={handleCancel} disabled={loading}>Cancel</Button>
           {step < 3 ? (
             <Button key="next-btn" type="button" onClick={step === 1 ? handleNextStep1 : handleNextStep2}>
               Next Step

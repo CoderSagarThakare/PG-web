@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Input, Button, ImageUploader } from '../common';
 import { getPgOccupancyStatsApi } from '../../api/pg.api';
@@ -34,6 +34,83 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
   const isEdit = !!initialData;
   const [basePrice, setBasePrice] = useState({ min: 0, max: 0 });
   const [pgStats, setPgStats] = useState(null);
+
+  const newlyUploadedKeysRef = useRef(new Set());
+  const removedExistingKeysRef = useRef(new Set());
+  const isSubmittedRef = useRef(false);
+
+  const cleanupUnsubmittedKeys = async () => {
+    const keysToDelete = Array.from(newlyUploadedKeysRef.current);
+    if (keysToDelete.length === 0) return;
+    newlyUploadedKeysRef.current.clear();
+
+    await Promise.all(
+      keysToDelete.map(async (key) => {
+        try {
+          await deletePostImageFileApi(key);
+        } catch (err) {
+          console.error('Failed to clean up unsubmitted post S3 file:', key, err);
+        }
+      })
+    );
+  };
+
+  useEffect(() => {
+    return () => {
+      if (!isSubmittedRef.current) {
+        cleanupUnsubmittedKeys();
+      }
+    };
+  }, []);
+
+  const handleUploadSuccess = (key) => {
+    if (key) {
+      newlyUploadedKeysRef.current.add(key);
+    }
+  };
+
+  const handleImageRemoved = (key) => {
+    if (!key) return;
+    if (newlyUploadedKeysRef.current.has(key)) {
+      newlyUploadedKeysRef.current.delete(key);
+    } else {
+      removedExistingKeysRef.current.add(key);
+    }
+  };
+
+  const handleCancel = async () => {
+    await cleanupUnsubmittedKeys();
+    if (onCancel) onCancel();
+    else reset();
+  };
+
+  const handleFormSubmit = async (data) => {
+    try {
+      isSubmittedRef.current = true;
+      if (onSubmit) {
+        await onSubmit(data);
+      }
+
+      if (removedExistingKeysRef.current.size > 0) {
+        const keysToDelete = Array.from(removedExistingKeysRef.current);
+        removedExistingKeysRef.current.clear();
+        await Promise.all(
+          keysToDelete.map(async (key) => {
+            try {
+              await deletePostImageFileApi(key);
+            } catch (err) {
+              console.error('Failed to clean up removed post S3 file:', key, err);
+            }
+          })
+        );
+      }
+
+      newlyUploadedKeysRef.current.clear();
+    } catch (err) {
+      console.error('Post form submission failed:', err);
+      isSubmittedRef.current = false;
+    }
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -90,7 +167,7 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
   const currentPgType = watch('pgType');
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form onSubmit={handleSubmit(handleFormSubmit)}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div className="col-span-full">
           <Controller
@@ -346,6 +423,8 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
                   uploadUrlApi={getPostImageUploadUrlApi}
                   deleteUrlApi={deletePostImageFileApi}
                   maxImages={5}
+                  onUploadSuccess={handleUploadSuccess}
+                  onImageRemoved={handleImageRemoved}
                 />
               )}
             />
@@ -354,7 +433,7 @@ export default function PostForm({ initialData, onSubmit, loading, pgs = [], but
       </div>
 
       <div className="flex gap-3 justify-end mt-6 pt-5 border-t dark:border-[#2d3052] border-gray-200 flex-col-reverse sm:flex-row">
-        <Button variant="ghost" type="button" onClick={() => onCancel ? onCancel() : reset()} disabled={loading}>Cancel</Button>
+        <Button variant="ghost" type="button" onClick={handleCancel} disabled={loading}>Cancel</Button>
         <Button type="submit" loading={loading}>{buttonText}</Button>
       </div>
     </form>
