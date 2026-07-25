@@ -15,6 +15,12 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
 
+  const isTestingEnv = 
+    import.meta.env.DEV || 
+    import.meta.env.MODE === 'development' || 
+    import.meta.env.VITE_SHOW_TEST_CREDENTIALS === 'true' || 
+    (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
+
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
@@ -83,39 +89,41 @@ export default function Login() {
           </Button>
         </form>
 
-        <div className="mt-5 p-4 bg-[#242740] dark:bg-[#242740] rounded-lg text-[12px] space-y-2.5">
-          <p className="text-[#6b6e82] mb-1 font-semibold">Select Test Account to Autofill:</p>
-          <div className="flex flex-col gap-2">
-            {[
-              { id: 'owner', label: 'Owner', email: 'coder.sagarthakare@gmail.com', pass: 'sagar123' },
-              { id: 'manager', label: 'Manager', email: 'manager1@gmail.com', pass: 'Sagar@123' },
-              { id: 'user', label: 'User', email: 'saggythakare01@gmail.com', pass: 'Sagar@123' }
-            ].map(acc => {
-              const isSelected = form.email === acc.email && form.password === acc.pass;
-              return (
-                <label key={acc.id} className="flex items-start gap-2.5 cursor-pointer text-[#a0a3b1] hover:text-white transition-colors select-none">
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setForm({ email: acc.email, password: acc.pass });
-                      } else {
-                        setForm({ email: '', password: '' });
-                      }
-                    }}
-                    className="rounded border-gray-300 text-[#6c63ff] focus:ring-[#6c63ff]/40 bg-white dark:bg-[#242740] dark:border-[#2d3052] w-4 h-4 cursor-pointer mt-0.5"
-                  />
-                  <div>
-                    <span className="font-bold text-[#6c63ff] dark:text-[#8e87ff]">{acc.label}: </span>
-                    <span className="font-semibold text-gray-900 dark:text-[#f0f0f8]">{acc.email}</span>
-                    <span className="text-gray-400 dark:text-[#6b6e82]"> ({acc.pass})</span>
-                  </div>
-                </label>
-              );
-            })}
+        {isTestingEnv && (
+          <div className="mt-5 p-4 bg-[#242740] dark:bg-[#242740] rounded-lg text-[12px] space-y-2.5">
+            <p className="text-[#6b6e82] mb-1 font-semibold">Select Test Account to Autofill:</p>
+            <div className="flex flex-col gap-2">
+              {[
+                { id: 'owner', label: 'Owner', email: 'coder.sagarthakare@gmail.com', pass: 'sagar123' },
+                { id: 'manager', label: 'Manager', email: 'manager1@gmail.com', pass: 'Sagar@123' },
+                { id: 'user', label: 'User', email: 'saggythakare01@gmail.com', pass: 'Sagar@123' }
+              ].map(acc => {
+                const isSelected = form.email === acc.email && form.password === acc.pass;
+                return (
+                  <label key={acc.id} className="flex items-start gap-2.5 cursor-pointer text-[#a0a3b1] hover:text-white transition-colors select-none">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setForm({ email: acc.email, password: acc.pass });
+                        } else {
+                          setForm({ email: '', password: '' });
+                        }
+                      }}
+                      className="rounded border-gray-300 text-[#6c63ff] focus:ring-[#6c63ff]/40 bg-white dark:bg-[#242740] dark:border-[#2d3052] w-4 h-4 cursor-pointer mt-0.5"
+                    />
+                    <div>
+                      <span className="font-bold text-[#6c63ff] dark:text-[#8e87ff]">{acc.label}: </span>
+                      <span className="font-semibold text-gray-900 dark:text-[#f0f0f8]">{acc.email}</span>
+                      <span className="text-gray-400 dark:text-[#6b6e82]"> ({acc.pass})</span>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="mt-4 text-center text-sm text-[#6b6e82]">
           <span>Don't have an account? </span>

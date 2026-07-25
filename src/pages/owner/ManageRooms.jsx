@@ -207,7 +207,7 @@ export default function ManageRooms() {
           action={rooms.length === 0 ? <Button onClick={() => setModalOpen(true)}><Plus size={16} /> Add First Room</Button> : null}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 items-start">
           {filteredRooms.map(room => (
             <Card key={room._id} className="hover-container p-3">
               {/* Hover action buttons */}
@@ -234,7 +234,7 @@ export default function ManageRooms() {
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#2d3052]/50 dark:border-[#2d3052]/50">
                 <div>
                   <span className="text-base font-black dark:text-[#f0f0f8] text-gray-900">Room {room.roomNumber}</span>
-                  <span className="text-[11px] dark:text-[#6b6e82] text-gray-400 ml-2">F{room.floor} · {room.roomType}</span>
+                  <span className="text-[11px] dark:text-[#6b6e82] text-gray-400 ml-2">F{room.floor} · {room.unitType || 'Single Room'} · {room.roomType}</span>
                 </div>
                 <Badge variant="accent" className="text-[10px] px-1.5 py-0.5">{room.sharingType} Beds</Badge>
               </div>
@@ -341,14 +341,29 @@ export default function ManageRooms() {
   );
 }
 
+const presetUnitTypes = ['Single Room', '1 RK', '1 BHK', '2 BHK', '3 BHK',];
+
 function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
-  const { register, control, handleSubmit, watch, formState: { errors } } = useForm({
-    defaultValues: initialData || {
-      roomNumber: '',
-      floor: '',
-      sharingType: 2,
-      roomType: 'Non-AC',
-      beds: [
+  const getInitialUnitType = () => {
+    if (!initialData?.unitType) return 'Single Room';
+    return presetUnitTypes.includes(initialData.unitType) ? initialData.unitType : 'Other';
+  };
+
+  const getInitialCustomUnitType = () => {
+    if (!initialData?.unitType) return '';
+    return presetUnitTypes.includes(initialData.unitType) ? '' : initialData.unitType;
+  };
+
+  const { register, control, handleSubmit, watch, trigger, formState: { errors } } = useForm({
+    mode: 'onChange',
+    defaultValues: {
+      roomNumber: initialData?.roomNumber || '',
+      floor: initialData?.floor ?? '',
+      unitType: getInitialUnitType(),
+      customUnitType: getInitialCustomUnitType(),
+      sharingType: initialData?.sharingType || 2,
+      roomType: initialData?.roomType || 'Non-AC',
+      beds: initialData?.beds || [
         { bedNumber: 'A', price: '', position: 'Window Side' },
         { bedNumber: 'B', price: '', position: 'Entrance Side' }
       ]
@@ -362,13 +377,41 @@ function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
 
   const sharingType = watch('sharingType');
 
+  const handleFormSubmit = (data) => {
+    const cleaned = {
+      roomNumber: data.roomNumber,
+      floor: Number(data.floor),
+      sharingType: Number(data.sharingType),
+      roomType: data.roomType,
+      unitType: data.unitType === 'Other' ? (data.customUnitType?.trim() || 'Custom Room') : data.unitType,
+      beds: data.beds?.map(b => ({
+        ...(b._id ? { _id: b._id } : {}),
+        bedNumber: b.bedNumber,
+        price: Number(b.price || 0),
+        position: b.position || '',
+      }))
+    };
+    onSubmit(cleaned);
+  };
+
   // Adjust beds array when occupancy changes
   const handleSharingChange = (e) => {
     const val = parseInt(e.target.value);
+    
+    // Trigger instant validation on keystroke/value enter
+    trigger('sharingType');
+
+    if (isNaN(val) || val < 1 || val > 20) {
+      return;
+    }
+
     const currentCount = fields.length;
     if (val > currentCount) {
       for (let i = currentCount; i < val; i++) {
-        append({ bedNumber: String.fromCharCode(65 + i), price: '', position: '' });
+        const bedLetter = i < 26 
+          ? String.fromCharCode(65 + i) 
+          : `${String.fromCharCode(65 + (i % 26))}${Math.floor(i / 26)}`;
+        append({ bedNumber: bedLetter, price: '', position: '' });
       }
     } else if (val < currentCount) {
       for (let i = currentCount - 1; i >= val; i--) {
@@ -378,52 +421,99 @@ function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <div className="max-h-[380px] overflow-y-auto pr-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Input
-          label="Room Number" required
-          {...register('roomNumber', { required: 'Room number is required' })}
-          error={errors.roomNumber?.message}
-          placeholder="e.g. 101"
-        />
-        <Input
-          label="Floor" type="number" required min={0}
-          {...register('floor', { required: 'Floor is required', min: { value: 0, message: 'Cannot be negative' } })}
-          error={errors.floor?.message}
-        />
-        <Input
-          label="Occupancy (Beds)" type="number" required min={1}
-          {...register('sharingType', { required: 'Occupancy is required', min: { value: 1, message: 'Minimum 1' } })}
-          onChange={handleSharingChange}
-          error={errors.sharingType?.message}
-        />
-        <Controller
-          name="roomType"
-          control={control}
-          render={({ field }) => (
+    <form onSubmit={handleSubmit(handleFormSubmit)}>
+      <div className="max-h-[420px] overflow-y-auto pr-1 flex flex-col gap-3">
+        {/* Row 1: Compact 4-column layout for Room Number, Floor, Room AC Type, and Occupancy */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Input
+            label="Room Number" required
+            {...register('roomNumber', { required: 'Required' })}
+            error={errors.roomNumber?.message}
+            placeholder="e.g. 101"
+          />
+          <Input
+            label="Floor" type="number" required min={0}
+            {...register('floor', { required: 'Required', min: { value: 0, message: 'Min 0' } })}
+            error={errors.floor?.message}
+            placeholder="0"
+          />
+          <Controller
+            name="roomType"
+            control={control}
+            render={({ field }) => (
+              <Input
+                label="Room AC Type"
+                as="select"
+                value={field.value}
+                onChange={field.onChange}
+                ref={field.ref}
+                options={[{ value: 'AC', label: 'AC' }, { value: 'Non-AC', label: 'Non-AC' }]}
+              />
+            )}
+          />
+          <Input
+            label="Occupancy (Beds)" type="number" required min={1} max={20}
+            {...register('sharingType', { 
+              required: 'Required', 
+              min: { value: 1, message: 'Min 1' },
+              max: { value: 20, message: 'Max 20' }
+            })}
+            onChange={handleSharingChange}
+            error={errors.sharingType?.message}
+            placeholder="2"
+          />
+        </div>
+
+        {/* Row 2: Unit / Layout Type + Custom Layout Name (if Other) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className={watch('unitType') === 'Other' ? 'col-span-1' : 'col-span-1 sm:col-span-2'}>
+            <Controller
+              name="unitType"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  label="Unit / Layout Type"
+                  as="select"
+                  value={field.value}
+                  onChange={field.onChange}
+                  ref={field.ref}
+                  options={[
+                    { value: 'Single Room', label: 'Single Room' },
+                    { value: '1 RK', label: '1 RK' },
+                    { value: '1 BHK', label: '1 BHK' },
+                    { value: '2 BHK', label: '2 BHK' },
+                    { value: '3 BHK', label: '3 BHK' },
+                    { value: 'Studio', label: 'Studio Apartment' },
+                    { value: 'Shared Room', label: 'Shared Room' },
+                    { value: 'Other', label: 'Other / Custom...' },
+                  ]}
+                />
+              )}
+            />
+          </div>
+
+          {watch('unitType') === 'Other' && (
             <Input
-              label="Room Type"
-              as="select"
-              value={field.value}
-              onChange={field.onChange}
-              ref={field.ref}
-              options={[{ value: 'AC', label: 'AC' }, { value: 'Non-AC', label: 'Non-AC' }]}
+              label="Custom Layout Name" required
+              placeholder="e.g. 4 BHK, Penthouse, Duplex"
+              {...register('customUnitType', { required: 'Required' })}
+              error={errors.customUnitType?.message}
             />
           )}
-        />
+        </div>
 
-        {/* Bed Configurations — full-width across both columns */}
-        <div className="col-span-1 sm:col-span-2 mt-2">
-          <h3 className="text-[14px] font-bold mb-3 pb-2 border-b dark:border-[#2d3052] border-gray-200 dark:text-[#f0f0f8] text-gray-900">
+        {/* Bed Configurations */}
+        <div className="mt-1">
+          <h3 className="text-[13px] font-bold mb-2 pb-1.5 border-b dark:border-[#2d3052] border-gray-200 dark:text-[#f0f0f8] text-gray-900">
             Bed Configurations
           </h3>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             {fields.map((field, index) => (
-              <div key={field.id} className="grid grid-cols-[80px_1fr_1fr] items-end gap-3">
+              <div key={field.id} className="grid grid-cols-[70px_1fr_1fr] items-end gap-2.5">
                 <Input label={`Bed ${field.bedNumber}`} disabled value={field.bedNumber} />
                 <Input
                   label="Price" type="number" required min={0}
-                  {...register(`beds.${index}.price`, { required: 'Price is required', min: { value: 0, message: 'Cannot be negative' } })}
+                  {...register(`beds.${index}.price`, { required: 'Required', min: { value: 0, message: 'Cannot be negative' } })}
                   placeholder="Price"
                   error={errors.beds?.[index]?.price?.message}
                 />
