@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { loginApi } from '../../api/auth.api';
 import { useAuth } from '../../context/AuthContext';
@@ -11,9 +11,17 @@ const STAFF_ROLES = ['owner', 'manager', 'employee'];
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+
+  // Show session expiry toast on ?session=expired
+  useEffect(() => {
+    if (searchParams.get('session') === 'expired') {
+      toast.error('Your session has expired. Please sign in again.', { id: 'session-expired', duration: 5000 });
+    }
+  }, [searchParams]);
 
   const isTestingEnv = 
     import.meta.env.DEV || 
@@ -33,14 +41,23 @@ export default function Login() {
     try {
       const { data } = await loginApi(form);
       const token = data?.data?.token;
+      const refreshToken = data?.data?.refreshToken;
       const userData = data?.data?.user;
       
       if (!token) throw new Error('No token received');
 
-      login(userData, token);
+      await login(userData, token, refreshToken);
       toast.success(`Welcome back, ${userData?.name || 'there'}!`);
 
-      // Redirect based on role
+      // Check for return URL (set when session expired while on another page)
+      const returnUrl = sessionStorage.getItem('returnUrl');
+      if (returnUrl) {
+        sessionStorage.removeItem('returnUrl');
+        navigate(returnUrl);
+        return;
+      }
+
+      // Default redirect based on role
       const role = userData?.role;
       if (role === 'user') navigate('/browse');
       else navigate('/dashboard');
@@ -82,11 +99,15 @@ export default function Login() {
             required
           />
 
+          <div className="flex justify-end -mt-2">
+            <Link to="/forgot-password" className="text-xs text-[#6c63ff] hover:underline font-semibold">Forgot Password?</Link>
+          </div>
+
           <Button 
             type="submit" 
             loading={loading} 
             disabled={!form.email.trim() || !form.password.trim()} 
-            className="w-full mt-2" 
+            className="w-full mt-1" 
             size="lg"
           >
             Sign In

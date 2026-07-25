@@ -37,29 +37,42 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Guard ref: ensures syncProfile is called only ONCE on mount.
-  // React 18 StrictMode double-fires effects in dev — the ref survives remounts.
   const syncCalled = useRef(false);
 
   useEffect(() => {
-    if (syncCalled.current) return;  // Already ran — skip the StrictMode second fire
+    if (syncCalled.current) return;
     if (token) {
       syncCalled.current = true;
       syncProfile();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const login = async (userData, authToken) => {
+  const login = async (userData, authToken, refreshToken) => {
     // Store core login data immediately (so the app can render)
     setUser(userData);
     setToken(authToken);
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('token', authToken);
+    if (refreshToken) {
+      localStorage.setItem('refreshToken', refreshToken);
+    }
 
     // Then fetch the full profile (includes fresh presigned picture URL)
     await syncProfile();
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Revoke refresh token on server (best-effort)
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (refreshToken) {
+      try {
+        const { logoutApi } = await import('../api/auth.api');
+        await logoutApi(refreshToken);
+      } catch {
+        // Non-fatal: token will expire naturally
+      }
+    }
+
     if (user?._id) {
       localStorage.removeItem(`staysync_posts_filters_${user._id}`);
       localStorage.removeItem(`staysync_pgs_filters_${user._id}`);
@@ -68,6 +81,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
   };
 
   const updateUser = (updatedData) => {
