@@ -19,7 +19,11 @@ export default function Login() {
     import.meta.env.DEV || 
     import.meta.env.MODE === 'development' || 
     import.meta.env.VITE_SHOW_TEST_CREDENTIALS === 'true' || 
-    (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
+    (typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.includes('test')
+    ));
 
   const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
