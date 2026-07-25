@@ -6,3 +6,5 @@ export const forgotPasswordApi    = (data)         => api.post('/auth/forgot-pas
 export const resetPasswordApi     = (data, token)  => api.post(`/auth/reset-password?token=${token}`, data, { timeout: AUTH_TIMEOUT });
 export const sendVerificationOtpApi = ()           => api.get('/auth/send-verification-otp',       { timeout: AUTH_TIMEOUT });
 export const verifyOtpApi         = (data)         => api.post('/auth/verify-otp',            data, { timeout: AUTH_TIMEOUT });
+export const refreshTokensApi     = (refreshToken) => api.post('/auth/refresh-tokens', { refreshToken }, { timeout: AUTH_TIMEOUT, _skipAuthRetry: true });
+export const logoutApi            = (refreshToken) => api.post('/auth/logout', { refreshToken }, { timeout: AUTH_TIMEOUT });

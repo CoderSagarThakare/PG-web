@@ -15,6 +15,8 @@ import AppLayout from './components/layout/AppLayout';
 // ── Lazy-loaded pages ─────────────────────────────────────────────────────────
 const Login        = lazy(() => import('./pages/auth/Login'));
 const Register     = lazy(() => import('./pages/auth/Register'));
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
+const ResetPassword  = lazy(() => import('./pages/auth/ResetPassword'));
 const Dashboard    = lazy(() => import('./pages/shared/Dashboard'));
 const Profile      = lazy(() => import('./pages/shared/Profile'));
 const Enquiries    = lazy(() => import('./pages/shared/Enquiries'));
@@ -101,8 +103,10 @@ const router = createBrowserRouter([
       {
         element: <GuestRoute />,
         children: [
-          { path: '/login',    element: <Login /> },
-          { path: '/register', element: <Register /> },
+          { path: '/login',            element: <Login /> },
+          { path: '/register',         element: <Register /> },
+          { path: '/forgot-password',  element: <ForgotPassword /> },
+          { path: '/reset-password',   element: <ResetPassword /> },
         ],
       },
 
