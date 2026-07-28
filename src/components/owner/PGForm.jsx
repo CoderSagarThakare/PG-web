@@ -183,18 +183,14 @@ export default function PGForm({ initialData, onSubmit, loading, managers = [], 
       }
     }
 
-    if (cleaned.location && 
-        cleaned.location.coordinates && 
-        cleaned.location.coordinates[0] !== undefined && 
-        cleaned.location.coordinates[0] !== null && 
-        cleaned.location.coordinates[0] !== '' &&
-        cleaned.location.coordinates[1] !== undefined &&
-        cleaned.location.coordinates[1] !== null &&
-        cleaned.location.coordinates[1] !== '') {
-      cleaned.location.coordinates = [
-        Number(cleaned.location.coordinates[0]),
-        Number(cleaned.location.coordinates[1])
-      ];
+    const lng = Number(cleaned.location?.coordinates?.[0]);
+    const lat = Number(cleaned.location?.coordinates?.[1]);
+
+    if (cleaned.location?.coordinates && !isNaN(lng) && isFinite(lng) && !isNaN(lat) && isFinite(lat)) {
+      cleaned.location = {
+        type: 'Point',
+        coordinates: [lng, lat]
+      };
     } else {
       delete cleaned.location;
     }

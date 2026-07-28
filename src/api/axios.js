@@ -36,7 +36,8 @@ function normalizeFriendlyError(err) {
 
   const status = err.response.status;
   if (status === 500 || status === 502 || status === 503 || status === 504) {
-    err.friendlyMessage = 'The server is temporarily unavailable. Please try again later.';
+    const serverMsg = err.response?.data?.message;
+    err.friendlyMessage = serverMsg || 'The server is temporarily unavailable. Please try again later.';
   } else if (status === 429) {
     // Prefer the backend's rate-limit message (e.g. "Too many attempts, please try again after 15 minutes")
     const serverMsg = err.response?.data?.message;
