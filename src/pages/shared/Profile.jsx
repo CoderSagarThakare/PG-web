@@ -13,14 +13,13 @@ import {
   verifyAadharApi,
   deleteAadharFileApi
 } from '../../api/profile.api';
-import { sendVerificationOtpApi, verifyOtpApi } from '../../api/auth.api';
+
 import { Input, Button, Card, ConfirmModal, Badge, SelectDropdown, Modal } from '../../components/common';
 import { cn } from '../../utils/cn';
 import { getErrorMessage } from '../../utils/helpers';
 import {
   MapPin, Shield, ExternalLink, Camera, Trash2,
-  FileText, CheckCircle, AlertCircle, Loader2, Upload, Car,
-  Clock, RotateCw
+  FileText, CheckCircle, AlertCircle, Loader2, Upload, Car
 } from 'lucide-react';
 
 export default function Profile() {
@@ -58,62 +57,6 @@ export default function Profile() {
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState(null);
 
-  // Email OTP verification state
-  const [otpModalOpen, setOtpModalOpen] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpVerifying, setOtpVerifying] = useState(false);
-  const [otpTimer, setOtpTimer] = useState(120);
-  const [resendCooldown, setResendCooldown] = useState(0);
-
-  useEffect(() => {
-    let interval = null;
-    if (otpModalOpen) {
-      interval = setInterval(() => {
-        setOtpTimer(prev => (prev > 0 ? prev - 1 : 0));
-        setResendCooldown(prev => (prev > 0 ? prev - 1 : 0));
-      }, 1000);
-    } else {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [otpModalOpen]);
-
-  const handleSendOtp = async () => {
-    setOtpSending(true);
-    try {
-      await sendVerificationOtpApi();
-      toast.success(`Verification OTP sent to ${user?.email}`);
-      setOtpCode('');
-      setOtpTimer(120);
-      setResendCooldown(30);
-      setOtpModalOpen(true);
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    } finally {
-      setOtpSending(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e) => {
-    e?.preventDefault();
-    if (!otpCode || otpCode.length !== 6) {
-      toast.error('Please enter valid 6-digit OTP');
-      return;
-    }
-    setOtpVerifying(true);
-    try {
-      await verifyOtpApi({ otp: Number(otpCode) });
-      toast.success('Email verified successfully! 🎉');
-      updateUser({ isEmailVerified: true });
-      await syncProfile();
-      setOtpModalOpen(false);
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    } finally {
-      setOtpVerifying(false);
-    }
-  };
 
   const watchAadharFileKey = watch('aadharFileKey');
   const watchAadharNumber = watch('aadharNumber');
@@ -428,25 +371,6 @@ export default function Profile() {
                     <Badge variant={user?.role === 'owner' ? 'owner' : user?.role === 'manager' ? 'manager' : 'user'}>
                       {user?.role}
                     </Badge>
-                    {user?.isEmailVerified ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#00d4aa] bg-[#00d4aa]/10 px-2 py-0.5 rounded-md border border-[#00d4aa]/30">
-                        <CheckCircle size={12} /> Email Verified
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#ffa94d] bg-[#ffa94d]/10 px-2 py-0.5 rounded-md border border-[#ffa94d]/30">
-                          <AlertCircle size={12} /> Unverified
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleSendOtp}
-                          disabled={otpSending}
-                          className="text-[11px] font-bold text-[#6c63ff] hover:underline flex items-center gap-1 cursor-pointer"
-                        >
-                          {otpSending ? <Loader2 size={11} className="animate-spin" /> : null} Verify Now
-                        </button>
-                      </span>
-                    )}
                   </div>
                 </div>
 
@@ -656,26 +580,9 @@ export default function Profile() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1]">
-                      Email Address <span className="text-[#ff4d6d]">*</span>
-                    </label>
-                    {user?.isEmailVerified ? (
-                      <span className="text-[11px] font-bold text-[#00d4aa] flex items-center gap-1">
-                        <CheckCircle size={12} /> Verified
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleSendOtp}
-                        disabled={otpSending}
-                        className="text-[11px] font-bold text-[#ffa94d] hover:text-[#ff922b] flex items-center gap-1 cursor-pointer hover:underline"
-                      >
-                        {otpSending ? <Loader2 size={11} className="animate-spin" /> : <AlertCircle size={11} />}
-                        Verify via OTP
-                      </button>
-                    )}
-                  </div>
+                  <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1]">
+                    Email Address <span className="text-[#ff4d6d]">*</span>
+                  </label>
                   <Input label="" {...register('email')} disabled required />
                 </div>
                 <Input
@@ -757,75 +664,7 @@ export default function Profile() {
           </div>
         </div>
       </form>
-      {/* OTP Verification Modal */}
-      <Modal isOpen={otpModalOpen} onClose={() => setOtpModalOpen(false)} title="Verify Email Address">
-        <form onSubmit={handleVerifyOtp} className="space-y-4 py-2">
-          <div className="text-center">
-            <div className="w-12 h-12 rounded-full bg-[#6c63ff]/15 text-[#6c63ff] flex items-center justify-center mx-auto mb-3">
-              <Shield size={24} />
-            </div>
-            <h4 className="text-base font-bold dark:text-[#f0f0f8] text-gray-900">Enter 6-Digit OTP</h4>
-            <p className="text-xs dark:text-[#6b6e82] text-gray-500 mt-1">
-              We have sent a verification code to <span className="font-bold text-[#6c63ff]">{user?.email}</span>
-            </p>
-          </div>
 
-          <div>
-            <Input
-              label="Verification Code (OTP)"
-              placeholder="e.g. 123456"
-              value={otpCode}
-              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              maxLength={6}
-              autoFocus
-              required
-            />
-            <div className="flex justify-between items-center mt-3 pt-2 border-t border-[#2d3052]/50 text-xs">
-              {/* Timer Status Pill */}
-              {otpTimer > 0 ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#6c63ff]/10 border border-[#6c63ff]/30 text-[#a099ff] text-[11px] font-semibold">
-                  <Clock size={12} className="animate-pulse text-[#6c63ff]" />
-                  Code expires in <span className="font-extrabold text-white font-mono">{Math.floor(otpTimer / 60)}:{String(otpTimer % 60).padStart(2, '0')}</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ff4d6d]/10 border border-[#ff4d6d]/30 text-[#ff4d6d] text-[11px] font-bold">
-                  <AlertCircle size={12} /> Code Expired
-                </span>
-              )}
-
-              {/* Resend OTP Action Button */}
-              {resendCooldown > 0 && otpTimer > 0 ? (
-                <span className="px-3 py-1 rounded-lg bg-[#242740] border border-[#2d3052] text-[#6b6e82] text-[11px] font-medium cursor-not-allowed select-none">
-                  Resend in {resendCooldown}s
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  disabled={otpSending}
-                  className="px-3 py-1 rounded-lg bg-[#6c63ff]/20 hover:bg-[#6c63ff]/30 border border-[#6c63ff]/50 text-[#a099ff] hover:text-white text-[11px] font-bold transition-all shadow-[0_0_12px_rgba(108,99,255,0.25)] flex items-center gap-1.5 cursor-pointer"
-                >
-                  {otpSending ? (
-                    <Loader2 size={12} className="animate-spin text-[#6c63ff]" />
-                  ) : (
-                    <RotateCw size={12} className="text-[#6c63ff]" />
-                  )}
-                  Resend OTP
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="ghost" type="button" onClick={() => setOtpModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" loading={otpVerifying} disabled={otpCode.length !== 6}>
-              Verify OTP
-            </Button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }

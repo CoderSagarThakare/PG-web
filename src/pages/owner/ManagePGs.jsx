@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { getMyPGsApi, getPGByIdApi, createPGApi, updatePGApi, deletePGApi, getFacilitiesApi, getManagersApi } from '../../api/pg.api';
-import { sendVerificationOtpApi, verifyOtpApi } from '../../api/auth.api';
-import { Building2, Plus, Edit2, Trash2, MapPin, Users, Bed, AlertTriangle, Shield, Clock, RotateCw, AlertCircle, Loader2 } from 'lucide-react';
+import { Building2, Plus, Edit2, Trash2, MapPin, Users, Bed } from 'lucide-react';
 import { Button, Card, Badge, Modal, Spinner, EmptyState, QueryError, ConfirmModal, StatCard, Input } from '../../components/common';
 import PGForm from '../../components/owner/PGForm';
 import { getErrorMessage, formatDate } from '../../utils/helpers';
@@ -23,76 +22,14 @@ export default function ManagePGs() {
   const [editPG, setEditPG] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
 
-  const { user, updateUser, syncProfile } = useAuth();
+  const { user } = useAuth();
   const isOwner = user?.role === 'owner';
 
-  // Email verification prompt & OTP state
-  const [showVerifyPromptModal, setShowVerifyPromptModal] = useState(false);
-  const [otpModalOpen, setOtpModalOpen] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpVerifying, setOtpVerifying] = useState(false);
-  const [otpTimer, setOtpTimer] = useState(120);
-  const [resendCooldown, setResendCooldown] = useState(0);
-
-  useEffect(() => {
-    let interval = null;
-    if (otpModalOpen) {
-      interval = setInterval(() => {
-        setOtpTimer(prev => (prev > 0 ? prev - 1 : 0));
-        setResendCooldown(prev => (prev > 0 ? prev - 1 : 0));
-      }, 1000);
-    } else {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [otpModalOpen]);
-
   const handleAddPgClick = () => {
-    if (isOwner && !user?.isEmailVerified && pgs.length === 0) {
-      setShowVerifyPromptModal(true);
-      return;
-    }
     setModalOpen(true);
   };
 
-  const handleSendOtp = async () => {
-    setShowVerifyPromptModal(false);
-    setOtpSending(true);
-    try {
-      await sendVerificationOtpApi();
-      toast.success(`Verification OTP sent to ${user?.email}`);
-      setOtpCode('');
-      setOtpTimer(120);
-      setResendCooldown(30);
-      setOtpModalOpen(true);
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    } finally {
-      setOtpSending(false);
-    }
-  };
 
-  const handleVerifyOtp = async (e) => {
-    e?.preventDefault();
-    if (!otpCode || otpCode.length !== 6) {
-      toast.error('Please enter valid 6-digit OTP');
-      return;
-    }
-    setOtpVerifying(true);
-    try {
-      await verifyOtpApi({ otp: Number(otpCode) });
-      toast.success('Email verified successfully! 🎉');
-      updateUser({ isEmailVerified: true });
-      await syncProfile();
-      setOtpModalOpen(false);
-      setModalOpen(true);
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    } finally {
-      setOtpVerifying(false);
-    }
-  };
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['my-pgs'],
@@ -170,25 +107,7 @@ export default function ManagePGs() {
         </div>
       </div>
 
-      {/* Email Verification Alert Banner for Unverified Owners */}
-      {isOwner && !user?.isEmailVerified && pgs.length === 0 && (
-        <div className="mb-6 p-4 rounded-xl bg-[#ffa94d]/10 border border-[#ffa94d]/30 flex items-center justify-between gap-4 flex-wrap animate-[slideDown_0.25s_ease]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#ffa94d]/20 text-[#ffa94d] flex items-center justify-center flex-shrink-0">
-              <AlertTriangle size={20} />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold dark:text-[#f0f0f8] text-gray-900">Email Verification Required</h4>
-              <p className="text-xs dark:text-[#6b6e82] text-gray-500 mt-0.5">Please verify your email address to add and list PG properties on StaySync.</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={handleSendOtp} loading={otpSending} className="bg-[#ffa94d] hover:bg-[#ff922b] text-slate-950 font-bold border-none">
-              Verify Email Now
-            </Button>
-          </div>
-        </div>
-      )}
+
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -299,101 +218,7 @@ export default function ManagePGs() {
         message="Are you sure you want to delete this PG? This action cannot be undone."
       />
 
-      {/* Verify Prompt Modal */}
-      <Modal isOpen={showVerifyPromptModal} onClose={() => setShowVerifyPromptModal(false)} title="Verify Your Account">
-        <div className="text-center py-3 space-y-4">
-          <div className="w-14 h-14 rounded-full bg-[#ffa94d]/15 text-[#ffa94d] flex items-center justify-center mx-auto">
-            <Shield size={28} />
-          </div>
-          <div>
-            <h3 className="text-base font-bold dark:text-[#f0f0f8] text-gray-900">Email Verification Required</h3>
-            <p className="text-xs dark:text-[#6b6e82] text-gray-500 mt-1.5 px-4">
-              To keep properties safe and trusted, property owners must verify their email address before adding their first PG property on StaySync.
-            </p>
-          </div>
-          <div className="p-3 bg-[#242740] rounded-lg text-xs text-[#a0a3b1] font-medium max-w-sm mx-auto">
-            We will send a 6-digit verification code to <span className="font-bold text-[#6c63ff]">{user?.email}</span>
-          </div>
-          <div className="flex flex-col gap-2.5 pt-2">
-            <Button onClick={handleSendOtp} loading={otpSending} className="w-full">
-              Verify via OTP Now
-            </Button>
-            <Button variant="ghost" onClick={() => { setShowVerifyPromptModal(false); navigate('/profile'); }} className="w-full">
-              Go to Profile
-            </Button>
-          </div>
-        </div>
-      </Modal>
 
-      {/* OTP Verification Modal */}
-      <Modal isOpen={otpModalOpen} onClose={() => setOtpModalOpen(false)} title="Verify Email Address">
-        <form onSubmit={handleVerifyOtp} className="space-y-4 py-2">
-          <div className="text-center">
-            <div className="w-12 h-12 rounded-full bg-[#6c63ff]/15 text-[#6c63ff] flex items-center justify-center mx-auto mb-3">
-              <Shield size={24} />
-            </div>
-            <h4 className="text-base font-bold dark:text-[#f0f0f8] text-gray-900">Enter 6-Digit OTP</h4>
-            <p className="text-xs dark:text-[#6b6e82] text-gray-500 mt-1">
-              We have sent a verification code to <span className="font-bold text-[#6c63ff]">{user?.email}</span>
-            </p>
-          </div>
-
-          <div>
-            <Input
-              label="Verification Code (OTP)"
-              placeholder="e.g. 123456"
-              value={otpCode}
-              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              maxLength={6}
-              autoFocus
-              required
-            />
-            <div className="flex justify-between items-center mt-3 pt-2 border-t border-[#2d3052]/50 text-xs">
-              {/* Timer Status Pill */}
-              {otpTimer > 0 ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#6c63ff]/10 border border-[#6c63ff]/30 text-[#a099ff] text-[11px] font-semibold">
-                  <Clock size={12} className="animate-pulse text-[#6c63ff]" />
-                  Code expires in <span className="font-extrabold text-white font-mono">{Math.floor(otpTimer / 60)}:{String(otpTimer % 60).padStart(2, '0')}</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ff4d6d]/10 border border-[#ff4d6d]/30 text-[#ff4d6d] text-[11px] font-bold">
-                  <AlertCircle size={12} /> Code Expired
-                </span>
-              )}
-
-              {/* Resend OTP Action Button */}
-              {resendCooldown > 0 && otpTimer > 0 ? (
-                <span className="px-3 py-1 rounded-lg bg-[#242740] border border-[#2d3052] text-[#6b6e82] text-[11px] font-medium cursor-not-allowed select-none">
-                  Resend in {resendCooldown}s
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  disabled={otpSending}
-                  className="px-3 py-1 rounded-lg bg-[#6c63ff]/20 hover:bg-[#6c63ff]/30 border border-[#6c63ff]/50 text-[#a099ff] hover:text-white text-[11px] font-bold transition-all shadow-[0_0_12px_rgba(108,99,255,0.25)] flex items-center gap-1.5 cursor-pointer"
-                >
-                  {otpSending ? (
-                    <Loader2 size={12} className="animate-spin text-[#6c63ff]" />
-                  ) : (
-                    <RotateCw size={12} className="text-[#6c63ff]" />
-                  )}
-                  Resend OTP
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="ghost" type="button" onClick={() => setOtpModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" loading={otpVerifying} disabled={otpCode.length !== 6}>
-              Verify OTP & Proceed
-            </Button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }
