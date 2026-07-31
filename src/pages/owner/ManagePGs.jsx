@@ -49,7 +49,7 @@ export default function ManagePGs() {
   }, [otpModalOpen]);
 
   const handleAddPgClick = () => {
-    if (isOwner && !user?.isEmailVerified && pgs.length === 0) {
+    if (isOwner && !user?.isEmailVerified) {
       setShowVerifyPromptModal(true);
       return;
     }
@@ -171,7 +171,7 @@ export default function ManagePGs() {
       </div>
 
       {/* Email Verification Alert Banner for Unverified Owners */}
-      {isOwner && !user?.isEmailVerified && pgs.length === 0 && (
+      {isOwner && !user?.isEmailVerified && (
         <div className="mb-6 p-4 rounded-xl bg-[#ffa94d]/10 border border-[#ffa94d]/30 flex items-center justify-between gap-4 flex-wrap animate-[slideDown_0.25s_ease]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-[#ffa94d]/20 text-[#ffa94d] flex items-center justify-center flex-shrink-0">
