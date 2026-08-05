@@ -165,6 +165,22 @@ function TenantDrawer({ tenant, onClose, onOffboard }) {
                   ₹{Number(ft.securityDepositAmount || 0).toLocaleString('en-IN')}
                 </span>
               </div>
+              {ft.preBookingAdvanceCredited > 0 && (
+                <div className="flex justify-between">
+                  <span className="dark:text-[#6b6e82] text-gray-500">Pre-Booking Advance Credited</span>
+                  <span className="font-semibold text-[#51cf66]">
+                    ₹{Number(ft.preBookingAdvanceCredited).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              )}
+              {ft.netDepositDue !== undefined && (
+                <div className="flex justify-between">
+                  <span className="dark:text-[#6b6e82] text-gray-500">Net Deposit Due</span>
+                  <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">
+                    ₹{Number(ft.netDepositDue).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="dark:text-[#6b6e82] text-gray-500">Deposit Received</span>
                 <Badge variant={ft.securityDepositReceived ? 'success' : 'warning'}>
@@ -215,6 +231,11 @@ function TenantCard({ tenant, onView, onOffboard, isChecking }) {
         <div className="flex items-center gap-2 flex-wrap">
           <h3 className="font-bold dark:text-[#f0f0f8] text-gray-900">{u.name || '—'}</h3>
           <StatusBadge status={tenant.status} />
+          {tenant.currentBedId?.status === 'vacating_soon' && (
+            <Badge variant="danger" className="text-[9px]">
+              ⚠️ Leaving {tenant.currentBedId.vacatingDetails?.vacatingDate ? new Date(tenant.currentBedId.vacatingDetails.vacatingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''}
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-4 mt-1.5 flex-wrap">
           <span className="flex items-center gap-1 text-xs dark:text-[#6b6e82] text-gray-500">

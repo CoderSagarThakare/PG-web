@@ -9,6 +9,7 @@ import {
   assignBedApi,
 } from '../../api/onboarding.api';
 import { getRoomsApi } from '../../api/room.api';
+import { getPreBookingsByPgApi } from '../../api/preBooking.api';
 import { useAuth } from '../../context/AuthContext';
 import {
   Button, Input, Card, Spinner, Badge, SelectDropdown, Modal,
@@ -317,6 +318,19 @@ function StepFinancialTerms({ onboarding, onSave, isSaving }) {
     }
   }, [onboarding]);
 
+  const { data: preBookingsData } = useQuery({
+    queryKey: ['pre-bookings-for-onboarding', onboarding?.pgId?._id || onboarding?.pgId],
+    queryFn: async () => (await getPreBookingsByPgApi(onboarding?.pgId?._id || onboarding?.pgId, { status: 'reserved' })).data?.data,
+    enabled: !!(onboarding?.pgId?._id || onboarding?.pgId),
+  });
+
+  // Find pre-booking for this user
+  const activePreBooking = (preBookingsData || []).find(
+    pb => pb.userId?._id === (onboarding?.userId?._id || onboarding?.userId) ||
+          pb.guestDetails?.phone === onboarding?.userId?.mobNo1
+  );
+  const advanceCredited = activePreBooking?.advanceAmount || onboarding?.financialTerms?.preBookingAdvanceCredited || 0;
+
   const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
   const toggle = (k) => () => setForm(p => ({ ...p, [k]: !p[k] }));
 
@@ -353,6 +367,18 @@ function StepFinancialTerms({ onboarding, onSave, isSaving }) {
           <p className="text-sm font-medium text-[#fcc419]">
             Bed assignment is blocked until security deposit is confirmed.
           </p>
+        </div>
+      )}
+
+      {advanceCredited > 0 && (
+        <div className="p-4 bg-[#51cf66]/10 border border-[#51cf66]/30 rounded-xl flex items-start gap-3">
+          <CheckCircle2 size={18} className="text-[#51cf66] mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-bold text-[#51cf66]">Pre-Booking Advance: ₹{Number(advanceCredited).toLocaleString('en-IN')}</p>
+            <p className="text-xs dark:text-[#6b6e82] text-gray-500 mt-0.5">
+              This advance will be credited toward the security deposit. Net deposit payable: ₹{Math.max(0, Number(form.securityDepositAmount || 0) - advanceCredited).toLocaleString('en-IN')}
+            </p>
+          </div>
         </div>
       )}
 

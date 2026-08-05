@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getRoomsApi, createRoomApi, updateRoomApi, deleteRoomApi, assignTenantApi, unassignTenantApi, updateBedApi, getEligibleTenantsApi } from '../../api/room.api';
 import { getPGByIdApi } from '../../api/pg.api';
+import { setVacatingNoticeApi, clearVacatingNoticeApi, createPreBookingApi, cancelPreBookingApi } from '../../api/preBooking.api';
 import { Button, Card, Badge, Modal, Spinner, EmptyState, Input, SelectDropdown } from '../../components/common';
-import { Building2, Plus, Bed, Users, Trash2, Edit2, ArrowLeft, Search, UserPlus, LogOut } from 'lucide-react';
+import { Building2, Plus, Bed, Users, Trash2, Edit2, ArrowLeft, Search, UserPlus, LogOut, Clock, CalendarCheck, Lock, AlertTriangle, Phone, UserCheck } from 'lucide-react';
 import { getErrorMessage, formatPrice } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
@@ -16,6 +17,11 @@ export default function ManageRooms() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editRoom, setEditRoom] = useState(null);
   const [assignModal, setAssignModal] = useState(null); // { bedId, roomNumber }
+
+  // New Modals State
+  const [vacatingModal, setVacatingModal] = useState(null); // { bedId, userName }
+  const [preBookModal, setPreBookModal] = useState(null); // { bedId, roomId, roomNumber, bedNum, pgId }
+  const [reservationModal, setReservationModal] = useState(null); // preBooking details + currentTenant info
 
   const { data: rooms = [], isLoading } = useQuery({
     queryKey: ['rooms', pgId],
@@ -29,7 +35,7 @@ export default function ManageRooms() {
   });
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all'); // all, occupied, available
+  const [statusFilter, setStatusFilter] = useState('all'); // all, occupied, available, vacating_soon, reserved
   const [typeFilter, setTypeFilter] = useState('all'); // all, AC, Non-AC
 
   const filteredRooms = rooms.filter(room => {
@@ -43,22 +49,29 @@ export default function ManageRooms() {
       bed.bedNumber.toLowerCase().includes(searchLower) ||
       bed.userId?.name?.toLowerCase().includes(searchLower) ||
       bed.userId?.mobNo1?.toLowerCase().includes(searchLower) ||
-      bed.userId?.vehicleNumber?.toLowerCase().includes(searchLower)
+      bed.userId?.vehicleNumber?.toLowerCase().includes(searchLower) ||
+      bed.activePreBookingId?.guestDetails?.name?.toLowerCase().includes(searchLower) ||
+      bed.activePreBookingId?.guestDetails?.phone?.toLowerCase().includes(searchLower)
     );
 
     if (searchTerm && !roomMatch && !bedMatch) return false;
 
-    // Status Filter (Occupancy)
+    // Status Filter (Occupancy / Reservation / Vacating)
     if (statusFilter === 'occupied') {
       return room.beds?.some(bed => bed.status === 'occupied');
     }
     if (statusFilter === 'available') {
       return room.beds?.some(bed => bed.status === 'available');
     }
+    if (statusFilter === 'vacating_soon') {
+      return room.beds?.some(bed => bed.status === 'vacating_soon');
+    }
+    if (statusFilter === 'reserved') {
+      return room.beds?.some(bed => bed.status === 'reserved');
+    }
 
     return true;
   }).sort((a, b) => {
-    // Natural sort for room numbers (e.g., 101, 102, 201)
     return a.roomNumber.toString().localeCompare(b.roomNumber.toString(), undefined, { numeric: true });
   });
 
@@ -111,6 +124,47 @@ export default function ManageRooms() {
       toast.success('Bed vacated!');
       qc.invalidateQueries(['rooms', pgId]);
       qc.invalidateQueries(['my-pgs']);
+    },
+    onError: (e) => toast.error(getErrorMessage(e)),
+  });
+
+  const setVacatingMut = useMutation({
+    mutationFn: setVacatingNoticeApi,
+    onSuccess: () => {
+      toast.success('Vacating notice set!');
+      qc.invalidateQueries(['rooms', pgId]);
+      qc.invalidateQueries(['vacating-beds-dashboard']);
+      setVacatingModal(null);
+    },
+    onError: (e) => toast.error(getErrorMessage(e)),
+  });
+
+  const clearVacatingMut = useMutation({
+    mutationFn: clearVacatingNoticeApi,
+    onSuccess: () => {
+      toast.success('Vacating notice cleared!');
+      qc.invalidateQueries(['rooms', pgId]);
+      qc.invalidateQueries(['vacating-beds-dashboard']);
+    },
+    onError: (e) => toast.error(getErrorMessage(e)),
+  });
+
+  const preBookMut = useMutation({
+    mutationFn: createPreBookingApi,
+    onSuccess: () => {
+      toast.success('Bed pre-booked successfully!');
+      qc.invalidateQueries(['rooms', pgId]);
+      setPreBookModal(null);
+    },
+    onError: (e) => toast.error(getErrorMessage(e)),
+  });
+
+  const cancelPreBookMut = useMutation({
+    mutationFn: ({ id, data }) => cancelPreBookingApi(id, data),
+    onSuccess: () => {
+      toast.success('Pre-booking cancelled!');
+      qc.invalidateQueries(['rooms', pgId]);
+      setReservationModal(null);
     },
     onError: (e) => toast.error(getErrorMessage(e)),
   });
@@ -185,7 +239,9 @@ export default function ManageRooms() {
               options={[
                 { value: 'all', label: 'All Status' },
                 { value: 'occupied', label: 'Has Occupancy' },
-                { value: 'available', label: 'Has Vacancy' }
+                { value: 'available', label: 'Has Vacancy' },
+                { value: 'vacating_soon', label: 'Vacating Soon' },
+                { value: 'reserved', label: 'Reserved' },
               ]}
               className="min-w-[140px]"
             />
@@ -241,68 +297,164 @@ export default function ManageRooms() {
 
               {/* Bed List */}
               <div className="flex flex-col gap-1">
-                {room.beds?.map(bed => (
-                  <div
-                    key={bed._id}
-                    className={[
-                      'px-2 py-1.5 rounded-lg border border-[#2d3052]/30 dark:border-[#2d3052]/30 grid grid-cols-[30px_1fr_80px] items-center gap-2 text-xs',
-                      bed.status === 'occupied' ? 'dark:bg-[#242740] bg-gray-100' : 'bg-transparent',
-                    ].join(' ')}
-                  >
-                    {/* Bed Icon */}
-                    <div className={bed.status === 'occupied' ? 'text-[#ffa94d] flex' : 'text-[#51cf66] flex'}>
-                      <Bed size={14} />
-                    </div>
+                {room.beds?.map(bed => {
+                  const isVacating = bed.status === 'vacating_soon';
+                  const isReserved = bed.status === 'reserved';
+                  const isOccupied = bed.status === 'occupied';
+                  const isAvailable = bed.status === 'available';
+                  const preBooking = bed.activePreBookingId;
+                  const bedSuffix = bed.bedNumber.includes('-') ? bed.bedNumber.split('-')[1] : bed.bedNumber;
 
-                    {/* Tenant Info */}
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1">
-                        <span className="font-bold dark:text-[#f0f0f8] text-gray-900">
-                          Bed {bed.bedNumber.includes('-') ? bed.bedNumber.split('-')[1] : bed.bedNumber}
-                        </span>
-                        <span className="text-[10px] dark:text-[#6b6e82] text-gray-400">
-                          ({bed.position || 'No Pos'} · {formatPrice(bed.price)})
-                        </span>
+                  let bgClass = 'bg-transparent';
+                  let iconColor = 'text-[#51cf66]';
+                  if (isOccupied) { bgClass = 'dark:bg-[#242740] bg-gray-100'; iconColor = 'text-[#ffa94d]'; }
+                  if (isVacating) { bgClass = 'dark:bg-[#ff4d6d]/5 bg-[#ff4d6d]/5 border-[#ff4d6d]/30'; iconColor = 'text-[#ff4d6d]'; }
+                  if (isReserved) { bgClass = 'dark:bg-[#a855f7]/5 bg-[#a855f7]/5 border-[#a855f7]/30'; iconColor = 'text-[#a855f7]'; }
+
+                  return (
+                    <div
+                      key={bed._id}
+                      className={`px-2 py-1.5 rounded-lg border border-[#2d3052]/30 dark:border-[#2d3052]/30 grid grid-cols-[30px_1fr_auto] items-center gap-2 text-xs ${bgClass}`}
+                    >
+                      {/* Bed Icon */}
+                      <div className={`${iconColor} flex`}>
+                        {isReserved ? <Lock size={14} /> : <Bed size={14} />}
                       </div>
-                      {bed.status === 'occupied' ? (
-                        <div className="text-[11px] text-[#6c63ff] font-semibold truncate flex items-center gap-1.5 flex-wrap">
-                          <span>{bed.userId?.name || 'Assigned'} {bed.userId?.mobNo1 && `· ${bed.userId.mobNo1}`}</span>
-                          {bed.userId?.vehicleType && bed.userId.vehicleType !== 'none' && (
-                            <span className="inline-flex items-center gap-0.5 px-1 py-0.2 bg-gray-100 dark:bg-[#1a1d2e] text-gray-600 dark:text-[#a0a3b1] rounded text-[9px] font-bold border border-gray-200 dark:border-[#2d3052]">
-                              {bed.userId.vehicleType === 'bike' ? '🏍️' : '🚗'} {bed.userId.vehicleNumber}
+
+                      {/* Info Area */}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="font-bold dark:text-[#f0f0f8] text-gray-900">
+                            Bed {bedSuffix}
+                          </span>
+                          <span className="text-[10px] dark:text-[#6b6e82] text-gray-400">
+                            ({bed.position || 'No Pos'} · {formatPrice(bed.price)})
+                          </span>
+                          {isVacating && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-[#ff4d6d]/15 text-[#ff4d6d] rounded text-[9px] font-bold border border-[#ff4d6d]/20">
+                              ⚠️ Leaving {bed.vacatingDetails?.vacatingDate ? new Date(bed.vacatingDetails.vacatingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
+                            </span>
+                          )}
+                          {isReserved && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-[#a855f7]/15 text-[#a855f7] rounded text-[9px] font-bold border border-[#a855f7]/20">
+                              🔒 Reserved
+                              {preBooking?.isRefundable === false && ' · Non-Refundable'}
                             </span>
                           )}
                         </div>
-                      ) : (
-                        <div className="text-[10px] text-[#51cf66]">Available</div>
-                      )}
-                    </div>
 
-                    {/* Bed Action Buttons */}
-                    <div className="text-right">
-                      {bed.status === 'occupied' ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-[#ff4d6d] text-[10px] px-1 py-0.5 h-auto"
-                          onClick={() => unassignMut.mutate(bed._id)}
-                          loading={unassignMut.isPending && unassignMut.variables === bed._id}
-                        >
-                          Vacate
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-[10px] px-1.5 py-0.5 h-auto"
-                          onClick={() => setAssignModal({ bedId: bed._id, roomNumber: room.roomNumber, bedNum: bed.bedNumber.split('-')[1] })}
-                        >
-                          Assign
-                        </Button>
-                      )}
+                        {/* Tenant / Reservation Sub-Text */}
+                        {isOccupied && (
+                          <div className="text-[11px] text-[#6c63ff] font-semibold truncate flex items-center gap-1.5 flex-wrap">
+                            <span>{bed.userId?.name || 'Assigned'} {bed.userId?.mobNo1 && `· ${bed.userId.mobNo1}`}</span>
+                            {bed.userId?.vehicleType && bed.userId.vehicleType !== 'none' && (
+                              <span className="inline-flex items-center gap-0.5 px-1 py-0.2 bg-gray-100 dark:bg-[#1a1d2e] text-gray-600 dark:text-[#a0a3b1] rounded text-[9px] font-bold border border-gray-200 dark:border-[#2d3052]">
+                                {bed.userId.vehicleType === 'bike' ? '🏍️' : '🚗'} {bed.userId.vehicleNumber}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {isVacating && bed.userId && (
+                          <div className="text-[11px] text-[#ff4d6d] font-semibold truncate">
+                            Leaving: {bed.userId?.name || 'Tenant'} {bed.userId?.mobNo1 && `· ${bed.userId.mobNo1}`}
+                          </div>
+                        )}
+                        {isReserved && (
+                          <div className="flex flex-col gap-0.5 mt-0.5">
+                            {bed.userId && (
+                              <div className="text-[11px] text-[#ff4d6d] font-semibold truncate flex items-center gap-1">
+                                <span>Current: {bed.userId.name} {bed.userId.mobNo1 && `(${bed.userId.mobNo1})`}</span>
+                                {bed.vacatingDetails?.vacatingDate && (
+                                  <span className="text-[9px] text-[#ff4d6d] bg-[#ff4d6d]/10 px-1 rounded font-bold border border-[#ff4d6d]/20">
+                                    Leaving {new Date(bed.vacatingDetails.vacatingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {preBooking && (
+                              <div className="text-[11px] text-[#a855f7] font-semibold truncate">
+                                For: {preBooking.guestDetails?.name || preBooking.userId?.name || '—'} {preBooking.guestDetails?.phone ? `(${preBooking.guestDetails.phone})` : ''} · Move-in: {preBooking.expectedMoveInDate ? new Date(preBooking.expectedMoveInDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'} · Advance: ₹{Number(preBooking.advanceAmount || 0).toLocaleString('en-IN')}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {isAvailable && (
+                          <div className="text-[10px] text-[#51cf66]">Available</div>
+                        )}
+                      </div>
+
+                      {/* Bed Action Buttons */}
+                      <div className="flex items-center gap-1">
+                        {isOccupied && (
+                          <>
+                            <Button
+                              variant="ghost" size="sm"
+                              className="text-[#ffa94d] text-[10px] px-1.5 py-0.5 h-auto hover:bg-[#ffa94d]/10"
+                              onClick={() => setVacatingModal({ bedId: bed._id, userName: bed.userId?.name })}
+                            >
+                              Set Notice
+                            </Button>
+                            <Button
+                              variant="ghost" size="sm"
+                              className="text-[#ff4d6d] text-[10px] px-1 py-0.5 h-auto hover:bg-[#ff4d6d]/10"
+                              onClick={() => unassignMut.mutate(bed._id)}
+                              loading={unassignMut.isPending && unassignMut.variables === bed._id}
+                            >
+                              Vacate
+                            </Button>
+                          </>
+                        )}
+                        {isVacating && (
+                          <>
+                            <Button
+                              variant="outline" size="sm"
+                              className="text-[#a855f7] text-[10px] px-1.5 py-0.5 h-auto border-[#a855f7]/30 hover:bg-[#a855f7]/10"
+                              onClick={() => setPreBookModal({ bedId: bed._id, roomId: room._id, roomNumber: room.roomNumber, bedNum: bedSuffix, pgId })}
+                            >
+                              Pre-Book
+                            </Button>
+                            <Button
+                              variant="ghost" size="sm"
+                              className="text-[#6b6e82] text-[10px] px-1 py-0.5 h-auto hover:bg-gray-100 dark:hover:bg-[#2d3052]"
+                              onClick={() => clearVacatingMut.mutate(bed._id)}
+                            >
+                              Clear
+                            </Button>
+                          </>
+                        )}
+                        {isReserved && (
+                          <>
+                            <Button
+                              variant="ghost" size="sm"
+                              className="text-[#a855f7] text-[10px] px-1.5 py-0.5 h-auto hover:bg-[#a855f7]/10"
+                              onClick={() => setReservationModal({ ...preBooking, currentTenant: bed.userId, vacatingDetails: bed.vacatingDetails, bedId: bed._id })}
+                            >
+                              View
+                            </Button>
+                          </>
+                        )}
+                        {isAvailable && (
+                          <>
+                            <Button
+                              variant="outline" size="sm"
+                              className="text-[10px] px-1.5 py-0.5 h-auto"
+                              onClick={() => setAssignModal({ bedId: bed._id, roomNumber: room.roomNumber, bedNum: bedSuffix })}
+                            >
+                              Assign
+                            </Button>
+                            <Button
+                              variant="ghost" size="sm"
+                              className="text-[#a855f7] text-[10px] px-1.5 py-0.5 h-auto hover:bg-[#a855f7]/10"
+                              onClick={() => setPreBookModal({ bedId: bed._id, roomId: room._id, roomNumber: room.roomNumber, bedNum: bedSuffix, pgId })}
+                            >
+                              Pre-Book
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </Card>
           ))}
@@ -337,10 +489,48 @@ export default function ManageRooms() {
           loading={assignMut.isPending}
         />
       </Modal>
+
+      {/* Vacating Notice Modal */}
+      <Modal isOpen={!!vacatingModal} onClose={() => setVacatingModal(null)} title="Set Vacating Notice">
+        {vacatingModal && (
+          <VacatingNoticeForm
+            bedInfo={vacatingModal}
+            onSubmit={(data) => setVacatingMut.mutate(data)}
+            loading={setVacatingMut.isPending}
+            onCancel={() => setVacatingModal(null)}
+          />
+        )}
+      </Modal>
+
+      {/* Pre-Booking Modal */}
+      <Modal isOpen={!!preBookModal} onClose={() => setPreBookModal(null)} title="Pre-Book Bed">
+        {preBookModal && (
+          <PreBookForm
+            bedInfo={preBookModal}
+            onSubmit={(data) => preBookMut.mutate(data)}
+            loading={preBookMut.isPending}
+            onCancel={() => setPreBookModal(null)}
+          />
+        )}
+      </Modal>
+
+      {/* Reservation Details Modal */}
+      <Modal isOpen={!!reservationModal} onClose={() => setReservationModal(null)} title="Pre-Booking & Occupancy Details">
+        {reservationModal && (
+          <ReservationDetailsForm
+            reservation={reservationModal}
+            onCancelPreBooking={(cancelData) => cancelPreBookMut.mutate({ id: reservationModal._id, data: cancelData })}
+            onVacateTenant={(bedId) => unassignMut.mutate(bedId)}
+            loading={cancelPreBookMut.isPending}
+            onClose={() => setReservationModal(null)}
+          />
+        )}
+      </Modal>
     </div>
   );
 }
 
+// ── Room Form ──────────────────────────────────────────────────────────────────
 const presetUnitTypes = ['Single Room', '1 RK', '1 BHK', '2 BHK', '3 BHK',];
 
 function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
@@ -375,8 +565,6 @@ function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
     name: "beds"
   });
 
-  const sharingType = watch('sharingType');
-
   const handleFormSubmit = (data) => {
     const cleaned = {
       roomNumber: data.roomNumber,
@@ -394,16 +582,10 @@ function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
     onSubmit(cleaned);
   };
 
-  // Adjust beds array when occupancy changes
   const handleSharingChange = (e) => {
     const val = parseInt(e.target.value);
-    
-    // Trigger instant validation on keystroke/value enter
     trigger('sharingType');
-
-    if (isNaN(val) || val < 1 || val > 20) {
-      return;
-    }
+    if (isNaN(val) || val < 1 || val > 20) return;
 
     const currentCount = fields.length;
     if (val > currentCount) {
@@ -423,7 +605,6 @@ function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)}>
       <div className="max-h-[420px] overflow-y-auto pr-1 flex flex-col gap-3">
-        {/* Row 1: Compact 4-column layout for Room Number, Floor, Room AC Type, and Occupancy */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Input
             label="Room Number" required
@@ -464,7 +645,6 @@ function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
           />
         </div>
 
-        {/* Row 2: Unit / Layout Type + Custom Layout Name (if Other) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className={watch('unitType') === 'Other' ? 'col-span-1' : 'col-span-1 sm:col-span-2'}>
             <Controller
@@ -502,7 +682,6 @@ function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
           )}
         </div>
 
-        {/* Bed Configurations */}
         <div className="mt-1">
           <h3 className="text-[13px] font-bold mb-2 pb-1.5 border-b dark:border-[#2d3052] border-gray-200 dark:text-[#f0f0f8] text-gray-900">
             Bed Configurations
@@ -528,7 +707,6 @@ function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
         </div>
       </div>
 
-      {/* Modal Footer */}
       <div className="flex gap-3 justify-end mt-6 pt-5 border-t dark:border-[#2d3052] border-gray-200 flex-col-reverse sm:flex-row">
         <Button variant="ghost" type="button" onClick={onCancel} className="flex-1">Cancel</Button>
         <Button type="submit" loading={loading} className="flex-[2]">
@@ -539,6 +717,7 @@ function RoomForm({ onSubmit, loading, initialData, isEdit, onCancel }) {
   );
 }
 
+// ── Assign Form ────────────────────────────────────────────────────────────────
 function AssignForm({ bedInfo, onSubmit, loading, pgId, pgName }) {
   const { data: tenantData, isLoading } = useQuery({
     queryKey: ['eligible-tenants', pgId],
@@ -558,7 +737,6 @@ function AssignForm({ bedInfo, onSubmit, loading, pgId, pgName }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Bed Info Banner */}
       <div className="bg-[#6c63ff]/15 px-3 py-2.5 rounded-xl text-[#6c63ff] text-[13px] flex items-center justify-between flex-wrap gap-2">
         <span>
           Assigning tenant to <strong>Room {bedInfo?.roomNumber} - Bed {bedInfo?.bedNum}</strong>
@@ -570,7 +748,6 @@ function AssignForm({ bedInfo, onSubmit, loading, pgId, pgName }) {
         )}
       </div>
 
-      {/* Tenant Selector */}
       <div>
         <h4 className="text-[13px] font-bold mb-2.5 dark:text-[#f0f0f8] text-gray-900">
           Select Tenant (with "Deal Done" status)
@@ -617,7 +794,6 @@ function AssignForm({ bedInfo, onSubmit, loading, pgId, pgName }) {
         )}
       </div>
 
-      {/* Joining Date */}
       <div>
         <Input
           label="Check-in / Joining Date"
@@ -628,7 +804,6 @@ function AssignForm({ bedInfo, onSubmit, loading, pgId, pgName }) {
         />
       </div>
 
-      {/* Modal Footer */}
       <div className="border-t dark:border-[#2d3052] border-gray-200 pt-4">
         <Button
           onClick={() => onSubmit(selectedUser, joiningDate)}
@@ -639,6 +814,413 @@ function AssignForm({ bedInfo, onSubmit, loading, pgId, pgName }) {
           Confirm Assignment
         </Button>
       </div>
+    </div>
+  );
+}
+
+// ── Vacating Notice Form ───────────────────────────────────────────────────────
+function VacatingNoticeForm({ bedInfo, onSubmit, loading, onCancel }) {
+  const [vacatingDate, setVacatingDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().split('T')[0];
+  });
+  const [reason, setReason] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!vacatingDate) {
+      toast.error('Please select a vacating date');
+      return;
+    }
+    onSubmit({
+      bedId: bedInfo.bedId,
+      vacatingDate,
+      reason,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="bg-[#ff4d6d]/10 p-3 rounded-xl border border-[#ff4d6d]/20 flex items-center justify-between text-xs text-[#ff4d6d] font-bold">
+        <span>Setting Vacating Notice for Tenant</span>
+        {bedInfo.userName && <Badge variant="danger">{bedInfo.userName}</Badge>}
+      </div>
+
+      <Input
+        label="Expected Vacating Date"
+        type="date"
+        required
+        value={vacatingDate}
+        onChange={(e) => setVacatingDate(e.target.value)}
+      />
+
+      <Input
+        label="Reason for Leaving (Optional)"
+        placeholder="e.g. Relocating to another city, job change"
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+      />
+
+      <div className="flex gap-3 justify-end pt-3 border-t dark:border-[#2d3052] border-gray-200">
+        <Button variant="ghost" type="button" onClick={onCancel} className="flex-1">
+          Cancel
+        </Button>
+        <Button type="submit" loading={loading} className="flex-[2] bg-[#ff4d6d] hover:bg-[#ff4d6d]/90 text-white">
+          Confirm Vacating Notice
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// ── Pre-Book Form ──────────────────────────────────────────────────────────────
+function PreBookForm({ bedInfo, onSubmit, loading, onCancel }) {
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [moveInDate, setMoveInDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().split('T')[0];
+  });
+  const [advanceAmount, setAdvanceAmount] = useState('');
+  const [paymentMode, setPaymentMode] = useState('upi');
+  const [paymentRef, setPaymentRef] = useState('');
+  const [isRefundable, setIsRefundable] = useState(true);
+
+  const handlePhoneChange = (e) => {
+    // Only allow digits and cap at 10 numbers
+    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setGuestPhone(val);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!guestName.trim()) {
+      toast.error('Incoming tenant name is required');
+      return;
+    }
+    if (!/^\d{10}$/.test(guestPhone.trim())) {
+      toast.error('Mobile number must be exactly 10 digits');
+      return;
+    }
+    if (!advanceAmount || Number(advanceAmount) < 0) {
+      toast.error('Advance amount must be a positive number');
+      return;
+    }
+
+    onSubmit({
+      pgId: bedInfo.pgId,
+      roomId: bedInfo.roomId,
+      bedId: bedInfo.bedId,
+      guestDetails: {
+        name: guestName.trim(),
+        phone: guestPhone.trim(),
+        email: guestEmail.trim() || undefined,
+      },
+      expectedMoveInDate: moveInDate,
+      advanceAmount: Number(advanceAmount),
+      paymentMode,
+      paymentReference: paymentRef.trim() || undefined,
+      isRefundable,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="bg-[#a855f7]/15 p-3 rounded-xl border border-[#a855f7]/20 flex items-center justify-between text-xs text-[#a855f7] font-bold">
+        <span>Pre-Booking for Room {bedInfo.roomNumber} - Bed {bedInfo.bedNum}</span>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Input
+          label="Incoming Tenant Name"
+          required
+          placeholder="e.g. Rahul Sharma"
+          value={guestName}
+          onChange={(e) => setGuestName(e.target.value)}
+        />
+        <div>
+          <Input
+            label="Mobile Phone (10 digits)"
+            required
+            type="text"
+            maxLength={10}
+            placeholder="e.g. 9876543210"
+            value={guestPhone}
+            onChange={handlePhoneChange}
+          />
+          <span className="text-[10px] dark:text-[#6b6e82] text-gray-400 mt-0.5 block">
+            {guestPhone.length}/10 digits
+          </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Input
+          label="Email Address (Optional)"
+          type="email"
+          placeholder="rahul@example.com"
+          value={guestEmail}
+          onChange={(e) => setGuestEmail(e.target.value)}
+        />
+        <Input
+          label="Expected Move-in Date"
+          type="date"
+          required
+          value={moveInDate}
+          onChange={(e) => setMoveInDate(e.target.value)}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Input
+          label="Advance Amount Paid (₹)"
+          type="number"
+          required
+          min="0"
+          placeholder="e.g. 2000"
+          value={advanceAmount}
+          onChange={(e) => setAdvanceAmount(e.target.value)}
+        />
+        <SelectDropdown
+          label="Payment Mode"
+          value={paymentMode}
+          onChange={(e) => setPaymentMode(e.target.value)}
+          options={[
+            { value: 'upi', label: 'UPI' },
+            { value: 'cash', label: 'Cash' },
+            { value: 'bank_transfer', label: 'Bank Transfer' },
+            { value: 'online', label: 'Online' },
+          ]}
+        />
+      </div>
+
+      <Input
+        label="Payment Reference / Txn ID (Optional)"
+        placeholder="e.g. UPI/123456789"
+        value={paymentRef}
+        onChange={(e) => setPaymentRef(e.target.value)}
+      />
+
+      {/* Refundable Policy Radio Toggle */}
+      <div>
+        <label className="text-xs font-bold dark:text-[#f0f0f8] text-gray-900 block mb-2">
+          Advance Refund Policy
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label
+            onClick={() => setIsRefundable(true)}
+            className={`p-3 rounded-xl border flex items-center gap-2 cursor-pointer transition-all ${
+              isRefundable
+                ? 'border-[#51cf66] bg-[#51cf66]/10 text-[#51cf66]'
+                : 'dark:border-[#2d3052] border-gray-200 dark:bg-[#1a1d2e] bg-gray-50 dark:text-[#a0a3b1] text-gray-600'
+            }`}
+          >
+            <input type="radio" checked={isRefundable} onChange={() => setIsRefundable(true)} className="accent-[#51cf66]" />
+            <div className="text-xs">
+              <span className="font-bold block">Refundable</span>
+              <span className="text-[10px] opacity-75">Returned if cancelled</span>
+            </div>
+          </label>
+
+          <label
+            onClick={() => setIsRefundable(false)}
+            className={`p-3 rounded-xl border flex items-center gap-2 cursor-pointer transition-all ${
+              !isRefundable
+                ? 'border-[#ff4d6d] bg-[#ff4d6d]/10 text-[#ff4d6d]'
+                : 'dark:border-[#2d3052] border-gray-200 dark:bg-[#1a1d2e] bg-gray-50 dark:text-[#a0a3b1] text-gray-600'
+            }`}
+          >
+            <input type="radio" checked={!isRefundable} onChange={() => setIsRefundable(false)} className="accent-[#ff4d6d]" />
+            <div className="text-xs">
+              <span className="font-bold block">Non-Refundable</span>
+              <span className="text-[10px] opacity-75">Forfeited if cancelled</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div className="flex gap-3 justify-end pt-3 border-t dark:border-[#2d3052] border-gray-200">
+        <Button variant="ghost" type="button" onClick={onCancel} className="flex-1">
+          Cancel
+        </Button>
+        <Button type="submit" loading={loading} className="flex-[2] bg-[#a855f7] hover:bg-[#a855f7]/90 text-white">
+          Confirm Pre-Booking
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// ── Reservation Details Form ───────────────────────────────────────────────────
+function ReservationDetailsForm({ reservation, onCancelPreBooking, loading, onClose }) {
+  const [showCancel, setShowCancel] = useState(false);
+  const [refundStatus, setRefundStatus] = useState(reservation?.isRefundable === false ? 'forfeited' : 'refunded');
+  const [reason, setReason] = useState('');
+  const [refundRef, setRefundRef] = useState('');
+
+  if (!reservation) return null;
+
+  const handleCancelSubmit = (e) => {
+    e.preventDefault();
+    onCancelPreBooking({
+      reason,
+      refundStatus,
+      refundReference: refundRef,
+    });
+  };
+
+  return (
+    <div className="flex flex-col gap-4 text-sm">
+      {!showCancel ? (
+        <>
+          {/* Current Vacating Resident Info Banner (if bed was previously occupied) */}
+          {reservation.currentTenant && (
+            <div className="bg-[#ff4d6d]/10 p-3.5 rounded-xl border border-[#ff4d6d]/25 flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#ff4d6d] font-black uppercase tracking-wider flex items-center gap-1.5">
+                  <UserCheck size={14} /> Current Vacating Tenant
+                </span>
+                {reservation.vacatingDetails?.vacatingDate && (
+                  <Badge variant="danger" className="text-[10px]">
+                    Leaving {new Date(reservation.vacatingDetails.vacatingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </Badge>
+                )}
+              </div>
+              <div className="text-sm font-bold dark:text-[#f0f0f8] text-gray-900">
+                {reservation.currentTenant.name || 'Tenant'}
+              </div>
+              <div className="text-xs dark:text-[#a0a3b1] text-gray-500 flex items-center gap-3">
+                {reservation.currentTenant.mobNo1 && (
+                  <span>Phone: <a href={`tel:${reservation.currentTenant.mobNo1}`} className="text-[#6c63ff] font-semibold">{reservation.currentTenant.mobNo1}</a></span>
+                )}
+                {reservation.vacatingDetails?.reason && (
+                  <span>Reason: {reservation.vacatingDetails.reason}</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Reserved Incoming Guest Banner */}
+          <div className="bg-[#a855f7]/15 p-4 rounded-xl border border-[#a855f7]/20 flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <span className="text-xs dark:text-[#a0a3b1] text-gray-600 uppercase font-bold flex items-center gap-1.5">
+                <Lock size={13} className="text-[#a855f7]" /> Reserved Incoming Guest
+              </span>
+              <Badge variant={reservation.isRefundable === false ? 'danger' : 'purple'}>
+                {reservation.isRefundable === false ? 'Non-Refundable' : 'Refundable Advance'}
+              </Badge>
+            </div>
+            <div className="text-lg font-black dark:text-[#f0f0f8] text-gray-900">
+              {reservation.guestDetails?.name || reservation.userId?.name || '—'}
+            </div>
+            <div className="text-xs dark:text-[#a0a3b1] text-gray-500 flex items-center gap-3">
+              {reservation.guestDetails?.phone || reservation.userId?.mobNo1 ? (
+                <span>Phone: <a href={`tel:${reservation.guestDetails?.phone || reservation.userId?.mobNo1}`} className="text-[#a855f7] font-bold">{reservation.guestDetails?.phone || reservation.userId?.mobNo1}</a></span>
+              ) : null}
+              {reservation.guestDetails?.email && <span>Email: {reservation.guestDetails.email}</span>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 p-4 dark:bg-[#242740] bg-gray-50 rounded-xl border dark:border-[#2d3052] border-gray-200">
+            <div>
+              <span className="text-xs dark:text-[#6b6e82] text-gray-500">Advance Paid</span>
+              <div className="text-base font-black text-[#00d4aa]">₹{Number(reservation.advanceAmount || 0).toLocaleString('en-IN')}</div>
+            </div>
+            <div>
+              <span className="text-xs dark:text-[#6b6e82] text-gray-500">Expected Move-in</span>
+              <div className="text-sm font-bold dark:text-[#f0f0f8] text-gray-900">
+                {reservation.expectedMoveInDate ? new Date(reservation.expectedMoveInDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+              </div>
+            </div>
+            <div>
+              <span className="text-xs dark:text-[#6b6e82] text-gray-500">Payment Mode</span>
+              <div className="text-sm font-semibold dark:text-[#f0f0f8] text-gray-900 uppercase">{reservation.paymentMode || 'cash'}</div>
+            </div>
+            <div>
+              <span className="text-xs dark:text-[#6b6e82] text-gray-500">Payment Ref</span>
+              <div className="text-xs font-mono dark:text-[#a0a3b1] text-gray-600 truncate">{reservation.paymentReference || '—'}</div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 justify-end pt-3 border-t dark:border-[#2d3052] border-gray-200">
+            <Button variant="ghost" onClick={onClose} className="flex-1">Close</Button>
+            <Button variant="danger" onClick={() => setShowCancel(true)} className="flex-1">
+              Cancel Pre-Booking
+            </Button>
+          </div>
+        </>
+      ) : (
+        <form onSubmit={handleCancelSubmit} className="flex flex-col gap-4">
+          <div className="bg-[#ff4d6d]/10 p-3 rounded-xl border border-[#ff4d6d]/20 text-xs text-[#ff4d6d] font-bold">
+            Cancel Pre-Booking for {reservation.guestDetails?.name || 'Tenant'}
+          </div>
+
+          <div>
+            <label className="text-xs font-bold dark:text-[#f0f0f8] text-gray-900 block mb-2">
+              Refund Resolution
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label
+                onClick={() => setRefundStatus('refunded')}
+                className={`p-3 rounded-xl border flex items-center gap-2 cursor-pointer transition-all ${
+                  refundStatus === 'refunded'
+                    ? 'border-[#51cf66] bg-[#51cf66]/10 text-[#51cf66]'
+                    : 'dark:border-[#2d3052] border-gray-200 dark:bg-[#1a1d2e] bg-gray-50 dark:text-[#a0a3b1] text-gray-600'
+                }`}
+              >
+                <input type="radio" checked={refundStatus === 'refunded'} onChange={() => setRefundStatus('refunded')} className="accent-[#51cf66]" />
+                <div className="text-xs">
+                  <span className="font-bold block">Refunded</span>
+                  <span className="text-[10px] opacity-75">Returned advance</span>
+                </div>
+              </label>
+
+              <label
+                onClick={() => setRefundStatus('forfeited')}
+                className={`p-3 rounded-xl border flex items-center gap-2 cursor-pointer transition-all ${
+                  refundStatus === 'forfeited'
+                    ? 'border-[#ff4d6d] bg-[#ff4d6d]/10 text-[#ff4d6d]'
+                    : 'dark:border-[#2d3052] border-gray-200 dark:bg-[#1a1d2e] bg-gray-50 dark:text-[#a0a3b1] text-gray-600'
+                }`}
+              >
+                <input type="radio" checked={refundStatus === 'forfeited'} onChange={() => setRefundStatus('forfeited')} className="accent-[#ff4d6d]" />
+                <div className="text-xs">
+                  <span className="font-bold block">Forfeited</span>
+                  <span className="text-[10px] opacity-75">Non-refundable income</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {refundStatus === 'refunded' && (
+            <Input
+              label="Refund Transaction Reference"
+              placeholder="e.g. REF-UPI-998877"
+              value={refundRef}
+              onChange={(e) => setRefundRef(e.target.value)}
+            />
+          )}
+
+          <Input
+            label="Cancellation Reason (Optional)"
+            placeholder="e.g. Tenant changed mind, plans cancelled"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+
+          <div className="flex gap-3 justify-end pt-3 border-t dark:border-[#2d3052] border-gray-200">
+            <Button variant="ghost" type="button" onClick={() => setShowCancel(false)} className="flex-1">
+              Back
+            </Button>
+            <Button type="submit" loading={loading} variant="danger" className="flex-[2]">
+              Confirm Cancellation
+            </Button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

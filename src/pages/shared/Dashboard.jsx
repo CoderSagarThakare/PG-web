@@ -3,7 +3,8 @@ import { useAuth } from '../../context/AuthContext';
 import { getMyPGsApi } from '../../api/pg.api';
 import { getPostsApi } from '../../api/post.api';
 import { getEnquiriesApi } from '../../api/enquiry.api';
-import { Building2, FileText, MessageSquare, Bed, UserCircle2, ChevronRight, TrendingUp } from 'lucide-react';
+import { getVacatingBedsApi } from '../../api/preBooking.api';
+import { Building2, FileText, MessageSquare, Bed, UserCircle2, ChevronRight, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Badge, Spinner, QueryError } from '../../components/common';
 import { formatPrice } from '../../utils/helpers';
 import { Link } from 'react-router-dom';
@@ -64,6 +65,17 @@ export default function Dashboard() {
   const posts = postsData?.posts || [];
   const enquiries = enquiriesData?.enquiries || [];
 
+  const { data: vacatingData } = useQuery({
+    queryKey: ['vacating-beds-dashboard'],
+    queryFn: async () => {
+      if (!pgs.length) return [];
+      const results = await Promise.all(pgs.map(pg => getVacatingBedsApi(pg._id).then(r => r.data?.data || []).catch(() => [])));
+      return results.flat();
+    },
+    enabled: isOwner && pgs.length > 0,
+  });
+  const vacatingBeds = vacatingData || [];
+
   const totalBeds     = pgs.reduce((s, p) => s + (p.totalBeds || 0), 0);
   const occupiedBeds  = pgs.reduce((s, p) => s + (p.occupiedBeds || 0), 0);
   const emptyBeds     = pgs.reduce((s, p) => s + (p.emptyBeds || 0), 0);
@@ -104,6 +116,31 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {isOwner && vacatingBeds.length > 0 && (
+        <div className="bg-[#ff4d6d]/5 dark:bg-[#ff4d6d]/8 border border-[#ff4d6d]/20 rounded-xl p-4 transition-shadow hover:shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={16} className="text-[#ff4d6d]" />
+              <h2 className="text-base font-black text-[#ff4d6d]">Vacating Soon</h2>
+              <Badge variant="danger" className="text-[10px]">{vacatingBeds.length}</Badge>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            {vacatingBeds.slice(0, 5).map(bed => (
+              <div key={bed._id} className="flex items-center justify-between py-2 border-b border-[#ff4d6d]/10 last:border-0 text-sm">
+                <div>
+                  <span className="font-bold dark:text-[#f0f0f8] text-gray-900">{bed.userId?.name || 'Tenant'}</span>
+                  <span className="text-[11px] dark:text-[#6b6e82] text-gray-500 ml-2">Room {bed.roomId?.roomNumber} · Bed {bed.bedNumber?.split('-')?.[1] || bed.bedNumber}</span>
+                </div>
+                <span className="text-xs font-bold text-[#ff4d6d]">
+                  {bed.vacatingDetails?.vacatingDate ? new Date(bed.vacatingDetails.vacatingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ───── Vacancy Posts & Recent Enquiries (50-50 desktop view, stacked mobile) ───── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

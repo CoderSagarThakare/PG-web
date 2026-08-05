@@ -531,6 +531,22 @@ function TenantPGView() {
                     ₹{Number(onboarding.financialTerms.securityDepositAmount || 0).toLocaleString('en-IN')}
                   </span>
                 </div>
+                {onboarding?.financialTerms?.preBookingAdvanceCredited > 0 && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs dark:text-[#6b6e82] text-gray-500">Pre-Booking Advance</span>
+                      <span className="text-sm font-bold text-[#51cf66]">
+                        -₹{Number(onboarding.financialTerms.preBookingAdvanceCredited).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs dark:text-[#6b6e82] text-gray-500">Remaining Paid</span>
+                      <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">
+                        ₹{Number(Math.max(0, (onboarding.financialTerms.securityDepositAmount || 0) - (onboarding.financialTerms.preBookingAdvanceCredited || 0))).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between items-center text-xs border-t dark:border-[#2d3052] border-gray-200 pt-3">
                   <span className="dark:text-[#6b6e82] text-gray-500">Confirmation Date</span>
                   <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">
