@@ -49,6 +49,7 @@ const employeeNav = [
   { label: 'Discover Stays', icon: <Search size={18} />, to: '/browse' },
   { label: 'Browse PGs', icon: <Building2 size={18} />, to: '/browse-pgs' },
   { section: 'My Work' },
+  { label: 'My PG', icon: <Home size={18} />, to: '/my-pg' },
   { label: 'My Expenses', icon: <Receipt size={18} />, to: '/my-expenses' },
   { section: 'Account' },
   { label: 'Profile', icon: <User size={18} />, to: '/profile' },

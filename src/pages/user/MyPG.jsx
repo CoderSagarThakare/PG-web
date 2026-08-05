@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getMyPGInfoApi, getBedHistoryApi, confirmSettlementApi } from '../../api/onboarding.api';
-import { Badge, Card, Spinner, EmptyState, Button } from '../../components/common';
+import { getEmployeesApi } from '../../api/staff.api';
+import { getPGByIdApi } from '../../api/pg.api';
+import { useAuth } from '../../context/AuthContext';
+import { Badge, Card, Spinner, EmptyState, Button, ReviewsSection } from '../../components/common';
 import { formatDate, getErrorMessage } from '../../utils/helpers';
 import {
   Home, Building2, Calendar, ShieldCheck, Phone,
@@ -154,8 +157,189 @@ function SettlementCard({ onboarding, pgInfo, onConfirmed }) {
   );
 }
 
-// ── Main MyPG page ────────────────────────────────────────────────────────────
-export default function MyPG() {
+// ── Employee Workplace PG View ────────────────────────────────────────────────
+function EmployeePGView() {
+  const navigate = useNavigate();
+  const [selectedPgId, setSelectedPgId] = useState('');
+
+  // Fetch employee's staff record
+  const { data: staffData, isLoading: staffLoading } = useQuery({
+    queryKey: ['my-employee-record'],
+    queryFn: async () => (await getEmployeesApi({ limit: 100 })).data?.data,
+  });
+
+  const employeeRecord = staffData?.employees?.[0];
+  const assignedPgs = employeeRecord?.pgIds || [];
+
+  useEffect(() => {
+    if (assignedPgs.length > 0 && !selectedPgId) {
+      setSelectedPgId(assignedPgs[0]._id);
+    }
+  }, [assignedPgs, selectedPgId]);
+
+  // Fetch selected PG details
+  const { data: pgData, isLoading: pgLoading } = useQuery({
+    queryKey: ['pg-details', selectedPgId],
+    queryFn: async () => (await getPGByIdApi(selectedPgId)).data?.data,
+    enabled: !!selectedPgId,
+  });
+
+  if (staffLoading || pgLoading) return <Spinner center />;
+
+  if (assignedPgs.length === 0) {
+    return (
+      <div className="fade-in max-w-4xl mx-auto py-10 px-4">
+        <EmptyState
+          icon={<Building2 size={64} className="text-gray-400 dark:text-[#6b6e82]" />}
+          title="No Workplace PG Assigned"
+          description="You are currently not assigned to any PG property as a staff member."
+        >
+          <div className="flex gap-4 mt-6">
+            <Button onClick={() => navigate('/my-expenses')} className="bg-[#6c63ff] hover:bg-[#6c63ff]/90 text-white font-semibold">
+              Go to My Expenses
+            </Button>
+            <Button variant="ghost" onClick={() => navigate('/browse')}>
+              Browse PGs
+            </Button>
+          </div>
+        </EmptyState>
+      </div>
+    );
+  }
+
+  const pg = pgData?.pg || assignedPgs.find(p => p._id === selectedPgId) || assignedPgs[0];
+
+  return (
+    <div className="fade-in pb-10 max-w-6xl mx-auto px-4">
+      {/* Selector if employee works at multiple PGs */}
+      {assignedPgs.length > 1 && (
+        <div className="mb-6 flex items-center gap-3 overflow-x-auto pb-2">
+          <span className="text-xs font-bold dark:text-[#6b6e82] text-gray-500 uppercase tracking-wider">Select Assigned PG:</span>
+          {assignedPgs.map(p => (
+            <button
+              key={p._id}
+              onClick={() => setSelectedPgId(p._id)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                selectedPgId === p._id
+                  ? 'bg-[#00d4aa] text-slate-950 border-[#00d4aa]'
+                  : 'bg-gray-100 dark:bg-[#242740] dark:text-[#a0a3b1] text-gray-700 border-gray-200 dark:border-[#2d3052] hover:border-[#00d4aa]'
+              }`}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Hero section / Workplace PG Header */}
+      <div className="relative overflow-hidden rounded-[16px] mb-8 bg-gradient-to-r from-[#00d4aa]/20 to-[#6c63ff]/20 border border-gray-200 dark:border-[#2d3052] p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Building2 size={20} className="text-[#00d4aa]" />
+            <Badge variant="success" className="text-xs uppercase font-extrabold tracking-wider px-2 py-0.5">
+              Assigned Workplace PG
+            </Badge>
+          </div>
+          <h1 className="text-3xl font-black dark:text-[#f0f0f8] text-gray-900 leading-tight">
+            {pg?.name}
+          </h1>
+          <p className="text-sm dark:text-[#6b6e82] text-gray-500 mt-2 max-w-xl">
+            {pg?.address?.landmark && `${pg.address.landmark}, `}{pg?.address?.city}, {pg?.address?.state} - {pg?.address?.pincode}
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button
+            onClick={() => navigate('/my-expenses')}
+            className="bg-[#00d4aa] hover:bg-[#00d4aa]/90 text-slate-950 font-bold flex items-center gap-2"
+          >
+            My Expenses &amp; Salary <ArrowRight size={16} />
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* PG Details */}
+        <Card className="p-6 dark:bg-[#242740] bg-gray-50 border border-gray-200 dark:border-[#2d3052] rounded-[14px]">
+          <h3 className="text-base font-bold dark:text-[#f0f0f8] text-gray-900 mb-4 flex items-center gap-2">
+            <Building2 size={16} className="text-[#00d4aa]" /> Property Overview
+          </h3>
+          <div className="flex flex-col gap-3 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="dark:text-[#6b6e82] text-gray-500">PG Type</span>
+              <span className="font-semibold dark:text-[#f0f0f8] text-gray-900 capitalize">{pg?.pgType || '—'}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="dark:text-[#6b6e82] text-gray-500">Total Rooms</span>
+              <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">{pg?.totalRooms || 0}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="dark:text-[#6b6e82] text-gray-500">Total Beds</span>
+              <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">{pg?.totalBeds || 0}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="dark:text-[#6b6e82] text-gray-500">Rating</span>
+              <span className="font-bold text-[#ffa94d]">⭐ {pg?.rating ? pg.rating.toFixed(1) : '0.0'} ({pg?.numReviews || 0} reviews)</span>
+            </div>
+          </div>
+        </Card>
+
+        {/* Staff Job & Salary Details */}
+        <Card className="p-6 dark:bg-[#242740] bg-gray-50 border border-gray-200 dark:border-[#2d3052] rounded-[14px]">
+          <h3 className="text-base font-bold dark:text-[#f0f0f8] text-gray-900 mb-4 flex items-center gap-2">
+            <IndianRupee size={16} className="text-[#00d4aa]" /> My Staff Assignment
+          </h3>
+          <div className="flex flex-col gap-3 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="dark:text-[#6b6e82] text-gray-500">Monthly Salary</span>
+              <span className="font-bold text-[#00d4aa]">₹{Number(employeeRecord?.monthlySalary || 0).toLocaleString('en-IN')}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="dark:text-[#6b6e82] text-gray-500">Joined Date</span>
+              <span className="font-semibold dark:text-[#f0f0f8] text-gray-900">{employeeRecord?.joinedDate ? formatDate(employeeRecord.joinedDate) : '—'}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="dark:text-[#6b6e82] text-gray-500">Staff Status</span>
+              <Badge variant="success" className="capitalize">{employeeRecord?.status || 'Active'}</Badge>
+            </div>
+          </div>
+        </Card>
+
+        {/* Owner / Management Contact */}
+        <Card className="p-6 dark:bg-[#242740] bg-gray-50 border border-gray-200 dark:border-[#2d3052] rounded-[14px]">
+          <h3 className="text-base font-bold dark:text-[#f0f0f8] text-gray-900 mb-4 flex items-center gap-2">
+            <Phone size={16} className="text-[#6c63ff]" /> Property Management
+          </h3>
+          <div className="flex flex-col gap-3 text-sm">
+            {pg?.ownerId && (
+              <div>
+                <span className="text-xs dark:text-[#6b6e82] text-gray-500 font-bold uppercase">Owner</span>
+                <div className="font-bold dark:text-[#f0f0f8] text-gray-900 mt-0.5">{pg.ownerId.name || 'Owner'}</div>
+                {pg.ownerId.mobNo1 && <div className="text-xs dark:text-[#6b6e82] text-gray-500">{pg.ownerId.mobNo1}</div>}
+              </div>
+            )}
+            {pg?.managerId && (
+              <div className="border-t dark:border-[#2d3052] border-gray-200 pt-2">
+                <span className="text-xs dark:text-[#6b6e82] text-gray-500 font-bold uppercase">Manager</span>
+                <div className="font-bold dark:text-[#f0f0f8] text-gray-900 mt-0.5">{pg.managerId.name}</div>
+                {pg.managerId.mobNo1 && <div className="text-xs dark:text-[#6b6e82] text-gray-500">{pg.managerId.mobNo1}</div>}
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Reviews & Ratings Section for Employee */}
+      {selectedPgId && (
+        <Card className="p-6 dark:bg-[#242740] bg-gray-50 border border-gray-200 dark:border-[#2d3052] rounded-[14px]">
+          <ReviewsSection pgId={selectedPgId} />
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ── Tenant PG View ────────────────────────────────────────────────────────────
+function TenantPGView() {
   const navigate = useNavigate();
 
   // 1. Fetch current PG information
@@ -403,6 +587,24 @@ export default function MyPG() {
           </Card>
         </div>
       </div>
+
+      {/* Reviews & Ratings Section for Tenant */}
+      {pgInfo?._id && (
+        <Card className="p-6 mt-6 dark:bg-[#242740] bg-gray-50 border border-gray-200 dark:border-[#2d3052] rounded-[14px]">
+          <ReviewsSection pgId={pgInfo._id} />
+        </Card>
+      )}
     </div>
   );
+}
+
+// ── Main MyPG page ────────────────────────────────────────────────────────────
+export default function MyPG() {
+  const { user } = useAuth();
+
+  if (user?.role === 'employee') {
+    return <EmployeePGView />;
+  }
+
+  return <TenantPGView />;
 }

@@ -58,12 +58,12 @@ export default function ReviewsSection({ pgId }) {
     queryFn: async () => (await getPGReviewsApi(pgId, { page, limit: 5 })).data?.data,
   });
 
-  // Query 2: Get my review status (only if logged in and role is 'user')
-  const isUser = user && user.role === 'user';
+  // Query 2: Get my review status (only if logged in and role is 'user' or 'employee')
+  const canReviewRole = user && (user.role === 'user' || user.role === 'employee');
   const { data: myReviewData, isLoading: loadingMyReview } = useQuery({
     queryKey: ['my-review', pgId],
     queryFn: async () => (await getMyReviewApi(pgId)).data?.data,
-    enabled: !!isUser,
+    enabled: !!canReviewRole && !!pgId,
   });
 
   const review = myReviewData?.review;
@@ -137,8 +137,8 @@ export default function ReviewsSection({ pgId }) {
         <MessageSquare size={18} className="text-[#6c63ff]" /> Stays Reviews
       </h2>
 
-      {/* Review Form - Verified Residents Only */}
-      {isUser && isEligible && (
+      {/* Review Form - Verified Residents & Staff Only */}
+      {canReviewRole && isEligible && (
         <Card className="p-4 border border-[#6c63ff]/15 dark:bg-[#242740]/10 bg-gray-50/50">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex items-center justify-between">

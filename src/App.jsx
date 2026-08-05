@@ -152,6 +152,7 @@ const router = createBrowserRouter([
                 children: [
                   { path: '/browse',        element: <BrowsePosts /> },
                   { path: '/browse-pgs',    element: <BrowsePGs /> },
+                  { path: '/my-pg',         element: <MyPG /> },
                 ],
               },
 
@@ -161,7 +162,6 @@ const router = createBrowserRouter([
                 children: [
                   { path: '/my-enquiries',  element: <Enquiries /> },
                   { path: '/my-rent',       element: <MyRent /> },
-                  { path: '/my-pg',         element: <MyPG /> },
                 ],
               },
 
