@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { getEnquiriesApi, updateEnquiryApi } from '../../api/enquiry.api';
 import { getMyPGsApi } from '../../api/pg.api';
 import { useAuth } from '../../context/AuthContext';
-import { MessageSquare, Search, ChevronLeft, ChevronRight, Phone, CheckCircle2, Building2, ClipboardList, Edit } from 'lucide-react';
+import { MessageSquare, Search, ChevronLeft, ChevronRight, Phone, CheckCircle2, Building2, ClipboardList, Edit, Ban } from 'lucide-react';
 import { Badge, Card, Spinner, EmptyState, QueryError, Modal, Input, Button, SelectDropdown } from '../../components/common';
 import { getErrorMessage, formatDate, formatTime, capitalize } from '../../utils/helpers';
 import { cn } from '../../utils/cn';
@@ -16,6 +16,13 @@ const statusOptions = [
   { value: 'visited', label: 'Visited' },
   { value: 'dealDone', label: 'Deal Done' },
   { value: 'rejected', label: 'Rejected' },
+  { value: 'inventoryFull', label: 'Inventory Full' },
+];
+
+// When the linked vacancy post is deleted, only these closing statuses are allowed
+const postDeletedStatusOptions = [
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'inventoryFull', label: 'Inventory Full' },
 ];
 
 const statusVariant = {
@@ -274,7 +281,7 @@ export default function Enquiries() {
                             <a
                               href={`tel:${enq.userId.mobNo1}`}
                               onClick={() => {
-                                if (enq.status === 'interested') {
+                                if (enq.status === 'interested' && !enq.postId?.isDeleted) {
                                   callMut.mutate(enq._id);
                                 }
                               }}
@@ -296,17 +303,31 @@ export default function Enquiries() {
                     )}
 
                      {/* Action column */}
-                     {isStaff && (
+                     {isStaff && (() => {
+                       const isPostDeleted = enq.postId?.isDeleted === true;
+                       const isDealDone = enq.status === 'dealDone';
+                       // Block edit (forward-progression) when post is deleted AND enquiry hasn't reached dealDone
+                       const editBlocked = isPostDeleted && !isDealDone;
+                       return (
                        <td className="px-4 py-3.5 text-sm dark:text-[#f0f0f8] text-gray-900 border-b border-[#2d3052]/30 dark:border-[#2d3052]/30">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <button
-                              onClick={() => openUpdate(enq)}
-                              className="p-1.5 hover:bg-gray-100 dark:hover:bg-[#2d3052] rounded-lg transition-colors text-gray-500 dark:text-[#a0a3b1] border-none bg-transparent cursor-pointer flex items-center justify-center"
-                              title="Update Status"
-                            >
-                              <Edit size={16} />
-                            </button>
-                            {enq.status === 'dealDone' && (
+                            {editBlocked ? (
+                              <span
+                                className="p-1.5 rounded-lg text-gray-400 dark:text-[#4a4d62] flex items-center justify-center cursor-not-allowed"
+                                title="Post deleted — only reject or mark inventory full"
+                              >
+                                <Ban size={16} />
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => openUpdate(enq)}
+                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-[#2d3052] rounded-lg transition-colors text-gray-500 dark:text-[#a0a3b1] border-none bg-transparent cursor-pointer flex items-center justify-center"
+                                title="Update Status"
+                              >
+                                <Edit size={16} />
+                              </button>
+                            )}
+                            {isDealDone && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -318,7 +339,8 @@ export default function Enquiries() {
                             )}
                           </div>
                        </td>
-                     )}
+                       );
+                     })()}
                   </tr>
                 ))}
               </tbody>
@@ -367,16 +389,29 @@ export default function Enquiries() {
 
       {/* Update Modal */}
       <Modal isOpen={!!selected} onClose={() => setSelected(null)} title="Update Enquiry Status">
-        {selected && (
+        {selected && (() => {
+          const isPostDeleted = selected.postId?.isDeleted === true;
+          const isDealDone = selected.status === 'dealDone';
+          // When post is deleted and enquiry isn't at dealDone, restrict options to closing statuses only
+          const visibleStatusOptions = (isPostDeleted && !isDealDone) ? postDeletedStatusOptions : statusOptions;
+          return (
           <div>
             <div className="px-4 py-3 dark:bg-[#242740] bg-gray-50 rounded-lg mb-5">
               <div className="font-semibold dark:text-[#f0f0f8] text-gray-900">{selected.userId?.name}</div>
               <div className="text-sm dark:text-[#6b6e82] text-gray-500">{selected.postId?.title}</div>
               <div className="text-xs dark:text-[#6b6e82] text-gray-500 mt-4">{selected.userId?.email}</div>
             </div>
+            {isPostDeleted && !isDealDone && (
+              <div className="flex items-start gap-2 px-4 py-3 mb-4 rounded-lg dark:bg-[#ff6b6b]/10 bg-[#ff6b6b]/5 border border-[#ff6b6b]/20">
+                <Ban size={14} className="text-[#ff6b6b] mt-0.5 shrink-0" />
+                <p className="text-xs dark:text-[#ff6b6b] text-[#cc3333] leading-relaxed">
+                  The vacancy post linked to this enquiry has been deleted. You can only <strong>reject</strong> or mark as <strong>inventory full</strong>.
+                </p>
+              </div>
+            )}
             <div className="flex flex-col gap-4">
               <Input label="New Status" name="status" as="select" value={newStatus}
-                onChange={e => setNewStatus(e.target.value)} options={statusOptions} />
+                onChange={e => setNewStatus(e.target.value)} options={visibleStatusOptions} />
               <Input label="Staff Remarks" name="remarks" as="textarea"
                 value={remarks} onChange={e => setRemarks(e.target.value)}
                 placeholder="Add notes about this enquiry..." rows={3} />
@@ -386,7 +421,8 @@ export default function Enquiries() {
               <Button onClick={handleUpdate} loading={updateMut.isPending}>Save Changes</Button>
             </div>
           </div>
-        )}
+          );
+        })()}
       </Modal>
 
       {/* Start Onboarding Modal (replaces old assign-bed modal) */}

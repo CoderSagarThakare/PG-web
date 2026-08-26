@@ -211,13 +211,13 @@ export default function ManagePosts() {
 
   const { data: postsData, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['posts'],
-    queryFn: async () => (await getPostsApi()).data?.data,
+    queryFn: async () => (await getPostsApi({ limit: 1000 })).data?.data,
     retry: 1,
   });
 
   const { data: pgsData } = useQuery({
-    queryKey: ['my-pgs'],
-    queryFn: async () => (await getMyPGsApi()).data?.data,
+    queryKey: ['my-pgs-for-posts'],
+    queryFn: async () => (await getMyPGsApi({ limit: 1000 })).data?.data,
     enabled: modalOpen,
   });
 
@@ -226,7 +226,7 @@ export default function ManagePosts() {
 
   const availablePgsForForm = editPost
     ? pgs
-    : pgs.filter(pg => !posts.some(post => (post.pgId?._id || post.pgId) === pg._id));
+    : pgs.filter(pg => !posts.some(post => String(post.pgId?._id || post.pgId) === String(pg._id)));
 
   const createMut = useMutation({
     mutationFn: createPostApi,
