@@ -623,9 +623,14 @@ export default function StaffTracker() {
                             {emp.userId?.name}
                           </div>
                           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                            <Badge variant={emp.userId?.role === 'manager' ? 'manager' : 'default'} className="text-[9px] px-1.5 py-0">
+                            <Badge variant={emp.userId?.role === 'manager' ? 'manager' : 'default'} className="text-[9px] px-1.5 py-0 uppercase">
                               {emp.userId?.role}
                             </Badge>
+                            {emp.designation && (
+                              <Badge variant="accent" className="text-[9px] px-1.5 py-0 capitalize">
+                                {emp.designation}
+                              </Badge>
+                            )}
                           </div>
                           <div className="text-[10px] text-gray-400 dark:text-[#6b6e82] mt-1 flex flex-col gap-0.5">
                             <span className="font-semibold">{emp.userId?.mobNo1 || '—'}</span>
@@ -1165,7 +1170,7 @@ export default function StaffTracker() {
 
 // ── Modal: Add Staff ────────────────────────────────────────────────────────────
 function AddStaffModal({ isOpen, onClose, pgOptions, onSubmit, loading }) {
-  const [form, setForm] = useState({ pgIds: [], joinedDate: '', notes: '' });
+  const [form, setForm] = useState({ pgIds: [], joinedDate: '', notes: '', designation: 'other' });
   const [pgSalaries, setPgSalaries] = useState({});
   const [userSearch, setUserSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
@@ -1174,7 +1179,7 @@ function AddStaffModal({ isOpen, onClose, pgOptions, onSubmit, loading }) {
   // Reset form to clean values when modal opens
   useEffect(() => {
     if (isOpen) {
-      setForm({ pgIds: [], joinedDate: '', notes: '' });
+      setForm({ pgIds: [], joinedDate: '', notes: '', designation: 'other' });
       setPgSalaries({});
       setUserSearch('');
       setSelectedUser(null);
@@ -1276,7 +1281,12 @@ function AddStaffModal({ isOpen, onClose, pgOptions, onSubmit, loading }) {
                   <button
                     key={u._id}
                     className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-[#242740] text-left transition-colors border-b border-gray-100 dark:border-[#2d3052]/40 last:border-b-0"
-                    onClick={() => { setSelectedUser(u); setShowDropdown(false); setUserSearch(''); }}
+                    onClick={() => {
+                      setSelectedUser(u);
+                      setShowDropdown(false);
+                      setUserSearch('');
+                      setForm(f => ({ ...f, designation: u.role === 'manager' ? 'manager' : 'caretaker' }));
+                    }}
                   >
                     <img
                       src={u.picture || 'https://i.imgur.com/CR1iy7U.png'}
@@ -1294,6 +1304,29 @@ function AddStaffModal({ isOpen, onClose, pgOptions, onSubmit, loading }) {
             </div>
           )}
         </div>
+
+        {selectedUser && (
+          <div>
+            <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1] block mb-1.5">Designation</label>
+            <SelectDropdown
+              value={form.designation}
+              onChange={e => setForm(f => ({ ...f, designation: e.target.value }))}
+              options={
+                selectedUser.role === 'manager'
+                  ? [{ value: 'manager', label: 'Manager' }]
+                  : [
+                      { value: 'caretaker', label: 'Caretaker' },
+                      { value: 'cook', label: 'Cook' },
+                      { value: 'cleaner', label: 'Cleaner' },
+                      { value: 'security', label: 'Security Guard' },
+                      { value: 'warden', label: 'Warden' },
+                      { value: 'maintenance', label: 'Maintenance Staff' },
+                      { value: 'other', label: 'Other' },
+                    ]
+              }
+            />
+          </div>
+        )}
 
         <div>
           <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1] block mb-1.5">
@@ -1403,6 +1436,7 @@ function EditStaffModal({ isOpen, employee, pgOptions, onClose, onSubmit, loadin
     notes: employee.notes || '',
     joinedDate: employee.joinedDate ? employee.joinedDate.slice(0, 10) : '',
     pgIds: employee.pgIds?.map(p => p._id || p) || [],
+    designation: employee.designation || 'other',
   });
 
   const [pgSalaries, setPgSalaries] = useState(() => {
@@ -1435,6 +1469,7 @@ function EditStaffModal({ isOpen, employee, pgOptions, onClose, onSubmit, loadin
       joinedDate: form.joinedDate || undefined,
       pgIds: form.pgIds,
       pgSalaries,
+      designation: form.designation,
     });
   };
 
@@ -1447,6 +1482,27 @@ function EditStaffModal({ isOpen, employee, pgOptions, onClose, onSubmit, loadin
             value={form.status}
             onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
             options={[{ value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }]}
+          />
+        </div>
+
+        <div>
+          <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1] block mb-1.5">Designation</label>
+          <SelectDropdown
+            value={form.designation}
+            onChange={e => setForm(f => ({ ...f, designation: e.target.value }))}
+            options={
+              employee.userId?.role === 'manager'
+                ? [{ value: 'manager', label: 'Manager' }]
+                : [
+                    { value: 'caretaker', label: 'Caretaker' },
+                    { value: 'cook', label: 'Cook' },
+                    { value: 'cleaner', label: 'Cleaner' },
+                    { value: 'security', label: 'Security Guard' },
+                    { value: 'warden', label: 'Warden' },
+                    { value: 'maintenance', label: 'Maintenance Staff' },
+                    { value: 'other', label: 'Other' },
+                  ]
+            }
           />
         </div>
 

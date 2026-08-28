@@ -20,7 +20,7 @@ import { getErrorMessage } from '../../utils/helpers';
 import {
   MapPin, Shield, ExternalLink, Camera, Trash2,
   FileText, CheckCircle, AlertCircle, Loader2, Upload, Car,
-  Clock, RotateCw
+  Clock, RotateCw, Building2
 } from 'lucide-react';
 
 export default function Profile() {
@@ -425,9 +425,14 @@ export default function Profile() {
                     {user?.email}
                   </div>
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    <Badge variant={user?.role === 'owner' ? 'owner' : user?.role === 'manager' ? 'manager' : 'user'}>
+                    <Badge variant={user?.role === 'owner' ? 'owner' : user?.role === 'manager' ? 'manager' : 'user'} className="uppercase">
                       {user?.role}
                     </Badge>
+                    {user?.employeeDetails?.designation && (
+                      <Badge variant="accent" className="capitalize">
+                        {user.employeeDetails.designation}
+                      </Badge>
+                    )}
                     {user?.isEmailVerified ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#00d4aa] bg-[#00d4aa]/10 px-2 py-0.5 rounded-md border border-[#00d4aa]/30">
                         <CheckCircle size={12} /> Email Verified
@@ -638,6 +643,58 @@ export default function Profile() {
                 )}
               </div>
             </Card>
+
+            {/* Staff Details Card */}
+            {user?.employeeDetails && (
+              <Card className="px-5 py-4">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="w-[30px] h-[30px] rounded-lg bg-[#6c63ff]/15 flex items-center justify-center">
+                    <Building2 size={14} className="text-[#6c63ff]" />
+                  </div>
+                  <div>
+                    <h3 className="text-[14px] font-bold dark:text-[#f0f0f8] text-gray-900">Staff Details</h3>
+                    <p className="text-[11px] dark:text-[#6b6e82] text-gray-500">Your PG job details</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3.5 text-xs">
+                  <div className="flex justify-between items-center py-1.5 border-b border-gray-100 dark:border-[#2d3052]/30">
+                    <span className="text-gray-400 dark:text-[#6b6e82]">Designation</span>
+                    <span className="font-bold dark:text-[#f0f0f8] text-gray-800 capitalize bg-[#6c63ff]/10 text-[#6c63ff] border border-[#6c63ff]/20 px-2 py-0.5 rounded">
+                      {user.employeeDetails.designation}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-1.5 border-b border-gray-100 dark:border-[#2d3052]/30">
+                    <span className="text-gray-400 dark:text-[#6b6e82]">Monthly Salary</span>
+                    <span className="font-bold text-[#51cf66]">
+                      ₹{Number(user.employeeDetails.monthlySalary || 0).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-1.5 border-b border-gray-100 dark:border-[#2d3052]/30">
+                    <span className="text-gray-400 dark:text-[#6b6e82]">Joined Date</span>
+                    <span className="font-semibold dark:text-[#f0f0f8] text-gray-700">
+                      {user.employeeDetails.joinedDate ? formatDate(user.employeeDetails.joinedDate) : '—'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 py-1.5">
+                    <span className="text-gray-400 dark:text-[#6b6e82]">Assigned PGs ({user.employeeDetails.pgs?.length || 0})</span>
+                    <div className="flex flex-col gap-1.5 max-h-[120px] overflow-y-auto mt-1">
+                      {user.employeeDetails.pgs?.map(pg => (
+                        <div key={pg.id} className="bg-gray-50/50 dark:bg-[#242740]/40 p-2 rounded-lg border border-gray-100/30 dark:border-[#2d3052]/20 font-semibold text-gray-700 dark:text-[#e0e0f0]">
+                          {pg.name}
+                        </div>
+                      ))}
+                      {(!user.employeeDetails.pgs || user.employeeDetails.pgs.length === 0) && (
+                        <div className="text-gray-400 dark:text-[#6b6e82] italic">No PGs assigned yet</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
           </div>
 
           {/* ══ RIGHT COLUMN ══ */}
