@@ -16,7 +16,7 @@ import {
 import { sendVerificationOtpApi, verifyOtpApi } from '../../api/auth.api';
 import { Input, Button, Card, ConfirmModal, Badge, SelectDropdown, Modal } from '../../components/common';
 import { cn } from '../../utils/cn';
-import { getErrorMessage } from '../../utils/helpers';
+import { getErrorMessage, formatDate } from '../../utils/helpers';
 import {
   MapPin, Shield, ExternalLink, Camera, Trash2,
   FileText, CheckCircle, AlertCircle, Loader2, Upload, Car,

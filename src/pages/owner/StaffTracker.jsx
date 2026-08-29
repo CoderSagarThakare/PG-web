@@ -488,7 +488,12 @@ export default function StaffTracker() {
   });
 
   const markPayPaidMut = useMutation({
-    mutationFn: ({ id, data }) => markPayrollPaidApi(id, data),
+    mutationFn: async ({ id, ids, data }) => {
+      if (ids && ids.length > 0) {
+        return Promise.all(ids.map(singleId => markPayrollPaidApi(singleId, data)));
+      }
+      return markPayrollPaidApi(id, data);
+    },
     onSuccess: () => { toast.success('Payroll marked as paid!'); invalidate(); setMarkPaidModal(null); },
     onError: (e) => toast.error(getErrorMessage(e)),
   });
@@ -860,9 +865,21 @@ export default function StaffTracker() {
                               <div className="text-[10px] dark:text-[#6b6e82] text-gray-500 capitalize">{u?.role} · {pay.records.length} PGs Assigned</div>
                             </div>
                           </div>
-                          <Badge variant={allPaid ? 'success' : allPending ? 'warning' : 'warning'}>
-                            {allPaid ? 'All Paid' : allPending ? 'Pending Payout' : 'Partially Paid'}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            {!allPaid && !isEmployee && (
+                              <Button
+                                variant="success"
+                                size="xs"
+                                className="py-1 px-2.5 text-[10px]"
+                                onClick={() => setMarkPaidModal(pay)}
+                              >
+                                Pay All PGs
+                              </Button>
+                            )}
+                            <Badge variant={allPaid ? 'success' : allPending ? 'warning' : 'warning'}>
+                              {allPaid ? 'All Paid' : allPending ? 'Pending Payout' : 'Partially Paid'}
+                            </Badge>
+                          </div>
                         </div>
 
                         {/* PG Breakdown List */}
@@ -1149,7 +1166,7 @@ export default function StaffTracker() {
           isOpen={!!markPaidModal}
           payroll={markPaidModal}
           onClose={() => setMarkPaidModal(null)}
-          onSubmit={(data) => markPayPaidMut.mutate({ id: markPaidModal._id, data })}
+          onSubmit={({ id, ids, data }) => markPayPaidMut.mutate({ id, ids, data })}
           loading={markPayPaidMut.isPending}
         />
       )}
@@ -2016,45 +2033,59 @@ function MarkPaidModal({ isOpen, payroll, onClose, onSubmit, loading }) {
     notes: '',
   });
 
+  const isGroup = payroll.isGroup;
+  const pendingRecords = isGroup ? payroll.records.filter(r => r.status === 'pending') : [payroll];
+
   const emp = payroll.employeeId;
   const u = emp?.userId;
 
+  const salaryAmount = pendingRecords.reduce((s, r) => s + (r.salaryAmount || 0), 0);
+  const reimbursedExpenses = pendingRecords.reduce((s, r) => s + (r.reimbursedExpenses || 0), 0);
+  const totalAmount = pendingRecords.reduce((s, r) => s + (r.totalAmount || 0), 0);
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Mark Salary as Paid">
+    <Modal isOpen={isOpen} onClose={onClose} title={isGroup ? "Mark Combined Salary as Paid" : "Mark Salary as Paid"}>
       <div className="flex flex-col gap-4 mt-1">
         <div className="p-3.5 bg-[#51cf66]/10 border border-[#51cf66]/20 rounded-xl">
           <div className="text-sm font-bold dark:text-[#f0f0f8] text-gray-900">{u?.name}</div>
-          <div className="flex items-center gap-3 mt-1.5">
-            <span className="text-[11px] text-gray-500 dark:text-[#6b6e82]">Salary: {f(payroll.salaryAmount)}</span>
-            {payroll.reimbursedExpenses > 0 && (
-              <span className="text-[11px] text-[#00d4aa]">+ Expenses: {f(payroll.reimbursedExpenses)}</span>
+          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+            <span className="text-[11px] text-gray-500 dark:text-[#6b6e82]">Salary: {f(salaryAmount)}</span>
+            {reimbursedExpenses > 0 && (
+              <span className="text-[11px] text-[#00d4aa]">+ Expenses: {f(reimbursedExpenses)}</span>
             )}
-            <span className="text-sm font-black text-[#51cf66] ml-auto">Total: {f(payroll.totalAmount)}</span>
+            <span className="text-sm font-black text-[#51cf66] ml-auto">Total: {f(totalAmount)}</span>
           </div>
+          {isGroup && (
+            <div className="text-[10px] text-gray-400 dark:text-[#6b6e82] mt-2 border-t border-gray-200/50 dark:border-[#2d3052]/30 pt-1.5">
+              Paying for PGs: {pendingRecords.map(r => r.pgId?.name).join(', ')}
+            </div>
+          )}
         </div>
 
-        <div>
-          <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1] block mb-1.5">Payment Mode</label>
-          <SelectDropdown
-            value={form.paymentMode}
-            onChange={e => setForm(f => ({ ...f, paymentMode: e.target.value }))}
-            options={[
-              { value: 'cash', label: 'Cash' },
-              { value: 'upi', label: 'UPI / Scanner' },
-              { value: 'bank_transfer', label: 'Bank Transfer' },
-              { value: 'cheque', label: 'Cheque' },
-              { value: 'online', label: 'Online' },
-            ]}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-[13px] font-semibold text-gray-700 dark:text-[#a0a3b1] block mb-1.5">Payment Mode</label>
+            <SelectDropdown
+              value={form.paymentMode}
+              onChange={e => setForm(f => ({ ...f, paymentMode: e.target.value }))}
+              options={[
+                { value: 'cash', label: 'Cash' },
+                { value: 'upi', label: 'UPI / Scanner' },
+                { value: 'bank_transfer', label: 'Bank Transfer' },
+                { value: 'cheque', label: 'Cheque' },
+                { value: 'online', label: 'Online' },
+              ]}
+            />
+          </div>
+
+          <Input
+            label="Payment Date"
+            type="date"
+            value={form.paidDate}
+            onChange={e => setForm(f => ({ ...f, paidDate: e.target.value }))}
+            required
           />
         </div>
-
-        <Input
-          label="Payment Date"
-          type="date"
-          value={form.paidDate}
-          onChange={e => setForm(f => ({ ...f, paidDate: e.target.value }))}
-          required
-        />
 
         <Input
           label="Reference / Transaction ID"
@@ -2074,7 +2105,16 @@ function MarkPaidModal({ isOpen, payroll, onClose, onSubmit, loading }) {
 
         <div className="flex gap-3 pt-2 border-t dark:border-[#2d3052] border-gray-200">
           <Button variant="ghost" className="flex-1" onClick={onClose}>Cancel</Button>
-          <Button className="flex-1" variant="success" loading={loading} onClick={() => onSubmit(form)}>
+          <Button
+            className="flex-1"
+            variant="success"
+            loading={loading}
+            onClick={() => onSubmit({
+              id: !isGroup ? payroll._id : undefined,
+              ids: isGroup ? pendingRecords.map(r => r._id) : undefined,
+              data: form
+            })}
+          >
             <CheckCircle2 size={15} /> Confirm Payment
           </Button>
         </div>
