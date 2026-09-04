@@ -415,6 +415,18 @@ export default function ManageRooms() {
                             </Button>
                             <Button
                               variant="ghost" size="sm"
+                              className="text-[#ffa94d] text-[10px] px-1 py-0.5 h-auto hover:bg-[#ffa94d]/10"
+                              onClick={() => setVacatingModal({
+                                bedId: bed._id,
+                                userName: bed.userId?.name,
+                                existingDate: bed.vacatingDetails?.vacatingDate,
+                                existingReason: bed.vacatingDetails?.reason
+                              })}
+                            >
+                              Edit Notice
+                            </Button>
+                            <Button
+                              variant="ghost" size="sm"
                               className="text-[#6b6e82] text-[10px] px-1 py-0.5 h-auto hover:bg-gray-100 dark:hover:bg-[#2d3052]"
                               onClick={() => clearVacatingMut.mutate(bed._id)}
                             >
@@ -523,6 +535,14 @@ export default function ManageRooms() {
             onVacateTenant={(bedId) => unassignMut.mutate(bedId)}
             loading={cancelPreBookMut.isPending}
             onClose={() => setReservationModal(null)}
+            onEditVacatingNotice={() => {
+              const bedId = reservationModal.bedId;
+              const userName = reservationModal.currentTenant?.name;
+              const existingDate = reservationModal.vacatingDetails?.vacatingDate;
+              const existingReason = reservationModal.vacatingDetails?.reason;
+              setReservationModal(null);
+              setVacatingModal({ bedId, userName, existingDate, existingReason });
+            }}
           />
         )}
       </Modal>
@@ -821,11 +841,18 @@ function AssignForm({ bedInfo, onSubmit, loading, pgId, pgName }) {
 // ── Vacating Notice Form ───────────────────────────────────────────────────────
 function VacatingNoticeForm({ bedInfo, onSubmit, loading, onCancel }) {
   const [vacatingDate, setVacatingDate] = useState(() => {
+    if (bedInfo?.existingDate) {
+      try {
+        return new Date(bedInfo.existingDate).toISOString().split('T')[0];
+      } catch (e) {
+        return bedInfo.existingDate;
+      }
+    }
     const d = new Date();
     d.setDate(d.getDate() + 14);
     return d.toISOString().split('T')[0];
   });
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState(bedInfo?.existingReason || '');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -1055,7 +1082,7 @@ function PreBookForm({ bedInfo, onSubmit, loading, onCancel }) {
 }
 
 // ── Reservation Details Form ───────────────────────────────────────────────────
-function ReservationDetailsForm({ reservation, onCancelPreBooking, loading, onClose }) {
+function ReservationDetailsForm({ reservation, onCancelPreBooking, loading, onClose, onEditVacatingNotice }) {
   const [showCancel, setShowCancel] = useState(false);
   const [refundStatus, setRefundStatus] = useState(reservation?.isRefundable === false ? 'forfeited' : 'refunded');
   const [reason, setReason] = useState('');
@@ -1084,13 +1111,24 @@ function ReservationDetailsForm({ reservation, onCancelPreBooking, loading, onCl
                   <UserCheck size={14} /> Current Vacating Tenant
                 </span>
                 {reservation.vacatingDetails?.vacatingDate && (
-                  <Badge variant="danger" className="text-[10px]">
-                    Leaving {new Date(reservation.vacatingDetails.vacatingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  <Badge variant="danger" className="text-[10px] px-2 py-0.5 font-extrabold flex items-center gap-1 border border-[#ff4d6d]/30">
+                    <Clock size={11} /> Leaving {new Date(reservation.vacatingDetails.vacatingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </Badge>
                 )}
               </div>
-              <div className="text-sm font-bold dark:text-[#f0f0f8] text-gray-900">
-                {reservation.currentTenant.name || 'Tenant'}
+              <div className="flex items-center justify-between mt-1 flex-wrap gap-2">
+                <div className="text-sm font-bold dark:text-[#f0f0f8] text-gray-900">
+                  {reservation.currentTenant.name || 'Tenant'}
+                </div>
+                {onEditVacatingNotice && (
+                  <button
+                    type="button"
+                    onClick={onEditVacatingNotice}
+                    className="text-[10px] font-black bg-gradient-to-r from-[#ff4d6d] to-[#ff758f] hover:from-[#ff335c] hover:to-[#ff5c7a] text-white px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1 transition-all transform active:scale-95 duration-200"
+                  >
+                    <Edit2 size={11} /> Edit Date
+                  </button>
+                )}
               </div>
               <div className="text-xs dark:text-[#a0a3b1] text-gray-500 flex items-center gap-3">
                 {reservation.currentTenant.mobNo1 && (

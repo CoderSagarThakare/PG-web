@@ -104,7 +104,7 @@ export default function OffboardingModal({ isOpen, onClose, onboarding }) {
               <div className="flex items-center gap-2">
                 <Bed size={13} className="dark:text-[#6b6e82] text-gray-400" />
                 <span className="dark:text-[#a0a3b1] text-gray-600">
-                  Bed {onboarding.currentBedId?.bedNumber || '—'}
+                  Bed {onboarding.currentBedId?.bedNumber?.split('-')?.[1] || onboarding.currentBedId?.bedNumber || '—'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -168,8 +168,8 @@ export default function OffboardingModal({ isOpen, onClose, onboarding }) {
                 <span className="font-bold dark:text-[#f0f0f8] text-gray-900">{f(deposit)}</span>
               </div>
 
-              {/* Deductions input */}
-              <div>
+              {/* Deductions & Pending Rent Input Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="Deductions (₹)"
                   type="number"
@@ -178,31 +178,31 @@ export default function OffboardingModal({ isOpen, onClose, onboarding }) {
                   onChange={(e) => setDeductions(e.target.value)}
                   placeholder="0"
                 />
-              </div>
-              <div>
-                <Input
-                  label="Deduction Notes"
-                  as="textarea"
-                  rows={2}
-                  value={deductionNotes}
-                  onChange={(e) => setDeductionNotes(e.target.value)}
-                  placeholder="e.g. Broken furniture, overdue bills..."
-                />
-              </div>
-
-              {/* Pending rent */}
-              <div>
                 <Input
                   label="Pending Rent Due (₹)"
                   type="number"
                   min="0"
                   value={pendingRent}
                   onChange={(e) => setPendingRent(e.target.value)}
-                  placeholder="Enter outstanding rent if any"
+                  placeholder="0"
                 />
-                <p className="text-xs dark:text-[#6b6e82] text-gray-400 mt-1">
-                  Check Rent Tracker for outstanding rent balances.
-                </p>
+              </div>
+
+              {/* Deduction Notes & Rent Tracker Helper Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Deduction Notes"
+                  as="textarea"
+                  rows={1}
+                  value={deductionNotes}
+                  onChange={(e) => setDeductionNotes(e.target.value)}
+                  placeholder="e.g. Broken furniture, overdue bills..."
+                />
+                <div className="flex flex-col justify-end pb-2">
+                  <p className="text-xs dark:text-[#6b6e82] text-gray-400">
+                    Check Rent Tracker for outstanding rent balances.
+                  </p>
+                </div>
               </div>
 
               {/* Net refundable */}
